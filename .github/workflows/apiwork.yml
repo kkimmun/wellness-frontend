@@ -61,10 +61,18 @@ jobs:
             docker compose restart web
 
       - name: Send Slack Notification
-        if: success()
-        uses: 8398a7/action-slack@v3
+        if: always()
+        uses: act10ns/slack@v2
         with:
-          status: success
-          fields: repo,commit,author,eventName,ref
+          status: ${{ job.status }}
+          channel: "#wellness-cicd"
+          message: |
+            🚀 Frontend CI/CD
+
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Status: ${{ job.status }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
