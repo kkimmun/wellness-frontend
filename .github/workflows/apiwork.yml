@@ -59,3 +59,12 @@ jobs:
           script: |
             cd /home/ubuntu/app
             docker compose restart web
+
+      - name: Send Slack Notification
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          fields: repo,commit,author,eventName,ref
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
