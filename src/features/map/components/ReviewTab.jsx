@@ -312,9 +312,10 @@ const ReviewTab = ({ place }) => {
                         newImage = null;
                       } else if (response?.imageUrl) {
                         newImage = response.imageUrl;
+                      } else if (fileInputRef.current?.files[0]) {
+                        // 서버 응답이 없더라도 유저가 새 파일을 선택했다면 로컬 미리보기(blob URL)라도 반영하여 UX 훼손 방지
+                        newImage = previewImg;
                       }
-                      // 서버 응답이 없고(response?.imageUrl) 새 파일이 업로드된 상태라면 
-                      // blob URL을 상태에 영구 저장하지 않기 위해 원본(r.image) 유지
 
                       return {
                         ...r,
