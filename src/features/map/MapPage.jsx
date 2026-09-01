@@ -114,11 +114,8 @@ const MapPage = () => {
   };
 
   const handleMarkerClick = (place) => {
-    setSelectedPlace(place);
-    // 슬라이드가 이미 열려있는 상태라면, 마커 클릭 시 주소도 새 장소로 즉시 변경
-    if (isDetailOpen) {
-      navigate(`/place/${place.placeNo}`);
-    }
+    // 마커 클릭 시에도 무조건 주소를 변경하여 동기화 로직(패널 열림)이 타도록 통일
+    navigate(`/place/${place.placeNo}`);
   };
 
   if (loading) return <div>지도를 불러오는 중입니다...</div>;

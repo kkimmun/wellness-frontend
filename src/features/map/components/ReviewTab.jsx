@@ -81,6 +81,7 @@ const ReviewTab = ({ place }) => {
     setPreviewImg(null);
     setEditingReviewId(null);
     setIsImageDeleted(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }, [place?.placeNo]);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -120,6 +121,7 @@ const ReviewTab = ({ place }) => {
     setWriteRating(review.rating);
     setPreviewImg(review.image || null);
     setIsImageDeleted(false); // 수정 진입 시 초기화
+    if (fileInputRef.current) fileInputRef.current.value = ""; // 파일 입력창 초기화
     
     if (writeBoxRef.current) {
       writeBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -259,6 +261,7 @@ const ReviewTab = ({ place }) => {
               setPreviewImg(null); 
               setEditingReviewId(null);
               setIsImageDeleted(false);
+              if (fileInputRef.current) fileInputRef.current.value = "";
             }}>취소</button>
             <button className="btn-submit" onClick={async () => {
               if (status === "unauthenticated") {
