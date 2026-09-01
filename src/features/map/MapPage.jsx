@@ -97,13 +97,16 @@ const MapPage = () => {
           if (mapRef.current) {
             mapRef.current.panTo(new window.kakao.maps.LatLng(found.xAxis, found.yAxis));
           }
+        } else {
+          // 존재하지 않는 장소 번호면 지도 기본 화면으로 강제 이동
+          navigate("/map", { replace: true });
         }
       } else {
         // URL에 placeNo가 없으면 (/map으로 돌아가면) 상세 패널 닫기 (뒤로가기 대응)
         setIsDetailOpen(false);
       }
     }
-  }, [placeNo, pins]);
+  }, [placeNo, pins, navigate]);
 
   const handlePlaceSelect = (place) => {
     navigate(`/place/${place.placeNo}`);

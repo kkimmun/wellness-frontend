@@ -36,7 +36,8 @@ const mockReviews = [
     date: "2026. 06. 21",
     content: "김포 장릉에 다녀왔는데 생각보다 훨씬 여유롭고 좋았어요. 푸릇한 나무들 사이로 조용히 걸을 수 있어서 복잡한 도심에서 잠시 벗어난 기분이었습니다. 왕릉의 분위기도 차분하고 잘돈되어 있어서 산책하면서 역사적인 공간을 함께 느낄 수 있었어요. 날씨 좋은 날 천천히 둘러보기 좋은 곳이라 추천합니다.",
     likes: 5,
-    isMine: true
+    isMine: true,
+    isMock: true
   },
   {
     id: 2,
@@ -47,7 +48,8 @@ const mockReviews = [
     content: "김포 장릉에 방문했는데 전체적으로 조용하고 고즈넉한 분위기가 마음에 들었어요. 주변 숲길을 따라 천천히 걷기 좋고, 역사적인 공간을 직접 둘러보는 재미도 있었습니다. 다만 생각보다 규모가 크지 않아서 오래 머물러 구경하기에는 조금 아쉬웠어요. 그래도 가볍게 산책하면서 여유롭게 시간을 보내기 좋습니다.",
     image: getMockImage(1),
     likes: 3,
-    isMine: false
+    isMine: false,
+    isMock: true
   }
 ];
 
@@ -131,7 +133,10 @@ const ReviewTab = ({ place }) => {
   // 리뷰 삭제 핸들러
   const handleDeleteReview = async () => {
     try {
-      await PlaceAPI.deleteReview(place.placeNo, selectedReviewId);
+      const reviewToDelete = reviews.find(r => r.id === selectedReviewId);
+      if (!reviewToDelete?.isMock) {
+        await PlaceAPI.deleteReview(place.placeNo, selectedReviewId);
+      }
       setReviews(prev => prev.filter(r => r.id !== selectedReviewId));
       setIsDeleteModalOpen(false);
       setSelectedReviewId(null);
@@ -163,7 +168,8 @@ const ReviewTab = ({ place }) => {
                   content: "무한 스크롤 테스트용으로 추가된 리뷰입니다. 100자가 넘어가도록 글을 길게 작성해봅니다. 내용이 너무 길어지면 숨김 처리가 되고 더보기 버튼을 누르면 전체 내용이 보이게 됩니다.",
                   image: (prev.length % 2 === 0) ? getMockImage(prev.length) : null,
                   likes: 0,
-                  isMine: false
+                  isMine: false,
+                  isMock: true
                 }
               ];
               return [...prev, ...newItems];
@@ -288,7 +294,15 @@ const ReviewTab = ({ place }) => {
 
               try {
                 if (editingReviewId) {
-                  const response = await PlaceAPI.updateReview(place.placeNo, editingReviewId, formData);
+                  const reviewToEdit = reviews.find(r => r.id === editingReviewId);
+                  let response = null;
+                  
+                  if (!reviewToEdit?.isMock) {
+                    response = await PlaceAPI.updateReview(place.placeNo, editingReviewId, formData);
+                  }
+                  
+                  // 서버 응답으로 진짜 이미지 URL이 오면 갱신 (없으면 로컬 미리보기 유지)
+                  const finalImageUrl = response?.imageUrl || previewImg;
                   
                   // 로컬 상태 업데이트
                   setReviews(prev => prev.map(r => {
