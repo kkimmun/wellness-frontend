@@ -15,17 +15,30 @@ import {
 } from "./DetailPanel.styles";
 import ReviewTab from "./ReviewTab";
 
+import { useNavigate, useLocation } from "react-router-dom";
+
 const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
-  const [activeTab, setActiveTab] = useState("기본정보");
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const activeTab = location.pathname.endsWith("/review") ? "리뷰" : "기본정보";
   const [imgIndex, setImgIndex] = useState(0);
 
-  // 창이 열리거나 장소가 바뀔 때 탭과 이미지 인덱스를 초기화
+  // 장소가 바뀔 때 이미지 인덱스를 초기화
   useEffect(() => {
     if (isOpen) {
-      setActiveTab("기본정보");
       setImgIndex(0);
     }
   }, [isOpen, place]);
+
+  const handleTabClick = (tab) => {
+    if (!place?.placeNo) return;
+    if (tab === "리뷰") {
+      navigate(`/place/${place.placeNo}/review`);
+    } else {
+      navigate(`/place/${place.placeNo}`);
+    }
+  };
 
   const mockImages = [
     { bg: "#FFB300", text: "Image 1" },
@@ -112,13 +125,13 @@ const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
       <TabMenu>
         <div 
           className={`tab ${activeTab === "기본정보" ? "active" : ""}`}
-          onClick={() => setActiveTab("기본정보")}
+          onClick={() => handleTabClick("기본정보")}
         >
           기본정보
         </div>
         <div 
           className={`tab ${activeTab === "리뷰" ? "active" : ""}`}
-          onClick={() => setActiveTab("리뷰")}
+          onClick={() => handleTabClick("리뷰")}
         >
           리뷰
         </div>

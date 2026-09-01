@@ -62,6 +62,27 @@ const ReviewTab = ({ place }) => {
   const [isImageDeleted, setIsImageDeleted] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState(null);
   
+  // 무한 스크롤 및 장소 변경 관련 상태
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [mockLoadCount, setMockLoadCount] = useState(0); // 가짜 데이터 추가 횟수 제한용
+
+  // 장소가 변경되면 기존 리뷰 데이터 및 무한 스크롤 상태 초기화
+  useEffect(() => {
+    setReviews(mockReviews);
+    setExpandedIds(new Set());
+    setHasMore(true);
+    setMockLoadCount(0);
+    setIsLoading(false);
+    
+    // 폼 상태도 초기화
+    setWriteText("");
+    setWriteRating(0);
+    setPreviewImg(null);
+    setEditingReviewId(null);
+    setIsImageDeleted(false);
+  }, [place?.placeNo]);
+
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState(null);
   
@@ -119,38 +140,56 @@ const ReviewTab = ({ place }) => {
     }
   };
 
-  // 무한 스크롤 옵저버 (가짜 데이터 추가)
+  // 무한 스크롤 옵저버 (가짜 데이터 로딩 제어)
   useEffect(() => {
+    if (!hasMore) return; // 더 불러올 데이터가 없으면 옵저버 실행 안함
+
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
+        if (entries[0].isIntersecting && !isLoading && hasMore) {
+          setIsLoading(true);
+          
           setTimeout(() => {
-            setReviews((prev) => [
-              ...prev,
-              {
-                id: prev.length + 1,
-                userName: `User ${prev.length + 1}`,
-                userProfile: "https://via.placeholder.com/40/CCCCCC/FFFFFF?text=U",
-                rating: 4.0,
-                date: "2026. 08. 31",
-                content: "무한 스크롤 테스트용으로 추가된 리뷰입니다. 100자가 넘어가도록 글을 길게 작성해봅니다. 내용이 너무 길어지면 숨김 처리가 되고 더보기 버튼을 누르면 전체 내용이 보이게 됩니다. 이 로직이 잘 동작하는지 확인하기 위해 일부러 길게 씁니다.",
-                image: (prev.length % 2 === 0) ? getMockImage(prev.length) : null,
-                likes: 0,
-                isMine: false
+            setReviews((prev) => {
+              const newItems = [
+                {
+                  id: prev.length + 1,
+                  userName: `User ${prev.length + 1}`,
+                  userProfile: "https://via.placeholder.com/40/CCCCCC/FFFFFF?text=U",
+                  rating: 4.0,
+                  date: "2026. 08. 31",
+                  content: "무한 스크롤 테스트용으로 추가된 리뷰입니다. 100자가 넘어가도록 글을 길게 작성해봅니다. 내용이 너무 길어지면 숨김 처리가 되고 더보기 버튼을 누르면 전체 내용이 보이게 됩니다.",
+                  image: (prev.length % 2 === 0) ? getMockImage(prev.length) : null,
+                  likes: 0,
+                  isMine: false
+                }
+              ];
+              return [...prev, ...newItems];
+            });
+
+            setIsLoading(false);
+            setMockLoadCount(prev => {
+              const nextCount = prev + 1;
+              if (nextCount >= 3) {
+                setHasMore(false); // 3번 불러오면 끝
               }
-            ]);
+              return nextCount;
+            });
           }, 1000);
         }
       },
       { threshold: 1.0 }
     );
 
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
+    const currentLoader = loaderRef.current;
+    if (currentLoader) {
+      observer.observe(currentLoader);
     }
 
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      if (currentLoader) observer.unobserve(currentLoader);
+    };
+  }, [isLoading, hasMore, mockLoadCount]);
 
   return (
     <ReviewContainer>
@@ -349,11 +388,20 @@ const ReviewTab = ({ place }) => {
       </ReviewList>
 
       {/* 무한 스크롤 로더 */}
-      <LoadingMore ref={loaderRef}>
-        <button className="more-btn">
-          아래로 스크롤하여 더보기 <FaArrowDown />
-        </button>
-      </LoadingMore>
+      {hasMore && (
+        <LoadingMore ref={loaderRef}>
+          <button className="more-btn" disabled={isLoading}>
+            {isLoading ? "리뷰 불러오는 중..." : (
+              <>아래로 스크롤하여 더보기 <FaArrowDown /></>
+            )}
+          </button>
+        </LoadingMore>
+      )}
+      {!hasMore && reviews.length > 0 && (
+        <LoadingMore>
+          <div style={{ color: "#999", fontSize: "13px" }}>마지막 리뷰입니다.</div>
+        </LoadingMore>
+      )}
 
       {/* 리뷰 삭제 확인 모달 */}
       <Modal

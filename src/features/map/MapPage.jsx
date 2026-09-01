@@ -7,6 +7,7 @@ import {
   MarkerClusterer,
   useKakaoLoader,
 } from "react-kakao-maps-sdk";
+import { useParams, useNavigate } from "react-router-dom";
 import { PlaceAPI } from "../../api/place";
 import SearchPanel from "./components/SearchPanel";
 import DetailPanel from "./components/DetailPanel";
@@ -82,12 +83,30 @@ const MapPage = () => {
     fetchPins();
   }, []);
 
-  const handlePlaceSelect = (place) => {
-    setSelectedPlace(place);
-    setIsDetailOpen(true); // 검색 결과 클릭 시 슬라이드 패널 열림
-    if (mapRef.current) {
-      mapRef.current.panTo(new window.kakao.maps.LatLng(place.xAxis, place.yAxis));
+  const { placeNo } = useParams();
+  const navigate = useNavigate();
+
+  // URL의 placeNo 변경 감지하여 지도 및 상세 패널 동기화
+  useEffect(() => {
+    if (pins.length > 0) {
+      if (placeNo) {
+        const found = pins.find(p => String(p.placeNo) === String(placeNo));
+        if (found) {
+          setSelectedPlace(found);
+          setIsDetailOpen(true);
+          if (mapRef.current) {
+            mapRef.current.panTo(new window.kakao.maps.LatLng(found.xAxis, found.yAxis));
+          }
+        }
+      } else {
+        // URL에 placeNo가 없으면 (/map으로 돌아가면) 상세 패널 닫기 (뒤로가기 대응)
+        setIsDetailOpen(false);
+      }
     }
+  }, [placeNo, pins]);
+
+  const handlePlaceSelect = (place) => {
+    navigate(`/place/${place.placeNo}`);
   };
 
   const handleToggleTags = () => {
@@ -96,7 +115,10 @@ const MapPage = () => {
 
   const handleMarkerClick = (place) => {
     setSelectedPlace(place);
-    // 마커 클릭 시에는 슬라이드 패널을 열지 않음 (말풍선만 표시)
+    // 슬라이드가 이미 열려있는 상태라면, 마커 클릭 시 주소도 새 장소로 즉시 변경
+    if (isDetailOpen) {
+      navigate(`/place/${place.placeNo}`);
+    }
   };
 
   if (loading) return <div>지도를 불러오는 중입니다...</div>;
@@ -148,6 +170,7 @@ const MapPage = () => {
         onClick={() => {
           setSelectedPlace(null);
           setIsDetailOpen(false); // 지도 빈 공간 클릭 시 슬라이드 패널도 닫기
+          navigate("/map");
         }}
       >
         <MarkerClusterer averageCenter={true} minLevel={10}>
@@ -209,7 +232,7 @@ const MapPage = () => {
                   className="detail-link"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setIsDetailOpen(true);
+                    navigate(`/place/${selectedPlace.placeNo}`);
                   }}
                 >
                   상세보기
@@ -239,7 +262,10 @@ const MapPage = () => {
       <DetailPanel 
         place={selectedPlace} 
         isOpen={isDetailOpen} 
-        onClose={() => setIsDetailOpen(false)}
+        onClose={() => {
+          setIsDetailOpen(false);
+          navigate("/map");
+        }}
         isBookmarked={selectedPlace ? bookmarks[selectedPlace.placeNo] : false}
         onBookmark={(e) => selectedPlace && toggleBookmark(e, selectedPlace.placeNo)}
       />
