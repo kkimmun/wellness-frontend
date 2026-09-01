@@ -5,7 +5,10 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // 쿠키 자동 포함
+  withCredentials: true, // 쿠키 자동 포함 (인증 토큰용)
+  // CSRF 방어용 (Double Submit Cookie 패턴)
+  xsrfCookieName: 'XSRF-TOKEN', 
+  xsrfHeaderName: 'X-XSRF-TOKEN'
 });
 
 // 응답 인터셉터에서 401 발생 시 이벤트 디스패치
