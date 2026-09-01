@@ -35,12 +35,14 @@ const SearchPanel = ({
   const [hasMore, setHasMore] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false); // 처음 진입 시 검색 전 상태 
+  const [lastSearchedKeyword, setLastSearchedKeyword] = useState(""); // 추가: 마지막으로 실제 검색을 수행한 키워드
 
   const observerTarget = useRef(null);
   const ITEMS_PER_PAGE = 3;
 
   const executeSearch = (searchKeyword, currentPage = 1) => {
     setIsSearching(true);
+    setPage(currentPage); // 항상 전달받은 페이지로 상태 동기화
     
     // 빈 검색어 처리: 아무것도 안 나오게 (hasSearched = false로 설정하여 드롭다운 숨김)
     if (!searchKeyword.trim()) {
@@ -53,6 +55,7 @@ const SearchPanel = ({
     }
 
     setHasSearched(true);
+    setLastSearchedKeyword(searchKeyword);
 
     const filtered = pins.filter(
       (p) =>
@@ -74,9 +77,9 @@ const SearchPanel = ({
   useEffect(() => {
     // 핀 데이터가 변경되더라도, 유저가 이미 검색을 한 상태일 때만 재검색 적용
     if (pins && pins.length > 0 && hasSearched) {
-      executeSearch(keyword, 1);
+      executeSearch(lastSearchedKeyword, 1);
     }
-  }, [pins]);
+  }, [pins, lastSearchedKeyword]);
 
   const handleObserver = useCallback(
     (entries) => {
@@ -84,12 +87,12 @@ const SearchPanel = ({
       if (target.isIntersecting && hasMore && !isSearching) {
         setPage((prevPage) => {
           const nextPage = prevPage + 1;
-          executeSearch(keyword, nextPage);
+          executeSearch(lastSearchedKeyword, nextPage);
           return nextPage;
         });
       }
     },
-    [hasMore, isSearching, keyword, pins],
+    [hasMore, isSearching, lastSearchedKeyword, pins],
   );
 
   useEffect(() => {

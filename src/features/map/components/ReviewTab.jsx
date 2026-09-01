@@ -288,15 +288,29 @@ const ReviewTab = ({ place }) => {
 
               try {
                 if (editingReviewId) {
-                  await PlaceAPI.updateReview(place.placeNo, editingReviewId, formData);
+                  const response = await PlaceAPI.updateReview(place.placeNo, editingReviewId, formData);
                   
                   // 로컬 상태 업데이트
-                  setReviews(prev => prev.map(r => r.id === editingReviewId ? {
-                    ...r,
-                    content: writeText,
-                    rating: writeRating,
-                    image: previewImg
-                  } : r));
+                  setReviews(prev => prev.map(r => {
+                    if (r.id === editingReviewId) {
+                      let newImage = r.image;
+                      if (isImageDeleted) {
+                        newImage = null;
+                      } else if (response?.imageUrl) {
+                        newImage = response.imageUrl;
+                      }
+                      // 서버 응답이 없고(response?.imageUrl) 새 파일이 업로드된 상태라면 
+                      // blob URL을 상태에 영구 저장하지 않기 위해 원본(r.image) 유지
+
+                      return {
+                        ...r,
+                        content: writeText,
+                        rating: writeRating,
+                        image: newImage
+                      };
+                    }
+                    return r;
+                  }));
                   
                   setAlertMessage("리뷰 수정 성공");
                 } else {
