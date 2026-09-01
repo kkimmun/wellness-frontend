@@ -6,35 +6,39 @@ export const PanelContainer = styled.div`
   top: 24px;
   left: 24px;
   width: 540px; /* 360 * 1.5 */
-  max-height: 70vh; /* 높이도 좀 더 여유있게 늘림 */
-  background-color: ${theme.colors.bgWhite};
-  border-radius: 24px; /* 16 * 1.5 */
-  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
+  max-height: 80vh; /* 조금 더 늘림 */
   display: flex;
   flex-direction: column;
+  gap: 12px; /* 검색창과 목록창 사이 간격 */
   z-index: 10;
-  overflow: hidden;
+  
+  /* 상세보기 열릴 때 왼쪽으로 밀려나며 사라지도록 추가 */
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  transform: ${({ $isVisible }) => ($isVisible ? "translateX(0)" : "translateX(-150%)")};
+  opacity: ${({ $isVisible }) => ($isVisible ? "1" : "0")};
+  pointer-events: ${({ $isVisible }) => ($isVisible ? "auto" : "none")};
 
   @media (max-width: 1024px) {
     top: 16px;
     left: 16px;
     width: 480px;
-    max-height: 75vh;
+    max-height: 80vh;
   }
 `;
 
 export const SearchHeader = styled.div`
-  padding: 30px 30px 18px 30px; /* 1.5배 */
-  border-bottom: none;
+  /* 기존 패딩 제거하고 자체적인 크기만 갖도록 함 */
+  width: 100%;
 `;
 
 export const SearchBarBox = styled.div`
   display: flex;
   align-items: center;
   background-color: ${theme.colors.bgWhite};
-  border: 3px solid ${theme.colors.borderLight}; /* 2px * 1.5 */
-  border-radius: 18px; /* 1.5배 */
+  border: none; /* 테두리 제거 */
+  border-radius: 30px; /* 더 둥글게 (알약 형태) */
   padding: 9px 9px 9px 24px; /* 1.5배 */
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12); /* 항상 고정된 부드러운 그림자 */
 `;
 
 export const SearchInput = styled.input`
@@ -72,6 +76,9 @@ export const SearchButton = styled.button`
 export const ResultListContainer = styled.div`
   flex: 1;
   overflow-y: auto;
+  background-color: ${theme.colors.bgWhite};
+  border-radius: 24px;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
   padding: 24px; /* 16 * 1.5 */
   display: flex;
   flex-direction: column;

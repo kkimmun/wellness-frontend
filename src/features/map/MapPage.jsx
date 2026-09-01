@@ -9,6 +9,10 @@ import {
 } from "react-kakao-maps-sdk";
 import { PlaceAPI } from "../../api/place";
 import SearchPanel from "./components/SearchPanel";
+import DetailPanel from "./components/DetailPanel";
+import { Modal } from "../../components/Modal/Modal";
+import { FiAlertCircle } from "react-icons/fi";
+import { useAuth } from "../../context/AuthContext";
 import {
   MapContainer,
   FloatingTags,
@@ -21,9 +25,29 @@ import {
 
 const MapPage = () => {
   const [pins, setPins] = useState([]);
+  const [filteredPins, setFilteredPins] = useState([]); // 지도에 표시할 핀 목록
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [isTagsOpen, setIsTagsOpen] = useState(true);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [bookmarks, setBookmarks] = useState({}); // { placeNo: boolean } 북마크 상태 공유용
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
   const mapRef = useRef(null);
+
+  const { status } = useAuth();
+
+  const toggleBookmark = (e, placeNo) => {
+    if (e) e.stopPropagation();
+    if (status === "unauthenticated") {
+      setAlertMessage("로그인 후 이용해주세요.");
+      setIsAlertModalOpen(true);
+      return;
+    }
+    setBookmarks(prev => ({
+      ...prev,
+      [placeNo]: !prev[placeNo]
+    }));
+  };
 
   // 카카오 맵 스크립트 로드 (clusterer 라이브러리 추가)
   const [loading, error] = useKakaoLoader({
@@ -38,6 +62,7 @@ const MapPage = () => {
         const response = await PlaceAPI.getPins();
         const dataList = response.data?.content || response.data || [];
         setPins(dataList);
+        setFilteredPins(dataList);
       } catch (err) {
         console.error("핀 데이터를 불러오는 데 실패했습니다.", err);
         const testData = [
@@ -51,6 +76,7 @@ const MapPage = () => {
           { placeNo: 8, placeName: "문수산 산림욕장", xAxis: 37.734, yAxis: 126.544, type: "A", avgRating: 4.6, reviewCount: 128, addr: "경기도 김포시 월곶면 성동리 산35-1", addrDetail: "", phone: "031-555-5555" },
         ];
         setPins(testData);
+        setFilteredPins(testData);
       }
     };
     fetchPins();
@@ -58,6 +84,7 @@ const MapPage = () => {
 
   const handlePlaceSelect = (place) => {
     setSelectedPlace(place);
+    setIsDetailOpen(true); // 검색 결과 클릭 시 슬라이드 패널 열림
     if (mapRef.current) {
       mapRef.current.panTo(new window.kakao.maps.LatLng(place.xAxis, place.yAxis));
     }
@@ -69,6 +96,7 @@ const MapPage = () => {
 
   const handleMarkerClick = (place) => {
     setSelectedPlace(place);
+    // 마커 클릭 시에는 슬라이드 패널을 열지 않음 (말풍선만 표시)
   };
 
   if (loading) return <div>지도를 불러오는 중입니다...</div>;
@@ -81,10 +109,17 @@ const MapPage = () => {
 
   return (
     <MapContainer>
-      <SearchPanel pins={pins} onPlaceSelect={handleMarkerClick} />
+      <SearchPanel 
+        pins={pins} 
+        onPlaceSelect={handlePlaceSelect} 
+        bookmarks={bookmarks}
+        toggleBookmark={toggleBookmark}
+        isVisible={!isDetailOpen}
+        onSearchResults={setFilteredPins}
+      />
 
       <FloatingTags>
-        <TagList isOpen={isTagsOpen}>
+        <TagList $isOpen={isTagsOpen}>
           <TagButton onClick={() => alert("#템플스테이 검색")}>
             # 템플스테이
           </TagButton>
@@ -108,11 +143,15 @@ const MapPage = () => {
       <Map
         center={{ lat: 37.6105, lng: 126.7056 }}
         style={{ width: "100%", height: "100%" }}
-        level={6}
-        onClick={() => setSelectedPlace(null)} // 지도 빈 공간 클릭 시 오버레이 닫기
+        level={5}
+        ref={mapRef}
+        onClick={() => {
+          setSelectedPlace(null);
+          setIsDetailOpen(false); // 지도 빈 공간 클릭 시 슬라이드 패널도 닫기
+        }}
       >
         <MarkerClusterer averageCenter={true} minLevel={10}>
-          {pins.map((pin) => (
+          {filteredPins.map((pin) => (
             <MapMarker
               key={pin.placeNo}
               position={{ lat: pin.xAxis, lng: pin.yAxis }}
@@ -129,6 +168,7 @@ const MapPage = () => {
           <CustomOverlayMap
             position={{ lat: selectedPlace.xAxis, lng: selectedPlace.yAxis }}
             yAnchor={1}
+            clickable={true}
           >
             <OverlayCard>
               {/* 상단: 장소명 및 출발/도착 버튼 */}
@@ -169,7 +209,7 @@ const MapPage = () => {
                   className="detail-link"
                   onClick={(e) => {
                     e.stopPropagation();
-                    alert("상세보기");
+                    setIsDetailOpen(true);
                   }}
                 >
                   상세보기
@@ -195,6 +235,23 @@ const MapPage = () => {
           </CustomOverlayMap>
         )}
       </Map>
+
+      <DetailPanel 
+        place={selectedPlace} 
+        isOpen={isDetailOpen} 
+        onClose={() => setIsDetailOpen(false)}
+        isBookmarked={selectedPlace ? bookmarks[selectedPlace.placeNo] : false}
+        onBookmark={(e) => selectedPlace && toggleBookmark(e, selectedPlace.placeNo)}
+      />
+
+      <Modal
+        isOpen={isAlertModalOpen}
+        icon={FiAlertCircle}
+        iconColor="primary"
+        showClose={true}
+        message={alertMessage}
+        onConfirm={() => setIsAlertModalOpen(false)}
+      />
     </MapContainer>
   );
 };
