@@ -59,6 +59,7 @@ const ReviewTab = ({ place }) => {
   const [writeText, setWriteText] = useState("");
   const [writeRating, setWriteRating] = useState(0);
   const [previewImg, setPreviewImg] = useState(null);
+  const [isImageDeleted, setIsImageDeleted] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState(null);
   
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -85,6 +86,7 @@ const ReviewTab = ({ place }) => {
     if (file) {
       const url = URL.createObjectURL(file);
       setPreviewImg(url);
+      setIsImageDeleted(false); // 새 사진을 올렸으므로 삭제 상태 해제
     }
   };
 
@@ -96,6 +98,7 @@ const ReviewTab = ({ place }) => {
     setWriteText(review.content);
     setWriteRating(review.rating);
     setPreviewImg(review.image || null);
+    setIsImageDeleted(false); // 수정 진입 시 초기화
     
     if (writeBoxRef.current) {
       writeBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -202,7 +205,11 @@ const ReviewTab = ({ place }) => {
             {previewImg && (
               <div className="preview-box">
                 <img src={previewImg} alt="preview" />
-                <button className="delete-preview" onClick={() => setPreviewImg(null)}>X</button>
+                <button className="delete-preview" onClick={() => {
+                  setPreviewImg(null);
+                  setIsImageDeleted(true); // 기존 이미지 삭제 의도 기록
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}>X</button>
               </div>
             )}
           </div>
@@ -212,6 +219,7 @@ const ReviewTab = ({ place }) => {
               setWriteRating(0); 
               setPreviewImg(null); 
               setEditingReviewId(null);
+              setIsImageDeleted(false);
             }}>취소</button>
             <button className="btn-submit" onClick={async () => {
               if (status === "unauthenticated") {
@@ -231,6 +239,9 @@ const ReviewTab = ({ place }) => {
               
               if (fileInputRef.current && fileInputRef.current.files[0]) {
                 formData.append("images", fileInputRef.current.files[0]);
+              } else if (editingReviewId && isImageDeleted) {
+                // 수정을 하면서 사진을 안 올렸지만 기존 사진을 지웠을 때
+                formData.append("isImageDeleted", true);
               }
 
               try {
@@ -259,6 +270,7 @@ const ReviewTab = ({ place }) => {
                 setWriteText("");
                 setWriteRating(0);
                 setPreviewImg(null);
+                setIsImageDeleted(false);
                 if (fileInputRef.current) fileInputRef.current.value = "";
               } catch (err) {
                 setAlertMessage("리뷰 처리에 실패했습니다.");

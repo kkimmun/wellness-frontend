@@ -48,7 +48,7 @@ const SearchPanel = ({
       setHasMore(false);
       setIsSearching(false);
       setHasSearched(false);
-      if (onSearchResults) onSearchResults([]);
+      if (onSearchResults) onSearchResults(pins); // 빈 배열 대신 전체 원본 pins 복원
       return;
     }
 
