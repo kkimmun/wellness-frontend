@@ -9,7 +9,6 @@ import {
   CopyrightText,
 } from "./Footer.styles";
 
-// 서브메뉴 데이터 구조 추가
 const FOOTER_MENUS = [
   { id: "map", label: "지도", path: "/map" },
   {

@@ -2,12 +2,9 @@ import styled from "styled-components";
 import { theme } from "../../styles/theme";
 
 export const MapContainer = styled.div`
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   overflow: hidden;
 `;
 

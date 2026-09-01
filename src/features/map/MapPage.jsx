@@ -4,7 +4,6 @@ import {
   Map,
   MapMarker,
   CustomOverlayMap,
-  MarkerClusterer,
   useKakaoLoader,
 } from "react-kakao-maps-sdk";
 import { useParams, useNavigate } from "react-router-dom";
@@ -44,19 +43,16 @@ const MapPage = () => {
       setIsAlertModalOpen(true);
       return;
     }
-    setBookmarks(prev => ({
+    setBookmarks((prev) => ({
       ...prev,
-      [placeNo]: !prev[placeNo]
+      [placeNo]: !prev[placeNo],
     }));
   };
 
-  // 카카오 맵 스크립트 로드 (clusterer 라이브러리 추가)
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_MAP_KEY,
-    libraries: ["clusterer"],
   });
 
-  // 컴포넌트 마운트 시 핀 데이터 호출
   useEffect(() => {
     const fetchPins = async () => {
       try {
@@ -67,14 +63,102 @@ const MapPage = () => {
       } catch (err) {
         console.error("핀 데이터를 불러오는 데 실패했습니다.", err);
         const testData = [
-          { placeNo: 1, placeName: "김포 장릉", xAxis: 37.6125, yAxis: 126.7065, type: "A", avgRating: 4.8, reviewCount: 52, addr: "경기도 김포시 장릉로 79", addrDetail: "풍무동 666-3", phone: "031-984-2897" },
-          { placeNo: 2, placeName: "장릉 치유의 숲", xAxis: 37.615, yAxis: 126.71, type: "B", avgRating: 4.2, reviewCount: 15, addr: "경기도 김포시 숲길 12", addrDetail: "관리사무소 옆", phone: "031-123-4567" },
-          { placeNo: 3, placeName: "라베니체 마치에비뉴", xAxis: 37.643, yAxis: 126.671, type: "C", avgRating: 4.9, reviewCount: 312, addr: "경기도 김포시 김포한강2로23번길", addrDetail: "장기동 2029-2", phone: "031-999-9999" },
-          { placeNo: 4, placeName: "김포아트빌리지", xAxis: 37.658, yAxis: 126.685, type: "A", avgRating: 4.5, reviewCount: 89, addr: "경기도 김포시 모담공원로 170", addrDetail: "운양동 1246-1", phone: "031-888-8888" },
-          { placeNo: 5, placeName: "아라마리나", xAxis: 37.596, yAxis: 126.79, type: "B", avgRating: 4.1, reviewCount: 42, addr: "경기도 김포시 고촌읍 아라육로 270", addrDetail: "", phone: "031-777-7777" },
-          { placeNo: 6, placeName: "현대프리미엄아울렛", xAxis: 37.6015, yAxis: 126.791, type: "C", avgRating: 4.7, reviewCount: 504, addr: "경기도 김포시 고촌읍 아라육로152번길 100", addrDetail: "", phone: "031-666-6666" },
-          { placeNo: 7, placeName: "풍무 중앙공원", xAxis: 37.605, yAxis: 126.718, type: "B", avgRating: 3.8, reviewCount: 7, addr: "경기도 김포시 풍무동 123", addrDetail: "공원 매점 앞", phone: "" },
-          { placeNo: 8, placeName: "문수산 산림욕장", xAxis: 37.734, yAxis: 126.544, type: "A", avgRating: 4.6, reviewCount: 128, addr: "경기도 김포시 월곶면 성동리 산35-1", addrDetail: "", phone: "031-555-5555" },
+          {
+            placeNo: 1,
+            placeName: "김포 장릉",
+            xAxis: 37.6125,
+            yAxis: 126.7065,
+            type: "A",
+            avgRating: 4.8,
+            reviewCount: 52,
+            addr: "경기도 김포시 장릉로 79",
+            addrDetail: "풍무동 666-3",
+            phone: "031-984-2897",
+          },
+          {
+            placeNo: 2,
+            placeName: "장릉 치유의 숲",
+            xAxis: 37.615,
+            yAxis: 126.71,
+            type: "B",
+            avgRating: 4.2,
+            reviewCount: 15,
+            addr: "경기도 김포시 숲길 12",
+            addrDetail: "관리사무소 옆",
+            phone: "031-123-4567",
+          },
+          {
+            placeNo: 3,
+            placeName: "라베니체 마치에비뉴",
+            xAxis: 37.643,
+            yAxis: 126.671,
+            type: "C",
+            avgRating: 4.9,
+            reviewCount: 312,
+            addr: "경기도 김포시 김포한강2로23번길",
+            addrDetail: "장기동 2029-2",
+            phone: "031-999-9999",
+          },
+          {
+            placeNo: 4,
+            placeName: "김포아트빌리지",
+            xAxis: 37.658,
+            yAxis: 126.685,
+            type: "A",
+            avgRating: 4.5,
+            reviewCount: 89,
+            addr: "경기도 김포시 모담공원로 170",
+            addrDetail: "운양동 1246-1",
+            phone: "031-888-8888",
+          },
+          {
+            placeNo: 5,
+            placeName: "아라마리나",
+            xAxis: 37.596,
+            yAxis: 126.79,
+            type: "B",
+            avgRating: 4.1,
+            reviewCount: 42,
+            addr: "경기도 김포시 고촌읍 아라육로 270",
+            addrDetail: "",
+            phone: "031-777-7777",
+          },
+          {
+            placeNo: 6,
+            placeName: "현대프리미엄아울렛",
+            xAxis: 37.6015,
+            yAxis: 126.791,
+            type: "C",
+            avgRating: 4.7,
+            reviewCount: 504,
+            addr: "경기도 김포시 고촌읍 아라육로152번길 100",
+            addrDetail: "",
+            phone: "031-666-6666",
+          },
+          {
+            placeNo: 7,
+            placeName: "풍무 중앙공원",
+            xAxis: 37.605,
+            yAxis: 126.718,
+            type: "B",
+            avgRating: 3.8,
+            reviewCount: 7,
+            addr: "경기도 김포시 풍무동 123",
+            addrDetail: "공원 매점 앞",
+            phone: "",
+          },
+          {
+            placeNo: 8,
+            placeName: "문수산 산림욕장",
+            xAxis: 37.734,
+            yAxis: 126.544,
+            type: "A",
+            avgRating: 4.6,
+            reviewCount: 128,
+            addr: "경기도 김포시 월곶면 성동리 산35-1",
+            addrDetail: "",
+            phone: "031-555-5555",
+          },
         ];
         setPins(testData);
         setFilteredPins(testData);
@@ -90,19 +174,19 @@ const MapPage = () => {
   useEffect(() => {
     if (pins.length > 0) {
       if (placeNo) {
-        const found = pins.find(p => String(p.placeNo) === String(placeNo));
+        const found = pins.find((p) => String(p.placeNo) === String(placeNo));
         if (found) {
           setSelectedPlace(found);
           setIsDetailOpen(true);
           if (mapRef.current) {
-            mapRef.current.panTo(new window.kakao.maps.LatLng(found.xAxis, found.yAxis));
+            mapRef.current.panTo(
+              new window.kakao.maps.LatLng(found.xAxis, found.yAxis),
+            );
           }
         } else {
-          // 존재하지 않는 장소 번호면 지도 기본 화면으로 강제 이동
           navigate("/map", { replace: true });
         }
       } else {
-        // URL에 placeNo가 없으면 (/map으로 돌아가면) 상세 패널 닫기 (뒤로가기 대응)
         setIsDetailOpen(false);
       }
     }
@@ -117,7 +201,6 @@ const MapPage = () => {
   };
 
   const handleMarkerClick = (place) => {
-    // 마커 클릭 시에도 무조건 주소를 변경하여 동기화 로직(패널 열림)이 타도록 통일
     navigate(`/place/${place.placeNo}`);
   };
 
@@ -131,9 +214,9 @@ const MapPage = () => {
 
   return (
     <MapContainer>
-      <SearchPanel 
-        pins={pins} 
-        onPlaceSelect={handlePlaceSelect} 
+      <SearchPanel
+        pins={pins}
+        onPlaceSelect={handlePlaceSelect}
         bookmarks={bookmarks}
         toggleBookmark={toggleBookmark}
         isVisible={!isDetailOpen}
@@ -166,26 +249,26 @@ const MapPage = () => {
         center={{ lat: 37.6105, lng: 126.7056 }}
         style={{ width: "100%", height: "100%" }}
         level={5}
+        minLevel={2}
+        maxLevel={10}
         ref={mapRef}
         onClick={() => {
           setSelectedPlace(null);
-          setIsDetailOpen(false); // 지도 빈 공간 클릭 시 슬라이드 패널도 닫기
+          setIsDetailOpen(false);
           navigate("/map");
         }}
       >
-        <MarkerClusterer averageCenter={true} minLevel={10}>
-          {filteredPins.map((pin) => (
-            <MapMarker
-              key={pin.placeNo}
-              position={{ lat: pin.xAxis, lng: pin.yAxis }}
-              image={{
-                src: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23FF7043' stroke='white' stroke-width='2'/%3E%3C/svg%3E",
-                size: { width: 24, height: 24 },
-              }}
-              onClick={() => handleMarkerClick(pin)}
-            />
-          ))}
-        </MarkerClusterer>
+        {filteredPins.map((pin) => (
+          <MapMarker
+            key={pin.placeNo}
+            position={{ lat: pin.xAxis, lng: pin.yAxis }}
+            image={{
+              src: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23FF7043' stroke='white' stroke-width='2'/%3E%3C/svg%3E",
+              size: { width: 24, height: 24 },
+            }}
+            onClick={() => handleMarkerClick(pin)}
+          />
+        ))}
 
         {selectedPlace && (
           <CustomOverlayMap
@@ -259,15 +342,17 @@ const MapPage = () => {
         )}
       </Map>
 
-      <DetailPanel 
-        place={selectedPlace} 
-        isOpen={isDetailOpen} 
+      <DetailPanel
+        place={selectedPlace}
+        isOpen={isDetailOpen}
         onClose={() => {
           setIsDetailOpen(false);
           navigate("/map");
         }}
         isBookmarked={selectedPlace ? bookmarks[selectedPlace.placeNo] : false}
-        onBookmark={(e) => selectedPlace && toggleBookmark(e, selectedPlace.placeNo)}
+        onBookmark={(e) =>
+          selectedPlace && toggleBookmark(e, selectedPlace.placeNo)
+        }
       />
 
       <Modal

@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { FaMapMarkerAlt, FaPhoneAlt, FaStar, FaShareAlt, FaBookmark, FaRegBookmark, FaChevronLeft, FaRegClock } from "react-icons/fa";
+import {
+  FaMapMarkerAlt,
+  FaPhoneAlt,
+  FaStar,
+  FaShareAlt,
+  FaBookmark,
+  FaRegBookmark,
+  FaChevronLeft,
+  FaRegClock,
+} from "react-icons/fa";
 import {
   PanelContainer,
   TopHeader,
@@ -11,7 +20,7 @@ import {
   TabMenu,
   InfoSection,
   InfoRow,
-  BottomArea
+  BottomArea,
 } from "./DetailPanel.styles";
 import ReviewTab from "./ReviewTab";
 
@@ -20,11 +29,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const activeTab = location.pathname.endsWith("/review") ? "리뷰" : "기본정보";
   const [imgIndex, setImgIndex] = useState(0);
 
-  // 장소가 바뀔 때 이미지 인덱스를 초기화
   useEffect(() => {
     if (isOpen) {
       setImgIndex(0);
@@ -44,28 +52,35 @@ const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
     { bg: "#FFB300", text: "Image 1" },
     { bg: "#81D4FA", text: "Image 2" },
     { bg: "#FF7043", text: "Image 3" },
-    { bg: "#B39DDB", text: "Image 4" }
+    { bg: "#B39DDB", text: "Image 4" },
   ];
 
   // 실제 데이터가 들어오면 교체되도록 셋팅
   const images = place?.images?.length > 0 ? place.images : mockImages;
 
-  // 배경 이미지를 그릴지, 단색+텍스트를 그릴지 결정하는 헬퍼 함수
   const renderBoxStyle = (item) => {
-    if (typeof item === 'string') {
+    if (typeof item === "string") {
       return { backgroundImage: `url(${item})` };
     }
-    return { backgroundColor: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+    return {
+      backgroundColor: item.bg,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    };
   };
 
   const renderBoxContent = (item) => {
-    if (typeof item !== 'string') {
-      return <span style={{ color: '#fff', fontSize: '24px', fontWeight: 'bold' }}>{item.text}</span>;
+    if (typeof item !== "string") {
+      return (
+        <span style={{ color: "#fff", fontSize: "24px", fontWeight: "bold" }}>
+          {item.text}
+        </span>
+      );
     }
     return null;
   };
 
-  // 클래스 계산 헬퍼
   const getCarouselClass = (idx) => {
     if (idx === imgIndex) return "active";
     if (idx === (imgIndex - 1 + images.length) % images.length) return "prev";
@@ -75,7 +90,6 @@ const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
 
   return (
     <PanelContainer $isOpen={isOpen}>
-      
       <TopHeader>
         <TitleGroup>
           <button className="back-btn" onClick={onClose}>
@@ -83,14 +97,16 @@ const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
           </button>
           <h2>{place?.placeName || "이름 없음"}</h2>
         </TitleGroup>
-        
+
         <ActionIcons>
-          <button className="icon-circle"><FaShareAlt size={16} /></button>
+          <button className="icon-circle">
+            <FaShareAlt size={16} />
+          </button>
           <button className="icon-circle" onClick={onBookmark}>
             {isBookmarked ? (
-              <FaBookmark size={15} color="#C9A227" /> // 골드색상 
+              <FaBookmark size={15} color="#C9A227" />
             ) : (
-              <FaRegBookmark size={15} /> // 빈 북마크
+              <FaRegBookmark size={15} />
             )}
           </button>
         </ActionIcons>
@@ -106,7 +122,7 @@ const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
 
       <ImageCarousel>
         {images.map((item, idx) => (
-          <CarouselItem 
+          <CarouselItem
             key={idx}
             className={getCarouselClass(idx)}
             style={renderBoxStyle(item)}
@@ -123,13 +139,13 @@ const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
       </ImageCarousel>
 
       <TabMenu>
-        <div 
+        <div
           className={`tab ${activeTab === "기본정보" ? "active" : ""}`}
           onClick={() => handleTabClick("기본정보")}
         >
           기본정보
         </div>
-        <div 
+        <div
           className={`tab ${activeTab === "리뷰" ? "active" : ""}`}
           onClick={() => handleTabClick("리뷰")}
         >
@@ -188,7 +204,6 @@ const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
           <button className="route-btn">경로찾기</button>
         </BottomArea>
       )}
-
     </PanelContainer>
   );
 };

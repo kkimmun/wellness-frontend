@@ -69,7 +69,6 @@ const ReviewTab = ({ place }) => {
   const [hasMore, setHasMore] = useState(true);
   const [mockLoadCount, setMockLoadCount] = useState(0); // 가짜 데이터 추가 횟수 제한용
 
-  // 장소가 변경되면 기존 리뷰 데이터 및 무한 스크롤 상태 초기화
   useEffect(() => {
     setReviews(mockReviews);
     setExpandedIds(new Set());
@@ -77,7 +76,6 @@ const ReviewTab = ({ place }) => {
     setMockLoadCount(0);
     setIsLoading(false);
     
-    // 폼 상태도 초기화
     setWriteText("");
     setWriteRating(0);
     setPreviewImg(null);
@@ -95,7 +93,6 @@ const ReviewTab = ({ place }) => {
   const loaderRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // 더 보기 토글
   const toggleExpand = (id) => {
     setExpandedIds(prev => {
       const newSet = new Set(prev);
@@ -104,7 +101,6 @@ const ReviewTab = ({ place }) => {
     });
   };
 
-  // 파일 업로드 핸들러
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -116,7 +112,6 @@ const ReviewTab = ({ place }) => {
 
   const writeBoxRef = useRef(null);
 
-  // 리뷰 수정 버튼 핸들러
   const handleEditClick = (review) => {
     setEditingReviewId(review.id);
     setWriteText(review.content);
@@ -130,7 +125,6 @@ const ReviewTab = ({ place }) => {
     }
   };
 
-  // 리뷰 삭제 핸들러
   const handleDeleteReview = async () => {
     try {
       const reviewToDelete = reviews.find(r => r.id === selectedReviewId);
@@ -336,7 +330,6 @@ const ReviewTab = ({ place }) => {
                 
                 setIsAlertModalOpen(true);
                 
-                // 폼 초기화
                 setEditingReviewId(null);
                 setWriteText("");
                 setWriteRating(0);
