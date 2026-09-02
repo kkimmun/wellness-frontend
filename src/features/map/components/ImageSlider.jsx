@@ -1,23 +1,21 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { ImageCarousel, CarouselItem } from "./DetailPanel.styles";
-
-const mockImages = [
-  { bg: "#FFB300", text: "Image 1" },
-  { bg: "#81D4FA", text: "Image 2" },
-  { bg: "#FF7043", text: "Image 3" },
-  { bg: "#B39DDB", text: "Image 4" },
-];
 
 const ImageSlider = ({ placeImages }) => {
   const [imgIndex, setImgIndex] = useState(0);
 
-  useEffect(() => {
-    setImgIndex(0);
-  }, [placeImages]);
-
-  const images = placeImages?.length > 0 ? placeImages : mockImages;
+  // DB 지도 핀 연동: 이미지가 없을 때 목업 이미지를 만들지 않고 빈 상태를 표시한다.
+  const images = placeImages?.length > 0 ? placeImages : [null];
 
   const renderBoxStyle = (item) => {
+    if (!item) {
+      return {
+        backgroundColor: "#F8F9FA",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      };
+    }
     if (typeof item === "string") {
       return { backgroundImage: `url(${item})` };
     }
@@ -30,6 +28,9 @@ const ImageSlider = ({ placeImages }) => {
   };
 
   const renderBoxContent = (item) => {
+    if (!item) {
+      return <span style={{ color: "#999" }}>등록된 이미지가 없습니다.</span>;
+    }
     if (typeof item !== "string") {
       return (
         <span style={{ color: "#fff", fontSize: "24px", fontWeight: "bold" }}>

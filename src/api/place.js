@@ -22,11 +22,15 @@ export const PlaceAPI = {
 
   updateReview: async (placeNo, reviewNo, formData) => {
     // URL이 스펙에 따라 2가지(form, reviews)로 혼동될 수 있으므로 RESTful 방식을 따름
-    const response = await api.patch(`/places/${placeNo}/reviews/${reviewNo}`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
+    const response = await api.patch(
+      `/places/${placeNo}/reviews/${reviewNo}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       },
-    });
+    );
     return response.data;
   },
 };
