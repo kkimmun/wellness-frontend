@@ -13,6 +13,7 @@ import DetailPanel from "./components/DetailPanel";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import { mapPinsMockData, MARKER_SVG } from "./mockData";
 import {
   MapContainer,
   FloatingTags,

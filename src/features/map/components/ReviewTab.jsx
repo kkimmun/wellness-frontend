@@ -172,7 +172,7 @@ const ReviewTab = ({ place }) => {
         <div className="rating-graph">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={ratingData}
+              data={reviewRatingData}
               margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
             >
               <XAxis
