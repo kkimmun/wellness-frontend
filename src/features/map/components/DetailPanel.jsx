@@ -1,4 +1,3 @@
-import React, { useEffect } from "react";
 import {
   FaShareAlt,
   FaBookmark,
@@ -20,7 +19,15 @@ import BasicInfoTab from "./BasicInfoTab";
 
 import { useNavigate, useLocation } from "react-router-dom";
 
-const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
+const DetailPanel = ({
+  place,
+  isOpen,
+  onClose,
+  isBookmarked,
+  onBookmark,
+  // 길찾기 기능 연동: 기본정보 탭의 경로찾기 동작을 MapPage까지 전달
+  onFindRoute,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,15 +66,24 @@ const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
         </ActionIcons>
       </TopHeader>
 
-      <RatingInfo>
-        <span>리뷰 {place?.reviewCount || 0}</span>
-        <div className="rating-box">
-          <FaStar className="star" />
-          <span>{place?.avgRating?.toFixed(1) || "0.0"}</span>
-        </div>
-      </RatingInfo>
+      {/* DB 지도 핀 연동: 실제 리뷰 집계가 없는 장소에는 0점이라는 가짜 값을 표시하지 않는다. */}
+      {(Number.isFinite(place?.reviewCount) ||
+        Number.isFinite(place?.avgRating)) && (
+        <RatingInfo>
+          {Number.isFinite(place?.reviewCount) && (
+            <span>리뷰 {place.reviewCount}</span>
+          )}
+          {Number.isFinite(place?.avgRating) && (
+            <div className="rating-box">
+              <FaStar className="star" />
+              <span>{place.avgRating.toFixed(1)}</span>
+            </div>
+          )}
+        </RatingInfo>
+      )}
 
-      <ImageSlider placeImages={place?.images} />
+      {/* DB 지도 핀 연동: 장소가 바뀌면 이미지 선택 상태도 첫 항목으로 초기화한다. */}
+      <ImageSlider key={place?.placeNo} placeImages={place?.images} />
 
       <TabMenu>
         <div
@@ -84,7 +100,9 @@ const DetailPanel = ({ place, isOpen, onClose, isBookmarked, onBookmark }) => {
         </div>
       </TabMenu>
       
-      {activeTab === "기본정보" && <BasicInfoTab place={place} />}
+      {activeTab === "기본정보" && (
+        <BasicInfoTab place={place} onFindRoute={onFindRoute} />
+      )}
       {activeTab === "리뷰" && <ReviewTab place={place} />}
     </PanelContainer>
   );
