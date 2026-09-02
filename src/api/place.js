@@ -6,6 +6,15 @@ export const PlaceAPI = {
     return response.data;
   },
 
+  createReview: async (placeNo, formData) => {
+    const response = await api.post(`/places/${placeNo}/reviews`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  },
+
   deleteReview: async (placeNo, reviewNo) => {
     const response = await api.delete(`/places/${placeNo}/reviews/${reviewNo}`);
     return response.data;

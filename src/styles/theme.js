@@ -1,3 +1,5 @@
+// src/styles/theme.js
+// src/styles/theme.js
 
 /**
  * 프로젝트 전역 디자인 규격을 관리하는 파일

@@ -45,7 +45,7 @@ const SearchPanel = ({
     setPage(currentPage); // 항상 전달받은 페이지로 상태 동기화
     
     // 빈 검색어 처리: 아무것도 안 나오게 (hasSearched = false로 설정하여 드롭다운 숨김)
-    if (!searchKeyword.trim()) {
+    if (!searchKeyword || !searchKeyword.trim()) {
       setDisplayedResults([]);
       setHasMore(false);
       setIsSearching(false);
@@ -57,10 +57,14 @@ const SearchPanel = ({
     setHasSearched(true);
     setLastSearchedKeyword(searchKeyword);
 
-    const filtered = pins.filter(
-      (p) =>
-        (p.placeName || "").includes(searchKeyword) || (p.addr || "").includes(searchKeyword),
-    );
+    // 검색 시 문자열 처리 (공백 제거 및 대소문자 무시)
+    const searchStr = searchKeyword.replace(/\s+/g, "").toLowerCase();
+
+    const filtered = pins.filter((p) => {
+      const placeName = (p.placeName || "").replace(/\s+/g, "").toLowerCase();
+      const addr = (p.addr || "").replace(/\s+/g, "").toLowerCase();
+      return placeName.includes(searchStr) || addr.includes(searchStr);
+    });
 
     const endIdx = currentPage * ITEMS_PER_PAGE;
     const paginated = filtered.slice(0, endIdx);
@@ -130,7 +134,13 @@ const SearchPanel = ({
             type="text"
             placeholder="검색어를 입력해주세요"
             value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setKeyword(val);
+              if (!val.trim()) {
+                executeSearch("", 1);
+              }
+            }}
             onKeyDown={handleKeyDown}
           />
           <SearchButton onClick={handleSearchClick}>
