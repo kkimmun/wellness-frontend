@@ -34,7 +34,8 @@ const SearchPanel = ({
 }) => {
   const [keyword, setKeyword] = useState("");
   const [displayedResults, setDisplayedResults] = useState([]);
-  const [, setPage] = useState(1);
+  // 코드 리뷰 반영: 현재 페이지를 직접 사용해 함수형 setter 안에서 검색 상태를 다시 갱신하지 않도록 한다.
+  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false); // 처음 진입 시 검색 전 상태 
@@ -104,14 +105,11 @@ const SearchPanel = ({
     (entries) => {
       const target = entries[0];
       if (target.isIntersecting && hasMore && !isSearching) {
-        setPage((prevPage) => {
-          const nextPage = prevPage + 1;
-          executeSearch(lastSearchedKeyword, nextPage);
-          return nextPage;
-        });
+        const nextPage = page + 1;
+        executeSearch(lastSearchedKeyword, nextPage);
       }
     },
-    [hasMore, isSearching, lastSearchedKeyword, executeSearch],
+    [page, hasMore, isSearching, lastSearchedKeyword, executeSearch],
   );
 
   useEffect(() => {
@@ -133,7 +131,6 @@ const SearchPanel = ({
   }, [handleObserver]);
 
   const handleSearchClick = () => {
-    setPage(1);
     executeSearch(keyword, 1);
   };
 

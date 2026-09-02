@@ -83,6 +83,8 @@ const MapPage = () => {
   const [routeOrigin, setRouteOrigin] = useState(null);
   const [routeDestination, setRouteDestination] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
+  // 코드 리뷰 반영: placeNo가 없는 좌표 장소도 외부 입력이 바뀔 때 RoutePanel을 새 입력으로 초기화한다.
+  const [routeInputRevision, setRouteInputRevision] = useState(0);
   // 길찾기 표시 안정화: 경로가 바뀔 때 Kakao Polyline을 새 인스턴스로 교체하기 위한 번호다.
   const [routeRenderRevision, setRouteRenderRevision] = useState(0);
   const mapRef = useRef(null);
@@ -181,6 +183,7 @@ const MapPage = () => {
   const openRouteWithOrigin = (place) => {
     setRouteOrigin(toRoutePlace(place));
     setSelectedRoute(null);
+    setRouteInputRevision((current) => current + 1);
     setRouteRenderRevision((current) => current + 1);
     setIsRouteOpen(true);
     navigate("/map");
@@ -189,6 +192,7 @@ const MapPage = () => {
   const openRouteWithDestination = (place) => {
     setRouteDestination(toRoutePlace(place));
     setSelectedRoute(null);
+    setRouteInputRevision((current) => current + 1);
     setRouteRenderRevision((current) => current + 1);
     setIsRouteOpen(true);
     navigate("/map");
@@ -273,7 +277,7 @@ const MapPage = () => {
 
       {/* 길찾기 기능 연동: 지도 위 독립 패널에서 입력·검색·결과 선택을 처리한다. */}
       <RoutePanel
-        key={`route-${routeOrigin?.placeNo || "coordinate"}-${routeDestination?.placeNo || "coordinate"}`}
+        key={`route-input-${routeInputRevision}`}
         isOpen={isRouteOpen}
         initialOrigin={routeOrigin}
         initialDestination={routeDestination}
