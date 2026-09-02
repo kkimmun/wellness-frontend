@@ -1,12 +1,11 @@
-import React from "react";
 import {
   FaMapMarkerAlt,
   FaPhoneAlt,
-  FaRegClock,
 } from "react-icons/fa";
 import { InfoSection, InfoRow, BottomArea } from "./DetailPanel.styles";
 
-const BasicInfoTab = ({ place }) => {
+// 길찾기 기능 연동: 상세 화면의 장소를 목적지로 전달하기 위해 onFindRoute를 받는다.
+const BasicInfoTab = ({ place, onFindRoute }) => {
   return (
     <>
       <InfoSection>
@@ -20,40 +19,37 @@ const BasicInfoTab = ({ place }) => {
               <span className="type">도로명</span>
               <span>{place?.addr || "-"}</span>
             </div>
-            <div className="addr-line">
-              <span className="type">지번</span>
-              <span>{place?.addrDetail || "-"}</span>
+            {place?.addrDetail && (
+              <div className="addr-line">
+                <span className="type">상세</span>
+                <span>{place.addrDetail}</span>
+              </div>
+            )}
+          </div>
+        </InfoRow>
+
+        {/* DB 지도 핀 연동: DB에 저장된 전화번호만 표시하고 임의 번호·운영시간을 사용하지 않는다. */}
+        {place?.phone && (
+          <InfoRow>
+            <div className="label-group">
+              <FaPhoneAlt size={13} />
+              <span>전화번호</span>
             </div>
-          </div>
-        </InfoRow>
-
-        <InfoRow>
-          <div className="label-group">
-            <FaPhoneAlt size={13} />
-            <span>전화번호</span>
-          </div>
-          <div className="value-group">
-            <span>{place?.phone || "031-984-2897"}</span>
-          </div>
-        </InfoRow>
-
-        <InfoRow>
-          <div className="label-group">
-            <FaRegClock />
-            <span>운영시간</span>
-          </div>
-          <div className="value-group">
-            <span>07:00~17:00 (월요일 휴무)</span>
-          </div>
-        </InfoRow>
+            <div className="value-group">
+              <span>{place.phone}</span>
+            </div>
+          </InfoRow>
+        )}
       </InfoSection>
 
       <BottomArea>
-        <div className="tags">
-          <div className="tag"># 가족동반</div>
-          <div className="tag"># 역사문화</div>
-        </div>
-        <button className="route-btn">경로찾기</button>
+        <button
+          className="route-btn"
+          onClick={() => onFindRoute(place)}
+          disabled={!place}
+        >
+          경로찾기
+        </button>
       </BottomArea>
     </>
   );
