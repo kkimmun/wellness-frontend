@@ -1,4 +1,3 @@
-// src/features/auth/Signup.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -18,7 +17,6 @@ import { BaseInput } from "../../components/Input/Input.styles";
 import { PasswordInput } from "../../components/Input/PasswordInput";
 import { AuthAPI } from "../../api/auth";
 
-// 비밀번호 정규식 (영문, 숫자 포함 8~20자)
 const pwdRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/;
 
 const SignUp = () => {
@@ -60,7 +58,6 @@ const SignUp = () => {
 
     let hasAnyError = false;
 
-    // 닉네임 검사: 빈값 및 길이 제한
     if (!payload.memberName.trim()) {
       setMemberNameError("닉네임을 입력해주세요.");
       hasAnyError = true;
@@ -69,7 +66,6 @@ const SignUp = () => {
       hasAnyError = true;
     }
 
-    // 비밀번호 검사: 빈값, 정규식, 일치 여부
     if (!payload.memberPwd) {
       setMemberPwdError("비밀번호를 입력해주세요.");
       hasAnyError = true;

@@ -15,7 +15,6 @@ import { PrimaryButton } from "../../components/Button/Button.styles";
 import { BaseInput } from "../../components/Input/Input.styles";
 import { AuthAPI } from "../../api/auth";
 
-// 이메일 정규식 패턴 (간단한 형태)
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const EmailRequest = () => {

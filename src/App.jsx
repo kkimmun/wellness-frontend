@@ -23,7 +23,8 @@ function App() {
     };
 
     window.addEventListener("sessionExpired", handleSessionExpired);
-    return () => window.removeEventListener("sessionExpired", handleSessionExpired);
+    return () =>
+      window.removeEventListener("sessionExpired", handleSessionExpired);
   }, []);
 
   const handleModalConfirm = () => {
@@ -34,9 +35,9 @@ function App() {
   return (
     <>
       <GlobalStyles />
-      
+
       {/* 401 공통 모달 렌더링 */}
-      <Modal 
+      <Modal
         isOpen={isSessionExpired}
         title="세션 만료"
         message="로그인이 만료되었습니다. 다시 로그인해주세요."
@@ -58,8 +59,9 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<MapPage />} />
           <Route path="/map" element={<MapPage />} />
+          <Route path="/place/:placeNo" element={<MapPage />} />
+          <Route path="/place/:placeNo/review" element={<MapPage />} />
         </Route>
-
       </Routes>
     </>
   );

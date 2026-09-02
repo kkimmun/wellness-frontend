@@ -69,7 +69,6 @@ const Login = () => {
 
     try {
       setIsLoading(true);
-      // JSON (RequestBody) 형식으로 안전하게 전송
       await AuthAPI.login(payload);
       // 로그인 성공 시 전역 상태 업데이트 후 이동
       await checkAuth();

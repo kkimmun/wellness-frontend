@@ -15,7 +15,6 @@ export default function ImageUploader({ maxFiles = 5, onImagesChange }) {
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
 
-    // 최대 첨부 개수 제한
     if (previewUrls.length + files.length > maxFiles) {
       alert(`사진은 최대 ${maxFiles}장까지만 첨부할 수 있습니다.`);
       return;

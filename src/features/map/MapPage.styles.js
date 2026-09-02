@@ -2,12 +2,9 @@ import styled from "styled-components";
 import { theme } from "../../styles/theme";
 
 export const MapContainer = styled.div`
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   overflow: hidden;
 `;
 
@@ -35,8 +32,8 @@ export const TagList = styled.div`
   overflow: hidden; 
   
   /* 부드러운 슬라이딩 및 페이드 효과 */
-  max-width: ${({ isOpen }) => (isOpen ? "750px" : "0px")}; /* 500 * 1.5 */
-  opacity: ${({ isOpen }) => (isOpen ? "1" : "0")};
+  max-width: ${({ $isOpen }) => ($isOpen ? "750px" : "0px")}; /* 500 * 1.5 */
+  opacity: ${({ $isOpen }) => ($isOpen ? "1" : "0")};
   transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out;
   
   /* 스크롤바 숨기기 (모바일 대응) */

@@ -53,7 +53,6 @@ const Header = () => {
     }
   };
 
-  // 프로필 업데이트 감지 및 드롭다운 외부 클릭 감지
   useEffect(() => {
     const handleProfileUpdate = () => {
       setProfileImg(localStorage.getItem("profileImage"));

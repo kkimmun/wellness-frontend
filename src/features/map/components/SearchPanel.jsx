@@ -18,83 +18,98 @@ import {
   CardFooter,
   PhoneText,
   ActionButtons,
-  LoadingSpinner
+  LoadingSpinner,
 } from "./SearchPanel.styles";
 
-const SearchPanel = ({ pins, onPlaceSelect }) => {
+const SearchPanel = ({
+  pins,
+  onPlaceSelect,
+  bookmarks,
+  toggleBookmark,
+  isVisible,
+  onSearchResults,
+}) => {
   const [keyword, setKeyword] = useState("");
   const [displayedResults, setDisplayedResults] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
-  const [bookmarks, setBookmarks] = useState({}); // { placeNo: boolean }
-  
-  // 임시 로그인 상태 (실제 구현 시 전역 Auth 상태나 토큰 확인 로직으로 교체하세요)
-  const isLoggedIn = false; // 기본값 false로 원복
-  
+  const [hasSearched, setHasSearched] = useState(false); // 처음 진입 시 검색 전 상태 
+  const [lastSearchedKeyword, setLastSearchedKeyword] = useState(""); // 추가: 마지막으로 실제 검색을 수행한 키워드
+
   const observerTarget = useRef(null);
   const ITEMS_PER_PAGE = 3;
 
-  const toggleBookmark = (e, placeNo) => {
-    e.stopPropagation();
-    
-    if (!isLoggedIn) {
-      alert("로그인 후 이용해 주세요.");
-      // 필요 시 navigate('/login') 등 라우팅 추가
-      return;
-    }
-    
-    setBookmarks(prev => ({
-      ...prev,
-      [placeNo]: !prev[placeNo]
-    }));
-  };
-
   const executeSearch = (searchKeyword, currentPage = 1) => {
     setIsSearching(true);
+    setPage(currentPage); // 항상 전달받은 페이지로 상태 동기화
     
-    setTimeout(() => {
-      const filtered = pins.filter(p => 
-        p.placeName.includes(searchKeyword) || p.addr.includes(searchKeyword)
-      );
-      
-      const endIdx = currentPage * ITEMS_PER_PAGE;
-      const paginated = filtered.slice(0, endIdx);
-      
-      setDisplayedResults(paginated);
-      setHasMore(endIdx < filtered.length);
+    // 빈 검색어 처리: 아무것도 안 나오게 (hasSearched = false로 설정하여 드롭다운 숨김)
+    if (!searchKeyword || !searchKeyword.trim()) {
+      setDisplayedResults([]);
+      setHasMore(false);
       setIsSearching(false);
-    }, 500); 
+      setHasSearched(false);
+      if (onSearchResults) onSearchResults(pins); // 빈 배열 대신 전체 원본 pins 복원
+      return;
+    }
+
+    setHasSearched(true);
+    setLastSearchedKeyword(searchKeyword);
+
+    // 검색 시 문자열 처리 (공백 제거 및 대소문자 무시)
+    const searchStr = searchKeyword.replace(/\s+/g, "").toLowerCase();
+
+    const filtered = pins.filter((p) => {
+      const placeName = (p.placeName || "").replace(/\s+/g, "").toLowerCase();
+      const addr = (p.addr || "").replace(/\s+/g, "").toLowerCase();
+      return placeName.includes(searchStr) || addr.includes(searchStr);
+    });
+
+    const endIdx = currentPage * ITEMS_PER_PAGE;
+    const paginated = filtered.slice(0, endIdx);
+
+    setDisplayedResults(paginated);
+    setHasMore(endIdx < filtered.length);
+    setIsSearching(false);
+
+    if (currentPage === 1 && onSearchResults) {
+      onSearchResults(filtered);
+    }
   };
 
   useEffect(() => {
-    if (pins && pins.length > 0) {
-      executeSearch(keyword, 1);
+    // 핀 데이터가 변경되더라도, 유저가 이미 검색을 한 상태일 때만 재검색 적용
+    if (pins && pins.length > 0 && hasSearched) {
+      executeSearch(lastSearchedKeyword, 1);
     }
-  }, [pins]);
+  }, [pins, lastSearchedKeyword]);
 
-  const handleObserver = useCallback((entries) => {
-    const target = entries[0];
-    if (target.isIntersecting && hasMore && !isSearching) {
-      setPage((prevPage) => {
-        const nextPage = prevPage + 1;
-        executeSearch(keyword, nextPage);
-        return nextPage;
-      });
-    }
-  }, [hasMore, isSearching, keyword, pins]);
+  const handleObserver = useCallback(
+    (entries) => {
+      const target = entries[0];
+      if (target.isIntersecting && hasMore && !isSearching) {
+        setPage((prevPage) => {
+          const nextPage = prevPage + 1;
+          executeSearch(lastSearchedKeyword, nextPage);
+          return nextPage;
+        });
+      }
+    },
+    [hasMore, isSearching, lastSearchedKeyword, pins],
+  );
 
   useEffect(() => {
     const observer = new IntersectionObserver(handleObserver, {
       root: null,
       rootMargin: "20px",
-      threshold: 1.0
+      threshold: 1.0,
     });
-    
+
     if (observerTarget.current) {
       observer.observe(observerTarget.current);
     }
-    
+
     return () => {
       if (observerTarget.current) observer.unobserve(observerTarget.current);
     };
@@ -112,14 +127,20 @@ const SearchPanel = ({ pins, onPlaceSelect }) => {
   };
 
   return (
-    <PanelContainer>
+    <PanelContainer $isVisible={isVisible}>
       <SearchHeader>
         <SearchBarBox>
           <SearchInput
             type="text"
-            placeholder="장소, 태그 검색"
+            placeholder="검색어를 입력해주세요"
             value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setKeyword(val);
+              if (!val.trim()) {
+                executeSearch("", 1);
+              }
+            }}
             onKeyDown={handleKeyDown}
           />
           <SearchButton onClick={handleSearchClick}>
@@ -128,68 +149,95 @@ const SearchPanel = ({ pins, onPlaceSelect }) => {
         </SearchBarBox>
       </SearchHeader>
 
-      <ResultListContainer>
-        {displayedResults.map((place) => {
-          const isBookmarked = bookmarks[place.placeNo];
-          return (
-            <ListCard key={place.placeNo} onClick={() => onPlaceSelect(place)}>
-              <CardHeader>
-                <TitleGroup>
-                  <PlaceTitle>{place.placeName}</PlaceTitle>
-                  <ReviewInfo>
-                    <span className="review-text">리뷰 {place.reviewCount}</span>
-                    <FaStar size={15} />
-                    <span className="rating-text">{place.avgRating.toFixed(1)}</span>
-                  </ReviewInfo>
-                </TitleGroup>
-                <BookmarkBtn onClick={(e) => toggleBookmark(e, place.placeNo)}>
-                  {isBookmarked ? (
-                    <BsBookmarkFill size={21} color="#C9A227" /> /* 테마의 gimpoGold 색상 활용 */
-                  ) : (
-                    <BsBookmark size={21} />
-                  )}
-                </BookmarkBtn>
-              </CardHeader>
-              
-              <AddressRow>
-                <div className="addr-item">
-                  <span className="addr-label">도로명</span>
-                  <span className="addr-value">{place.addr}</span>
-                </div>
-                {place.addrDetail && (
-                  <div className="addr-item">
-                    <span className="addr-label">지번</span>
-                    <span className="addr-value">{place.addrDetail}</span>
-                  </div>
-                )}
-              </AddressRow>
-              
-              <CardFooter>
-                <PhoneText>
-                  <FaPhoneAlt />
-                  {place.phone || "번호없음"}
-                </PhoneText>
-                <ActionButtons>
-                  <button className="btn-start" onClick={(e) => { e.stopPropagation(); alert('출발'); }}>출발</button>
-                  <button className="btn-end" onClick={(e) => { e.stopPropagation(); alert('도착'); }}>도착</button>
-                </ActionButtons>
-              </CardFooter>
-            </ListCard>
-          );
-        })}
+      {hasSearched && (
+        <ResultListContainer>
+          {displayedResults.map((place) => {
+            const isBookmarked = bookmarks[place.placeNo];
+            return (
+              <ListCard key={place.placeNo} onClick={() => onPlaceSelect(place)}>
+                <CardHeader>
+                  <TitleGroup>
+                    <PlaceTitle>{place.placeName}</PlaceTitle>
+                    <ReviewInfo>
+                      <span className="review-text">
+                        리뷰 {place.reviewCount}
+                      </span>
+                      <FaStar size={15} />
+                      <span className="rating-text">
+                        {place.avgRating.toFixed(1)}
+                      </span>
+                    </ReviewInfo>
+                  </TitleGroup>
+                  <BookmarkBtn onClick={(e) => toggleBookmark(e, place.placeNo)}>
+                    {isBookmarked ? (
+                      <BsBookmarkFill
+                        size={21}
+                        color="#C9A227"
+                      /> /* 테마의 gimpoGold 색상 활용 */
+                    ) : (
+                      <BsBookmark size={21} />
+                    )}
+                  </BookmarkBtn>
+                </CardHeader>
 
-        {hasMore && (
-          <LoadingSpinner ref={observerTarget}>
-            {isSearching ? "검색 중..." : "스크롤을 내려 더보기"}
-          </LoadingSpinner>
-        )}
-        {!hasMore && displayedResults.length > 0 && (
-          <LoadingSpinner style={{ color: '#CCC' }}>마지막 결과입니다.</LoadingSpinner>
-        )}
-        {displayedResults.length === 0 && !isSearching && (
-          <LoadingSpinner>검색 결과가 없습니다.</LoadingSpinner>
-        )}
-      </ResultListContainer>
+                <AddressRow>
+                  <div className="addr-item">
+                    <span className="addr-label">도로명</span>
+                    <span className="addr-value">{place.addr}</span>
+                  </div>
+                  {place.addrDetail && (
+                    <div className="addr-item">
+                      <span className="addr-label">지번</span>
+                      <span className="addr-value">{place.addrDetail}</span>
+                    </div>
+                  )}
+                </AddressRow>
+
+                <CardFooter>
+                  <PhoneText>
+                    <FaPhoneAlt />
+                    {place.phone || "번호없음"}
+                  </PhoneText>
+                  <ActionButtons>
+                    <button
+                      className="btn-start"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        alert("출발");
+                      }}
+                    >
+                      출발
+                    </button>
+                    <button
+                      className="btn-end"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        alert("도착");
+                      }}
+                    >
+                      도착
+                    </button>
+                  </ActionButtons>
+                </CardFooter>
+              </ListCard>
+            );
+          })}
+
+          {hasMore && (
+            <LoadingSpinner ref={observerTarget}>
+              {isSearching ? "검색 중..." : "스크롤을 내려 더보기"}
+            </LoadingSpinner>
+          )}
+          {!hasMore && displayedResults.length > 0 && (
+            <LoadingSpinner style={{ color: "#CCC" }}>
+              마지막 결과입니다.
+            </LoadingSpinner>
+          )}
+          {displayedResults.length === 0 && !isSearching && (
+            <LoadingSpinner>검색 결과가 없습니다.</LoadingSpinner>
+          )}
+        </ResultListContainer>
+      )}
     </PanelContainer>
   );
 };

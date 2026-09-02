@@ -1,14 +1,21 @@
+import React from "react";
+import { createPortal } from "react-dom";
+import { FiX } from "react-icons/fi";
 import * as S from "./Modal.styles";
-import { PrimaryButton, SecondaryButton } from "../Button/Button.styles";
 
 export const Modal = ({
   isOpen,
   title,
   message,
+  icon: Icon,           // 선택적 아이콘 컴포넌트 전달
+  iconColor,            // "danger" | "primary"
+  showClose = false,    // 우측 상단 X 버튼 표시 여부
   onConfirm,
   onCancel,
   confirmText = "확인",
   cancelText = "취소",
+  confirmVariant = "primary", // "primary" | "danger" | "secondary"
+  cancelVariant = "secondary", // "primary" | "danger" | "secondary"
 }) => {
   if (!isOpen) return null;
 
@@ -22,25 +29,37 @@ export const Modal = ({
     }
   };
 
-  return (
+  return createPortal(
     <S.Overlay onClick={handleOverlayClick}>
       {/* 모달 본체 클릭 시 이벤트 버블링 차단 */}
       <S.ModalContainer onClick={(e) => e.stopPropagation()}>
+        {showClose && (
+          <S.CloseButton onClick={isConfirmMode ? onCancel : onConfirm}>
+            <FiX />
+          </S.CloseButton>
+        )}
+        
+        {Icon && (
+          <S.IconWrapper $color={iconColor}>
+            <Icon />
+          </S.IconWrapper>
+        )}
+
         {title && <S.Title>{title}</S.Title>}
         <S.Message>{message}</S.Message>
 
         <S.ButtonGroup>
-          {/* isConfirmMode가 true일 때만 취소 버튼 렌더링 */}
           {isConfirmMode && (
-            <SecondaryButton $fullWidth onClick={onCancel}>
+            <S.ActionButton $variant={cancelVariant} onClick={onCancel}>
               {cancelText}
-            </SecondaryButton>
+            </S.ActionButton>
           )}
-          <PrimaryButton $fullWidth onClick={onConfirm}>
+          <S.ActionButton $variant={confirmVariant} onClick={onConfirm}>
             {confirmText}
-          </PrimaryButton>
+          </S.ActionButton>
         </S.ButtonGroup>
       </S.ModalContainer>
-    </S.Overlay>
+    </S.Overlay>,
+    document.body
   );
 };

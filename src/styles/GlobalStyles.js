@@ -1,4 +1,3 @@
-// src/styles/GlobalStyles.js
 
 /**
  * 프로젝트 전체에 적용되는 전역 CSS를 관리하는 파일

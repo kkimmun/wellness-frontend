@@ -20,8 +20,7 @@ export const ContentArea = styled.div`
   height: 100%;
   display: flex;
   flex-direction: column;
-  /* 지도 뷰일 때는 내부 스크롤을 막고, 일반 페이지일 때만 세로 스크롤 허용 */
-  overflow-y: ${({ $isMapPage }) => ($isMapPage ? "hidden" : "auto")};
+  overflow: hidden; /* 항상 스크롤 숨김 (지도 화면 최적화) */
 
   /* 1024px 이하: 좌측 마진 제거 및 상단 모바일 Header 높이(56px)만큼 여백 확보 */
   @media (max-width: 1024px) {
@@ -34,14 +33,4 @@ export const MainContent = styled.main`
   flex: 1;
   width: 100%;
   position: relative;
-
-  /* 일반 텍스트/게시판/상세 페이지일 때 최대 너비 제한 및 중앙 정렬 */
-  ${({ $isMapPage }) =>
-    !$isMapPage &&
-    `
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 40px 24px;
-    box-sizing: border-box;
-  `}
 `;
