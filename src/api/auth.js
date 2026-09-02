@@ -8,7 +8,13 @@ export const AuthAPI = {
 
   login: async (credentials) => {
     const response = await api.post("/auth/login", credentials);
-    // 토큰은 백엔드에서 쿠키로 설정되므로 프론트에서 별도 저장하지 않음
+    // 관리자 API(Bearer 인증)용으로 응답 body의 accessToken, memberId를 localStorage에 저장
+    // 응답이 { data: { accessToken } } 또는 평탄한 { accessToken } 두 형태 모두 대응
+    const payload = response?.data ?? response ?? {};
+    const accessToken = payload.accessToken ?? response?.accessToken;
+    const memberId = payload.memberId ?? response?.memberId;
+    if (accessToken) localStorage.setItem("accessToken", accessToken);
+    if (memberId != null) localStorage.setItem("memberId", String(memberId));
     return response.data;
   },
 
@@ -17,12 +23,14 @@ export const AuthAPI = {
   },
 
   getMe: async () => {
-    const response = await api.get("/auth/me");
+    const response = await api.get("/members/detail");
     return response.data;
   },
 
   logout: async () => {
     const response = await api.post("/auth/logout");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("memberId");
     return response?.data || { code: 200, message: "로그아웃 성공" };
   },
 

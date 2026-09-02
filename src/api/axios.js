@@ -11,6 +11,20 @@ const api = axios.create({
   xsrfHeaderName: 'X-XSRF-TOKEN'
 });
 
+// API 인증은 Bearer 토큰 방식이다.
+// 로그인 시 localStorage에 저장한 accessToken을 모든 요청 헤더에 부착한다.
+// 단 로그인 요청에는 (만료됐을 수 있는) 이전 토큰을 붙이지 않는다.
+api.interceptors.request.use((config) => {
+  const url = config.url || "";
+  if (!url.includes("/auth/login")) {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => {
     return response.data;
