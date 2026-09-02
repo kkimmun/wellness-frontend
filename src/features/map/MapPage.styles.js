@@ -43,6 +43,41 @@ export const LegendLine = styled.i`
   border-radius: ${theme.radius.pill};
 `;
 
+/* 길찾기 결과 유지: 닫은 길찾기 패널을 기존 결과 그대로 다시 여는 버튼이다. */
+export const RouteReopenButton = styled.button`
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border: 1px solid ${theme.colors.borderLight};
+  border-radius: ${theme.radius.pill};
+  background: ${theme.colors.bgWhite};
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+  color: ${theme.colors.textPrimary};
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+
+  svg {
+    color: #2196f3;
+  }
+
+  &:hover {
+    border-color: #81d4fa;
+    background: #f0f9ff;
+  }
+
+  @media (max-width: 768px) {
+    top: 16px;
+    right: 16px;
+    padding: 10px 14px;
+  }
+`;
+
 export const FloatingTags = styled.div`
   position: absolute;
   top: 24px;

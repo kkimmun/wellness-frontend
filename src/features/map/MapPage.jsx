@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { FaChevronRight } from "react-icons/fa";
+import { FaChevronRight, FaRoute } from "react-icons/fa";
 import {
   Map,
   MapMarker,
@@ -20,6 +20,7 @@ import {
   FloatingTags,
   LegendLine,
   RouteLegend,
+  RouteReopenButton,
   TagList,
   TagButton,
   ToggleButton,
@@ -58,6 +59,18 @@ const toMapPath = (path = []) =>
         Number.isFinite(coordinate.lat) && Number.isFinite(coordinate.lng),
     );
 
+// 길찾기 표시 안정화: 전체 path와 단계별 path를 모두 범위 계산에 포함해 일부 구간이 잘리지 않게 한다.
+const getRouteMapPoints = (route) => {
+  if (!route) return [];
+
+  const fullPath = toMapPath(route.path);
+  const stepPaths = (route.mapSteps || route.steps || []).flatMap((step) =>
+    toMapPath(step.path),
+  );
+
+  return [...fullPath, ...stepPaths];
+};
+
 const MapPage = () => {
   const [pins, setPins] = useState([]);
   const [filteredPins, setFilteredPins] = useState([]); // 지도에 표시할 핀 목록
@@ -70,6 +83,8 @@ const MapPage = () => {
   const [routeOrigin, setRouteOrigin] = useState(null);
   const [routeDestination, setRouteDestination] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
+  // 길찾기 표시 안정화: 경로가 바뀔 때 Kakao Polyline을 새 인스턴스로 교체하기 위한 번호다.
+  const [routeRenderRevision, setRouteRenderRevision] = useState(0);
   const mapRef = useRef(null);
 
   const { status } = useAuth();
@@ -165,17 +180,21 @@ const MapPage = () => {
   // 길찾기 기능 연동: 지도/검색/상세 화면에서 선택한 장소를 패널에 전달한다.
   const openRouteWithOrigin = (place) => {
     setRouteOrigin(toRoutePlace(place));
+    setSelectedRoute(null);
+    setRouteRenderRevision((current) => current + 1);
     setIsRouteOpen(true);
     navigate("/map");
   };
 
   const openRouteWithDestination = (place) => {
     setRouteDestination(toRoutePlace(place));
+    setSelectedRoute(null);
+    setRouteRenderRevision((current) => current + 1);
     setIsRouteOpen(true);
     navigate("/map");
   };
 
-  // 길찾기 기능 연동: 선택된 경로를 지도에 그린 뒤 경로 전체가 보이도록 범위를 맞춘다.
+  // 길찾기 표시 안정화: 새 경로마다 렌더링 번호를 변경해 이전 Polyline을 확실히 제거한다.
   const handleRouteSelect = (route, routeResponse) => {
     // 대중교통 경로 색상: 이동수단 정보를 선택 경로에 보존해 지도 표시 방식을 결정한다.
     setSelectedRoute(
@@ -183,21 +202,37 @@ const MapPage = () => {
         ? { ...route, transportType: routeResponse?.transportType }
         : null,
     );
-    const mapPath = toMapPath(route?.path);
-
-    if (!mapRef.current || mapPath.length === 0 || !window.kakao?.maps) return;
-
-    const bounds = new window.kakao.maps.LatLngBounds();
-    mapPath.forEach(({ lat, lng }) => {
-      bounds.extend(new window.kakao.maps.LatLng(lat, lng));
-    });
-    mapRef.current.setBounds(bounds, 50, 50, 50, 590);
+    setRouteRenderRevision((current) => current + 1);
   };
 
+  // 길찾기 결과 유지: 패널을 닫아도 선택 경로와 패널 내부 검색 결과는 보존한다.
   const closeRoutePanel = () => {
     setIsRouteOpen(false);
-    setSelectedRoute(null);
   };
+
+  // 길찾기 표시 안정화: 패널 열림 상태에 맞는 여백으로 경로 전체가 보이도록 지도를 조정한다.
+  useEffect(() => {
+    if (!selectedRoute || !mapRef.current || !window.kakao?.maps) return undefined;
+
+    const delay = isRouteOpen ? 0 : 320;
+    const timeoutId = window.setTimeout(() => {
+      const map = mapRef.current;
+      const mapPoints = getRouteMapPoints(selectedRoute);
+      if (!map || mapPoints.length === 0) return;
+
+      map.relayout();
+      const bounds = new window.kakao.maps.LatLngBounds();
+      mapPoints.forEach(({ lat, lng }) => {
+        bounds.extend(new window.kakao.maps.LatLng(lat, lng));
+      });
+
+      const sidePadding = window.innerWidth <= 768 ? 32 : 60;
+      const leftPadding = isRouteOpen && window.innerWidth > 768 ? 600 : sidePadding;
+      map.setBounds(bounds, 60, sidePadding, 60, leftPadding);
+    }, delay);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isRouteOpen, selectedRoute]);
 
   const selectedMapPath = toMapPath(selectedRoute?.path);
   // 대중교통 경로 색상: 단계별 path를 유지해 도보·버스·지하철을 각각 다른 선으로 그린다.
@@ -246,6 +281,18 @@ const MapPage = () => {
         onRouteSelect={handleRouteSelect}
       />
 
+      {/* 길찾기 결과 유지: 닫은 패널을 기존 결과와 입력값 그대로 다시 열 수 있다. */}
+      {!isRouteOpen && selectedRoute && (
+        <RouteReopenButton
+          type="button"
+          onClick={() => setIsRouteOpen(true)}
+          aria-label="길찾기 결과 다시 열기"
+        >
+          <FaRoute />
+          길찾기 결과
+        </RouteReopenButton>
+      )}
+
       <FloatingTags>
         <TagList $isOpen={isTagsOpen}>
           <TagButton onClick={() => alert("#템플스테이 검색")}>
@@ -275,7 +322,8 @@ const MapPage = () => {
         onCreate={(map) => {
           // 길찾기 기능 연동: 경로 범위 조정을 위해 실제 Kakao Map 인스턴스를 보관한다.
           mapRef.current = map;
-          map.setMaxLevel(10); // 과도한 축소 방지 (여백 방지)
+          // 길찾기 표시 안정화: 장거리 경로도 한 화면에 담을 수 있도록 최대 축소 레벨을 허용한다.
+          map.setMaxLevel(14);
           map.setMinLevel(2); // 과도한 확대 방지
         }}
         onClick={() => {
@@ -298,7 +346,7 @@ const MapPage = () => {
         {/* 대중교통 경로 색상: 대중교통은 이동 단계별 색상과 도보 점선으로 표시한다. */}
         {selectedMapSegments.map((segment) => (
           <Polyline
-            key={segment.key}
+            key={`${routeRenderRevision}-${segment.key}`}
             path={segment.path}
             strokeWeight={7}
             strokeColor={segment.color}
@@ -310,6 +358,7 @@ const MapPage = () => {
         {/* 길찾기 기능 연동: 단일 이동수단 또는 단계 path가 없는 응답은 전체 경로를 표시한다. */}
         {selectedMapSegments.length === 0 && selectedMapPath.length > 1 && (
           <Polyline
+            key={`route-${routeRenderRevision}`}
             path={selectedMapPath}
             strokeWeight={7}
             strokeColor={
