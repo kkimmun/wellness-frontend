@@ -4,7 +4,10 @@ import {
   PillButton,
   PrimaryButton,
 } from "../../../components/Button/Button.styles";
-import { BaseInput, BaseTextarea } from "../../../components/Input/Input.styles";
+import {
+  BaseInput,
+  BaseTextarea,
+} from "../../../components/Input/Input.styles";
 import { DropdownSelect } from "../../../components/Select/Select.styles";
 import { AdminPlaceAPI } from "./api/adminPlaceApi";
 import { PLACE_TYPE_GROUPS } from "./placeTypeOptions";
@@ -147,8 +150,8 @@ const AdminPlaceForm = () => {
     fd.append("placeDescription", form.placeDescription);
     fd.append("addr", form.addr);
     fd.append("typeDetailNo", form.typeDetailNo);
-    fd.append("x_axis", form.x_axis);
-    fd.append("y_axis", form.y_axis);
+    fd.append("xAxis", form.x_axis);
+    fd.append("yAxis", form.y_axis);
     if (mode === "add") fd.append("viewCount", "0");
     // 이미지: 표시된 순서대로 imageFiles 를 여러 개 추가 (append 순서 = imgOrder)
     files.forEach((file) => fd.append("imageFiles", file));
