@@ -6,10 +6,11 @@ import {
   CustomOverlayMap,
   useKakaoLoader,
 } from "react-kakao-maps-sdk";
-import { useParams, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { PlaceAPI } from "../../api/place";
 import SearchPanel from "./components/SearchPanel";
 import DetailPanel from "./components/DetailPanel";
+import FixedCoursePanel from "../courses/components/FixedCoursePanel";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
@@ -17,6 +18,7 @@ import { mapPinsMockData, MARKER_SVG } from "./mockData";
 import {
   MapContainer,
   FloatingTags,
+  MapStatus,
   TagList,
   TagButton,
   ToggleButton,
@@ -70,8 +72,10 @@ const MapPage = () => {
     fetchPins();
   }, []);
 
-  const { placeNo } = useParams();
+  const { placeNo, courseNo } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isFixedCourseView = location.pathname.startsWith("/pilgrim/fixed");
 
   // URL의 placeNo 변경 감지하여 지도 및 상세 패널 동기화
   useEffect(() => {
@@ -90,6 +94,7 @@ const MapPage = () => {
           navigate("/map", { replace: true });
         }
       } else {
+        setSelectedPlace(null);
         setIsDetailOpen(false);
       }
     }
@@ -107,14 +112,6 @@ const MapPage = () => {
     navigate(`/place/${place.placeNo}`);
   };
 
-  if (loading) return <div>지도를 불러오는 중입니다...</div>;
-  if (error)
-    return (
-      <div>
-        지도를 불러오는 데 실패했습니다. 카카오 앱 키 설정을 확인해주세요.
-      </div>
-    );
-
   return (
     <MapContainer>
       <SearchPanel
@@ -126,43 +123,68 @@ const MapPage = () => {
         onSearchResults={setFilteredPins}
       />
 
-      <FloatingTags>
-        <TagList $isOpen={isTagsOpen}>
-          <TagButton onClick={() => alert("#템플스테이 검색")}>
-            # 템플스테이
-          </TagButton>
-          <TagButton onClick={() => alert("#가족동반 검색")}>
-            # 가족동반
-          </TagButton>
-          <TagButton onClick={() => alert("#반려동물 검색")}>
-            # 반려동물
-          </TagButton>
-        </TagList>
+      {isFixedCourseView && (
+        <FixedCoursePanel
+          selectedCourseNo={courseNo}
+          onClose={() => navigate("/map")}
+          onCourseSelect={(course) =>
+            navigate(`/pilgrim/fixed/${course.courseNo}`)
+          }
+        />
+      )}
 
-        <ToggleButton onClick={handleToggleTags}>
-          {isTagsOpen ? (
-            <FaChevronRight size={21} style={{ transform: "rotate(180deg)" }} />
-          ) : (
-            <FaChevronRight size={21} />
-          )}
-        </ToggleButton>
-      </FloatingTags>
+      {!isFixedCourseView && (
+        <FloatingTags>
+          <TagList $isOpen={isTagsOpen}>
+            <TagButton onClick={() => alert("#템플스테이 검색")}>
+              # 템플스테이
+            </TagButton>
+            <TagButton onClick={() => alert("#가족동반 검색")}>
+              # 가족동반
+            </TagButton>
+            <TagButton onClick={() => alert("#반려동물 검색")}>
+              # 반려동물
+            </TagButton>
+          </TagList>
 
-      <Map
-        center={{ lat: 37.6105, lng: 126.7056 }}
-        style={{ width: "100%", height: "100%" }}
-        level={5}
-        ref={mapRef}
-        onCreate={(map) => {
-          map.setMaxLevel(10); // 과도한 축소 방지 (여백 방지)
-          map.setMinLevel(2); // 과도한 확대 방지
-        }}
-        onClick={() => {
-          setSelectedPlace(null);
-          setIsDetailOpen(false);
-          navigate("/map");
-        }}
-      >
+          <ToggleButton onClick={handleToggleTags}>
+            {isTagsOpen ? (
+              <FaChevronRight
+                size={21}
+                style={{ transform: "rotate(180deg)" }}
+              />
+            ) : (
+              <FaChevronRight size={21} />
+            )}
+          </ToggleButton>
+        </FloatingTags>
+      )}
+
+      {loading || error ? (
+        <MapStatus role="status">
+          <strong>
+            {loading
+              ? "지도를 불러오는 중입니다."
+              : "지도를 불러오는 데 실패했습니다."}
+          </strong>
+          {error && <span>카카오 앱 키 설정을 확인해주세요.</span>}
+        </MapStatus>
+      ) : (
+        <Map
+          center={{ lat: 37.6105, lng: 126.7056 }}
+          style={{ width: "100%", height: "100%" }}
+          level={5}
+          ref={mapRef}
+          onCreate={(map) => {
+            map.setMaxLevel(10); // 과도한 축소 방지 (여백 방지)
+            map.setMinLevel(2); // 과도한 확대 방지
+          }}
+          onClick={() => {
+            setSelectedPlace(null);
+            setIsDetailOpen(false);
+            navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
+          }}
+        >
         {filteredPins.map((pin) => (
           <MapMarker
             key={pin.placeNo}
@@ -245,7 +267,8 @@ const MapPage = () => {
             </OverlayCard>
           </CustomOverlayMap>
         )}
-      </Map>
+        </Map>
+      )}
 
       <DetailPanel
         place={selectedPlace}

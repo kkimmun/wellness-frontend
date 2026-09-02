@@ -8,6 +8,24 @@ export const MapContainer = styled.div`
   overflow: hidden;
 `;
 
+export const MapStatus = styled.div`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: ${theme.spacing.xs};
+  color: ${theme.colors.textSecondary};
+  background:
+    radial-gradient(circle at 20% 20%, rgba(135, 206, 235, 0.2), transparent 32%),
+    ${theme.colors.bgLight};
+
+  strong {
+    color: ${theme.colors.textPrimary};
+  }
+`;
+
 export const FloatingTags = styled.div`
   position: absolute;
   top: 24px;
