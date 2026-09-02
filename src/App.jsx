@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import MainLayout from "./components/Layout/MainLayout";
 import AuthLayout from "./components/Layout/AuthLayout";
-import { PublicRoute, PrivateRoute } from "./components/Layout/AuthGuard";
+import AdminLayout from "./components/Layout/AdminLayout";
+import { PublicRoute, AdminRoute } from "./components/Layout/AuthGuard";
 import SignUp from "./features/auth/SignUp";
 import EmailRequest from "./features/auth/EmailRequest";
 import EmailVerify from "./features/auth/EmailVerify";
 import Login from "./features/auth/Login";
 import MapPage from "./features/map/MapPage";
+import AdminPlace from "./features/admin/place/AdminPlace";
+import AdminPlaceDetail from "./features/admin/place/AdminPlaceDetail";
+import AdminPlaceForm from "./features/admin/place/AdminPlaceForm";
 import GlobalStyles from "./styles/GlobalStyles";
 import { Modal } from "./components/Modal/Modal";
 
@@ -18,7 +22,9 @@ function App() {
   useEffect(() => {
     // axios.js에서 보낸 401 세션 만료 이벤트를 감지
     const handleSessionExpired = () => {
-      // localStorage.removeItem("accessToken"); (더 이상 필요 없음)
+      // Bearer 토큰 인증용으로 저장한 값 정리
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("memberId");
       setIsSessionExpired(true);
     };
 
@@ -61,6 +67,16 @@ function App() {
           <Route path="/map" element={<MapPage />} />
           <Route path="/place/:placeNo" element={<MapPage />} />
           <Route path="/place/:placeNo/review" element={<MapPage />} />
+        </Route>
+
+        {/* 관리자 화면 (인증 + 관리자 권한 필요) */}
+        <Route element={<AdminRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin/places" element={<AdminPlace />} />
+            <Route path="/admin/places/add" element={<AdminPlaceForm />} />
+            <Route path="/admin/places/edit/:placeNo" element={<AdminPlaceForm />} />
+            <Route path="/admin/places/:placeNo" element={<AdminPlaceDetail />} />
+          </Route>
         </Route>
       </Routes>
     </>
