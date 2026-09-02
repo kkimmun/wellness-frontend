@@ -103,6 +103,7 @@ const Header = () => {
             <span>순례길</span>
             <SubMenuList>
               <SubMenuItem
+                $active={location.pathname === "/pilgrim/create"}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleNavigate("/pilgrim/create");
@@ -111,6 +112,7 @@ const Header = () => {
                 코스 제작
               </SubMenuItem>
               <SubMenuItem
+                $active={location.pathname.startsWith("/pilgrim/fixed")}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleNavigate("/pilgrim/fixed");

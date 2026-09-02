@@ -76,18 +76,21 @@ export const SubMenuList = styled.ul`
 export const SubMenuItem = styled.li`
   font-size: ${theme.fontSize.sm};
   white-space: nowrap;
-  color: ${theme.colors.textSecondary};
+  color: ${({ $active }) =>
+    $active ? theme.colors.gimpoGold : theme.colors.textSecondary};
+  font-weight: ${({ $active }) => ($active ? "600" : "400")};
   cursor: pointer;
   transition: color 0.15s ease;
 
   &:hover {
-    color: ${theme.colors.textPrimary};
+    color: ${theme.colors.gimpoGold};
     font-weight: 600;
   }
 
   &::before {
     content: "• ";
-    color: ${theme.colors.textMuted};
+    color: ${({ $active }) =>
+      $active ? theme.colors.gimpoGold : theme.colors.textMuted};
   }
 `;
 
