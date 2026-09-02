@@ -31,4 +31,4 @@ dist-ssr
 .agy/
 .gemini-cli/
 .gemini/
-.md
+*.md
