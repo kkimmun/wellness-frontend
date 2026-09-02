@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { FaSearch, FaStar, FaPhoneAlt } from "react-icons/fa";
 import { BsBookmark, BsBookmarkFill } from "react-icons/bs";
 import {
@@ -28,10 +28,13 @@ const SearchPanel = ({
   toggleBookmark,
   isVisible,
   onSearchResults,
+  // 길찾기 기능 연동: 검색 결과를 출발지/도착지로 전달하는 콜백
+  onSetOrigin,
+  onSetDestination,
 }) => {
   const [keyword, setKeyword] = useState("");
   const [displayedResults, setDisplayedResults] = useState([]);
-  const [page, setPage] = useState(1);
+  const [, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false); // 처음 진입 시 검색 전 상태 
@@ -40,50 +43,62 @@ const SearchPanel = ({
   const observerTarget = useRef(null);
   const ITEMS_PER_PAGE = 3;
 
-  const executeSearch = (searchKeyword, currentPage = 1) => {
-    setIsSearching(true);
-    setPage(currentPage); // 항상 전달받은 페이지로 상태 동기화
-    
-    // 빈 검색어 처리: 아무것도 안 나오게 (hasSearched = false로 설정하여 드롭다운 숨김)
-    if (!searchKeyword || !searchKeyword.trim()) {
-      setDisplayedResults([]);
-      setHasMore(false);
+  // 기존 코드 개선: 핀 변경 시 최신 목록으로 검색하도록 함수 의존성을 명확히 고정한다.
+  const executeSearch = useCallback(
+    (searchKeyword, currentPage = 1) => {
+      setIsSearching(true);
+      setPage(currentPage); // 항상 전달받은 페이지로 상태 동기화
+
+      // 빈 검색어 처리: 아무것도 안 나오게 (hasSearched = false로 설정하여 드롭다운 숨김)
+      if (!searchKeyword || !searchKeyword.trim()) {
+        setDisplayedResults([]);
+        setHasMore(false);
+        setIsSearching(false);
+        setHasSearched(false);
+        if (onSearchResults) onSearchResults(pins); // 빈 배열 대신 전체 원본 pins 복원
+        return;
+      }
+
+      setHasSearched(true);
+      setLastSearchedKeyword(searchKeyword);
+
+      // 검색 시 문자열 처리 (공백 제거 및 대소문자 무시)
+      const searchStr = searchKeyword.replace(/\s+/g, "").toLowerCase();
+
+      const filtered = pins.filter((p) => {
+        const placeName = (p.placeName || "")
+          .replace(/\s+/g, "")
+          .toLowerCase();
+        const addr = (p.addr || "").replace(/\s+/g, "").toLowerCase();
+        return placeName.includes(searchStr) || addr.includes(searchStr);
+      });
+
+      const endIdx = currentPage * ITEMS_PER_PAGE;
+      const paginated = filtered.slice(0, endIdx);
+
+      setDisplayedResults(paginated);
+      setHasMore(endIdx < filtered.length);
       setIsSearching(false);
-      setHasSearched(false);
-      if (onSearchResults) onSearchResults(pins); // 빈 배열 대신 전체 원본 pins 복원
-      return;
-    }
 
-    setHasSearched(true);
-    setLastSearchedKeyword(searchKeyword);
-
-    // 검색 시 문자열 처리 (공백 제거 및 대소문자 무시)
-    const searchStr = searchKeyword.replace(/\s+/g, "").toLowerCase();
-
-    const filtered = pins.filter((p) => {
-      const placeName = (p.placeName || "").replace(/\s+/g, "").toLowerCase();
-      const addr = (p.addr || "").replace(/\s+/g, "").toLowerCase();
-      return placeName.includes(searchStr) || addr.includes(searchStr);
-    });
-
-    const endIdx = currentPage * ITEMS_PER_PAGE;
-    const paginated = filtered.slice(0, endIdx);
-
-    setDisplayedResults(paginated);
-    setHasMore(endIdx < filtered.length);
-    setIsSearching(false);
-
-    if (currentPage === 1 && onSearchResults) {
-      onSearchResults(filtered);
-    }
-  };
+      if (currentPage === 1 && onSearchResults) {
+        onSearchResults(filtered);
+      }
+    },
+    [pins, onSearchResults],
+  );
 
   useEffect(() => {
     // 핀 데이터가 변경되더라도, 유저가 이미 검색을 한 상태일 때만 재검색 적용
     if (pins && pins.length > 0 && hasSearched) {
-      executeSearch(lastSearchedKeyword, 1);
+      // 기존 코드 개선: effect 본문에서 동기 setState가 발생하지 않도록 다음 작업으로 예약한다.
+      const timeoutId = window.setTimeout(
+        () => executeSearch(lastSearchedKeyword, 1),
+        0,
+      );
+      return () => window.clearTimeout(timeoutId);
     }
-  }, [pins, lastSearchedKeyword]);
+    return undefined;
+  }, [pins, lastSearchedKeyword, hasSearched, executeSearch]);
 
   const handleObserver = useCallback(
     (entries) => {
@@ -96,7 +111,7 @@ const SearchPanel = ({
         });
       }
     },
-    [hasMore, isSearching, lastSearchedKeyword, pins],
+    [hasMore, isSearching, lastSearchedKeyword, executeSearch],
   );
 
   useEffect(() => {
@@ -106,12 +121,14 @@ const SearchPanel = ({
       threshold: 1.0,
     });
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
+    // 기존 코드 개선: 정리 시점에도 같은 DOM을 해제하도록 ref 값을 고정한다.
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
     }
 
     return () => {
-      if (observerTarget.current) observer.unobserve(observerTarget.current);
+      if (currentTarget) observer.unobserve(currentTarget);
     };
   }, [handleObserver]);
 
@@ -158,15 +175,25 @@ const SearchPanel = ({
                 <CardHeader>
                   <TitleGroup>
                     <PlaceTitle>{place.placeName}</PlaceTitle>
-                    <ReviewInfo>
-                      <span className="review-text">
-                        리뷰 {place.reviewCount}
-                      </span>
-                      <FaStar size={15} />
-                      <span className="rating-text">
-                        {place.avgRating.toFixed(1)}
-                      </span>
-                    </ReviewInfo>
+                    {/* DB 지도 핀 연동: API에 없는 리뷰 값을 목업 숫자로 채우지 않는다. */}
+                    {(Number.isFinite(place.reviewCount) ||
+                      Number.isFinite(place.avgRating)) && (
+                      <ReviewInfo>
+                        {Number.isFinite(place.reviewCount) && (
+                          <span className="review-text">
+                            리뷰 {place.reviewCount}
+                          </span>
+                        )}
+                        {Number.isFinite(place.avgRating) && (
+                          <>
+                            <FaStar size={15} />
+                            <span className="rating-text">
+                              {place.avgRating.toFixed(1)}
+                            </span>
+                          </>
+                        )}
+                      </ReviewInfo>
+                    )}
                   </TitleGroup>
                   <BookmarkBtn onClick={(e) => toggleBookmark(e, place.placeNo)}>
                     {isBookmarked ? (
@@ -203,7 +230,8 @@ const SearchPanel = ({
                       className="btn-start"
                       onClick={(e) => {
                         e.stopPropagation();
-                        alert("출발");
+                        // 길찾기 기능 연동: 기존 임시 alert 대신 선택 장소를 출발지로 설정
+                        onSetOrigin(place);
                       }}
                     >
                       출발
@@ -212,7 +240,8 @@ const SearchPanel = ({
                       className="btn-end"
                       onClick={(e) => {
                         e.stopPropagation();
-                        alert("도착");
+                        // 길찾기 기능 연동: 기존 임시 alert 대신 선택 장소를 도착지로 설정
+                        onSetDestination(place);
                       }}
                     >
                       도착

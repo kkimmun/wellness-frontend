@@ -8,6 +8,41 @@ export const MapContainer = styled.div`
   overflow: hidden;
 `;
 
+/* 대중교통 경로 색상: 지도 경로의 도보·버스·지하철 색을 설명하는 범례다. */
+export const RouteLegend = styled.div`
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 14px;
+  max-width: 430px;
+  padding: 10px 14px;
+  border: 1px solid ${theme.colors.borderLight};
+  border-radius: ${theme.radius.lg};
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.14);
+  color: ${theme.colors.textSecondary};
+  font-size: 11px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+`;
+
+export const LegendLine = styled.i`
+  width: 25px;
+  height: 0;
+  border-top: 4px ${({ $dashed }) => ($dashed ? "dashed" : "solid")}
+    ${({ $color }) => $color};
+  border-radius: ${theme.radius.pill};
+`;
+
 export const FloatingTags = styled.div`
   position: absolute;
   top: 24px;
