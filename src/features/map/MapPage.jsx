@@ -96,7 +96,22 @@ const MapPage = () => {
   const [routeRenderRevision, setRouteRenderRevision] = useState(0);
   const mapRef = useRef(null);
 
-  const [top10Overlay, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
+  const [top10OverlayState, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
+  const [top10OverlayDetail, setTop10OverlayDetail] = useState(null);
+
+  useEffect(() => {
+    if (top10OverlayState && !top10OverlayState.isExternal && top10OverlayState.placeNo) {
+      PlaceAPI.getPlaceDetail(top10OverlayState.placeNo)
+        .then((res) => setTop10OverlayDetail(res.data || res))
+        .catch((err) => console.error("Top10 상세 정보 조회 실패", err));
+    } else {
+      setTop10OverlayDetail(null);
+    }
+  }, [top10OverlayState?.placeNo, top10OverlayState?.isExternal]);
+
+  const top10Overlay = useMemo(() => {
+    return top10OverlayState ? { ...top10OverlayState, ...top10OverlayDetail } : null;
+  }, [top10OverlayState, top10OverlayDetail]);
   const { status } = useAuth();
 
   const toggleBookmark = (e, placeNo) => {
@@ -470,8 +485,10 @@ const MapPage = () => {
               position={{ lat: selectedPlace.yAxis, lng: selectedPlace.xAxis }}
               yAnchor={1}
               clickable={true}
+              zIndex={20}
             >
-              <OverlayCard>
+              <div style={{ marginBottom: "28px" }}>
+                <OverlayCard>
                 {/* 상단: 장소명 및 출발/도착 버튼 */}
                 <div className="header-row">
                   <OverlayTitle>{selectedPlace.placeName}</OverlayTitle>
@@ -548,8 +565,10 @@ const MapPage = () => {
               position={{ lat: top10Overlay.yAxis, lng: top10Overlay.xAxis }}
               yAnchor={1}
               clickable={true}
+              zIndex={20}
             >
-              <OverlayCard>
+              <div style={{ marginBottom: "28px" }}>
+                <OverlayCard>
                 <div className="header-row">
                   <OverlayTitle>{top10Overlay.placeName}</OverlayTitle>
                   <div className="action-buttons">

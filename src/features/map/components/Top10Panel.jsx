@@ -203,18 +203,6 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
                   </div>
                 )}
               </div>
-
-              <div className="tags">
-                {place.tags && place.tags.length > 0 ? (
-                  place.tags.map((tag, idx) => (
-                    <span key={idx} className="tag">
-                      #{tag}
-                    </span>
-                  ))
-                ) : place.type ? (
-                  <span className="tag">#{place.type}</span>
-                ) : null}
-              </div>
             </InfoWrapper>
           </Top10Card>
         ))}
