@@ -12,7 +12,9 @@ import { PlaceAPI } from "../../api/place";
 import SearchPanel from "./components/SearchPanel";
 import DetailPanel from "./components/DetailPanel";
 import FixedCoursePanel from "../courses/components/FixedCoursePanel";
-import CustomCoursePanel from "../courses/components/CustomCoursePanel";
+import FixedCourseDetail from "../courses/components/FixedCourseDetail";
+import UserCourseFlow from "../courses/components/UserCourseFlow";
+import { getCourseRoute, isCoursePoint } from "../courses/utils/userCourseStorage";
 import RoutePanel from "./components/RoutePanel";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
@@ -87,7 +89,9 @@ const MapPage = () => {
   const [isRouteOpen, setIsRouteOpen] = useState(false);
   const [routeOrigin, setRouteOrigin] = useState(null);
   const [routeDestination, setRouteDestination] = useState(null);
-  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [generalRoute, setSelectedRoute] = useState(null);
+  const [customRoute, setCustomRoute] = useState(null);
+  const [fixedCourseMap, setFixedCourseMap] = useState(null);
   // 코드 리뷰 반영: placeNo가 없는 좌표 장소도 외부 입력이 바뀔 때 RoutePanel을 새 입력으로 초기화한다.
   const [routeInputRevision, setRouteInputRevision] = useState(0);
   // 길찾기 표시 안정화: 경로가 바뀔 때 Kakao Polyline을 새 인스턴스로 교체하기 위한 번호다.
@@ -149,6 +153,20 @@ const MapPage = () => {
   const location = useLocation();
   const isFixedCourseView = location.pathname.startsWith("/pilgrim/fixed");
   const isCustomCourseView = location.pathname === "/pilgrim/create";
+  const isFixedCourseDetail = isFixedCourseView && Boolean(courseNo);
+  const isCourseMapView = isCustomCourseView || isFixedCourseDetail;
+  // 현재 URL의 요청 결과만 사용해 다른 코스를 열 때 이전 경로가 남지 않게 한다.
+  const courseRouteData = isFixedCourseDetail
+    ? fixedCourseMap?.key === location.key ? fixedCourseMap.routeData : null
+    : customRoute;
+  const selectedRoute = useMemo(() => {
+    if (!isCourseMapView) return generalRoute;
+    const route = getCourseRoute(courseRouteData);
+    return route ? { ...route, transportType: courseRouteData.transportType } : null;
+  }, [isCourseMapView, generalRoute, courseRouteData]);
+  const coursePins = isCourseMapView && courseRouteData
+    ? [courseRouteData.origin, ...(courseRouteData.waypoints || []), courseRouteData.destination].filter(isCoursePoint)
+    : [];
 
   // 기존 코드 개선: URL을 단일 기준으로 사용해 상세 장소 상태의 중복 저장을 제거한다.
   const selectedPlace = useMemo(
@@ -216,11 +234,6 @@ const MapPage = () => {
     setRouteRenderRevision((current) => current + 1);
   };
 
-  const handleCustomCourseBuilt = (routeResponse) => {
-    const firstRoute = routeResponse?.routes?.[0] || null;
-    handleRouteSelect(firstRoute, routeResponse);
-  };
-
   // 길찾기 결과 유지: 패널을 닫아도 선택 경로와 패널 내부 검색 결과는 보존한다.
   const closeRoutePanel = () => {
     setIsRouteOpen(false);
@@ -244,13 +257,16 @@ const MapPage = () => {
       });
 
       const sidePadding = window.innerWidth <= 768 ? 32 : 60;
-      const leftPadding =
-        isRouteOpen && window.innerWidth > 768 ? 600 : sidePadding;
-      map.setBounds(bounds, 60, sidePadding, 60, leftPadding);
+      const leftPadding = window.innerWidth > 768
+        ? isCourseMapView ? 500 : isRouteOpen ? 600 : sidePadding
+        : sidePadding;
+      const bottomPadding = isCourseMapView && window.innerWidth <= 768
+        ? Math.round(window.innerHeight * 0.6) : 60;
+      map.setBounds(bounds, 60, sidePadding, bottomPadding, leftPadding);
     }, delay);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isRouteOpen, selectedRoute]);
+  }, [isRouteOpen, selectedRoute, isCourseMapView, loading]);
 
   const selectedMapPath = toMapPath(selectedRoute?.path);
   // 대중교통 경로 색상: 단계별 path를 유지해 도보·버스·지하철을 각각 다른 선으로 그린다.
@@ -275,13 +291,13 @@ const MapPage = () => {
         onPlaceSelect={handlePlaceSelect}
         bookmarks={bookmarks}
         toggleBookmark={toggleBookmark}
-        isVisible={!isDetailOpen && !isRouteOpen && !isCustomCourseView}
+        isVisible={!isDetailOpen && !isRouteOpen && !isCourseMapView}
         onSearchResults={setFilteredPins}
         onSetOrigin={openRouteWithOrigin}
         onSetDestination={openRouteWithDestination}
       />
 
-      {isFixedCourseView && (
+      {isFixedCourseView && !isFixedCourseDetail && (
         <FixedCoursePanel
           selectedCourseNo={courseNo}
           onClose={() => navigate("/map")}
@@ -291,19 +307,31 @@ const MapPage = () => {
         />
       )}
 
+      {isFixedCourseDetail && (
+        <FixedCourseDetail
+          key={location.key}
+          courseNo={courseNo}
+          pins={pins}
+          requestKey={location.key}
+          onClose={() => navigate("/map")}
+          onRouteChange={setFixedCourseMap}
+        />
+      )}
+
       {isCustomCourseView && (
-        <CustomCoursePanel
+        <UserCourseFlow
+          key={location.key}
           pins={pins}
           pinsState={pinsState}
           onClose={() => navigate("/map")}
-          onCourseBuilt={handleCustomCourseBuilt}
+          onRouteChange={setCustomRoute}
         />
       )}
 
       {/* 길찾기 기능 연동: 지도 위 독립 패널에서 입력·검색·결과 선택을 처리한다. */}
       <RoutePanel
         key={`route-input-${routeInputRevision}`}
-        isOpen={isRouteOpen}
+        isOpen={isRouteOpen && !isCourseMapView}
         initialOrigin={routeOrigin}
         initialDestination={routeDestination}
         onClose={closeRoutePanel}
@@ -311,7 +339,7 @@ const MapPage = () => {
       />
 
       {/* 길찾기 결과 유지: 닫은 패널을 기존 결과와 입력값 그대로 다시 열 수 있다. */}
-      {!isRouteOpen && selectedRoute && (
+      {!isCourseMapView && !isRouteOpen && selectedRoute && (
         <RouteReopenButton
           type="button"
           onClick={() => setIsRouteOpen(true)}
@@ -360,6 +388,7 @@ const MapPage = () => {
         </MapStatus>
       ) : (
         <Map
+          mapTypeId={isCustomCourseView ? "HYBRID" : "ROADMAP"}
           center={{ lat: 37.6105, lng: 126.7056 }}
           style={{ width: "100%", height: "100%" }}
           level={5}
@@ -371,19 +400,21 @@ const MapPage = () => {
             map.setMinLevel(2); // 과도한 확대 방지
           }}
           onClick={() => {
+            if (isCourseMapView) return;
             navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
           }}
         >
-          {filteredPins.map((pin) => (
+          {(isCourseMapView ? coursePins : filteredPins).map((pin, index) => (
             // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
             <MapMarker
-              key={pin.placeNo}
-              position={{ lat: pin.yAxis, lng: pin.xAxis }}
+              key={`${pin.placeNo ?? "origin"}-${index}`}
+              position={{ lat: Number(pin.Y_AXIS ?? pin.yAxis), lng: Number(pin.X_AXIS ?? pin.xAxis) }}
+              title={pin.placeName}
               image={{
-                src: MARKER_SVG,
+                src: isCourseMapView ? MARKER_SVG.replace("FF7043", "34C759") : MARKER_SVG,
                 size: { width: 24, height: 24 },
               }}
-              onClick={() => handleMarkerClick(pin)}
+              onClick={() => { if (!isCourseMapView) handleMarkerClick(pin); }}
             />
           ))}
 
@@ -402,16 +433,16 @@ const MapPage = () => {
           {/* 길찾기 기능 연동: 단일 이동수단 또는 단계 path가 없는 응답은 전체 경로를 표시한다. */}
           {selectedMapSegments.length === 0 && selectedMapPath.length > 1 && (
             <Polyline
-              key={`route-${routeRenderRevision}`}
+              key={`route-${isCourseMapView ? location.key : routeRenderRevision}`}
               path={selectedMapPath}
               strokeWeight={7}
               strokeColor={
-                isWalkingRoute
+                isCourseMapView ? "#34C759" : isWalkingRoute
                   ? ROUTE_SEGMENT_COLORS.WALKING
                   : ROUTE_SEGMENT_COLORS.GENERAL_BUS
               }
               strokeOpacity={0.9}
-              strokeStyle={isWalkingRoute ? "shortdash" : "solid"}
+              strokeStyle={!isCourseMapView && isWalkingRoute ? "shortdash" : "solid"}
             />
           )}
 

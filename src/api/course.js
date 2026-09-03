@@ -6,6 +6,9 @@ export const CourseAPI = {
       params: { page },
     }),
 
+  getFixedCourse: async (courseNo, signal) =>
+    api.get(`/courses/${courseNo}`, { signal }),
+
   getWaypointRecommendations: async (payload, signal) =>
     api.post("/courses/waypoints", payload, { signal }),
 
