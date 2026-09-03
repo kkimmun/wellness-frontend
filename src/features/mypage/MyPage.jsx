@@ -18,6 +18,8 @@ import {
 } from "./MyPage.styles";
 import { AuthAPI } from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
+import { Modal } from "../../components/Modal/Modal";
+import { FiAlertCircle } from "react-icons/fi";
 
 const MyPage = ({ onClose }) => {
   const navigate = useNavigate();
@@ -52,16 +54,21 @@ const MyPage = ({ onClose }) => {
     }
   };
 
-  const handleLogout = async () => {
-    if (window.confirm("로그아웃 하시겠습니까?")) {
-      try {
-        await AuthAPI.logout();
-        await checkAuth(); // 전역 상태(unauthenticated)로 갱신
-        if (onClose) onClose();
-        navigate("/login");
-      } catch (err) {
-        console.error(err);
-      }
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const handleLogout = () => {
+    setIsLogoutModalOpen(true);
+  };
+
+  const confirmLogout = async () => {
+    try {
+      await AuthAPI.logout();
+      await checkAuth(); // 전역 상태(unauthenticated)로 갱신
+      setIsLogoutModalOpen(false);
+      if (onClose) onClose();
+      navigate("/login");
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -125,6 +132,18 @@ const MyPage = ({ onClose }) => {
 
       <ActionButton onClick={handleLogout}>로그아웃</ActionButton>
       <ActionButton $danger onClick={handleWithdrawal}>회원탈퇴</ActionButton>
+
+      <Modal
+        isOpen={isLogoutModalOpen}
+        icon={FiAlertCircle}
+        iconColor="primary"
+        title="로그아웃"
+        message="정말로 로그아웃 하시겠습니까?"
+        confirmText="예"
+        cancelText="취소"
+        onConfirm={confirmLogout}
+        onCancel={() => setIsLogoutModalOpen(false)}
+      />
     </ProfilePopoverCard>
   );
 };
