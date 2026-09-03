@@ -557,6 +557,7 @@ const MapPage = () => {
                   )}
                 </div>
               </OverlayCard>
+              </div>
             </CustomOverlayMap>
           )}
 
@@ -628,6 +629,7 @@ const MapPage = () => {
                   )}
                 </div>
               </OverlayCard>
+              </div>
             </CustomOverlayMap>
           )}
         </Map>
