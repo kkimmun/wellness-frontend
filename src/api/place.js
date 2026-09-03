@@ -11,6 +11,13 @@ export const PlaceAPI = {
     return response.data;
   },
 
+  getGimpoTop10: async () => {
+    // 백엔드 명세에 따른 요청 URL (axios 인스턴스의 baseURL 설정에 따라 /api 유무가 다를 수 있음)
+    // 기존 코드들의 패턴을 따라 /gimpoTop10 으로 호출합니다.
+    const response = await api.get("/gimpoTop10");
+    return response; // ApiResponse 형식 (code, data, message) 전체 반환
+  },
+
 
   createReview: async (placeNo, formData) => {
     const response = await api.post(`/places/${placeNo}/reviews`, formData, {

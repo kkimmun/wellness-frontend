@@ -125,14 +125,52 @@ const DUMMY_TOP10 = [
   }
 ];
 
+import { useState, useEffect } from "react";
+import { PlaceAPI } from "../../../api/place";
+
 const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
   const navigate = useNavigate();
+  const [top10List, setTop10List] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (isOpen && top10List.length === 0 && !loading && !error) {
+      const fetchTop10 = async () => {
+        setLoading(true);
+        try {
+          const res = await PlaceAPI.getGimpoTop10();
+          if (res && res.code === 200 && res.data && res.data.content) {
+            setTop10List(res.data.content);
+          } else {
+            // 명세가 확정되지 않았거나 데이터가 없을 때 더미 데이터 폴백
+            setTop10List(DUMMY_TOP10);
+          }
+        } catch (err) {
+          console.error("Top10 API 호출 실패:", err);
+          // 백엔드 API가 아직 준비되지 않은 경우 더미 데이터 사용
+          setTop10List(DUMMY_TOP10);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchTop10();
+    }
+  }, [isOpen, top10List.length, loading, error]);
 
   const handlePlaceClick = (place) => {
+    // onPlaceClick 사용을 위해 addr 파라미터를 API 응답의 address로 맞춰준다 (하위 호환)
+    const placeData = {
+      ...place,
+      addr: place.address || place.addr,
+      phone: place.phoneNumber || place.phone,
+    };
     if (onPlaceClick) {
-      onPlaceClick(place);
+      onPlaceClick(placeData);
     }
   };
+
+  const listToRender = top10List.length > 0 ? top10List : DUMMY_TOP10;
 
   return (
     <PanelContainer $isOpen={isOpen}>
@@ -145,21 +183,22 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
       </Header>
 
       <ListContainer>
-        {DUMMY_TOP10.map((place, index) => (
+        {loading && <div style={{ padding: "20px", textAlign: "center" }}>데이터를 불러오는 중입니다...</div>}
+        {!loading && listToRender.map((place, index) => (
           <Top10Card key={place.placeNo} onClick={() => handlePlaceClick(place)}>
             <ImageWrapper>
-              <img src={place.imgUrl} alt={place.placeName} />
+              <img src={place.imageUrl || place.imgUrl} alt={place.placeName} />
               <div className="rank-badge">{index + 1}</div>
             </ImageWrapper>
 
             <InfoWrapper>
               <div>
                 <div className="title">{place.placeName}</div>
-                <div className="address">{place.addr}</div>
-                <div className="address">{place.addrDetail}</div>
+                <div className="address">{place.address || place.addr}</div>
+                {place.addrDetail && <div className="address">{place.addrDetail}</div>}
                 <div className="phone">
                   <FaPhoneAlt size={10} />
-                  {place.phone}
+                  {place.phoneNumber || place.phone || "번호없음"}
                 </div>
               </div>
               
@@ -175,11 +214,15 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
               </div>
 
               <div className="tags">
-                {place.tags.map((tag, idx) => (
-                  <span key={idx} className="tag">
-                    #{tag}
-                  </span>
-                ))}
+                {place.tags && place.tags.length > 0 ? (
+                  place.tags.map((tag, idx) => (
+                    <span key={idx} className="tag">
+                      #{tag}
+                    </span>
+                  ))
+                ) : place.type ? (
+                  <span className="tag">#{place.type}</span>
+                ) : null}
               </div>
             </InfoWrapper>
           </Top10Card>
