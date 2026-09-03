@@ -67,6 +67,7 @@ function App() {
           <Route path="/map" element={<MapPage />} />
           <Route path="/pilgrim/create" element={<MapPage />} />
           <Route path="/pilgrim/fixed" element={<MapPage />} />
+          <Route path="/pilgrim/fixed/mine/:userCourseId" element={<MapPage />} />
           <Route path="/pilgrim/fixed/:courseNo" element={<MapPage />} />
           <Route path="/place/:placeNo" element={<MapPage />} />
           <Route path="/place/:placeNo/review" element={<MapPage />} />

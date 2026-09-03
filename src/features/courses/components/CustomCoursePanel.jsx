@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  FiCheck,
-  FiCompass,
-  FiX,
-} from "react-icons/fi";
+import { FiCheck, FiCompass, FiX } from "react-icons/fi";
 import { FaLocationArrow, FaSearch } from "react-icons/fa";
 import { CourseAPI } from "../../../api/course";
 import { PlaceAPI } from "../../../api/place";
@@ -461,7 +457,11 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
                   }
                 }}
               />
-              <OriginSearchButton type="submit" aria-label="출발지 검색" title="검색">
+              <OriginSearchButton
+                type="submit"
+                aria-label="출발지 검색"
+                title="검색"
+              >
                 <FaSearch size={18} aria-hidden="true" />
               </OriginSearchButton>
             </OriginSearchBar>
@@ -478,12 +478,17 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
             검색 결과에서 출발지를 선택해주세요.
           </FieldMessage>
           {searchState !== "idle" && (
-            <SearchResults aria-label="출발지 검색 결과" aria-busy={searchState === "loading"}>
+            <SearchResults
+              aria-label="출발지 검색 결과"
+              aria-busy={searchState === "loading"}
+            >
               {searchState === "loading" && (
                 <InlineState role="status">{searchMessage}</InlineState>
               )}
               {searchState === "error" && (
-                <InlineState $error role="alert">{searchMessage}</InlineState>
+                <InlineState $error role="alert">
+                  {searchMessage}
+                </InlineState>
               )}
               {searchState === "empty" && (
                 <InlineState role="status">검색 결과가 없습니다.</InlineState>
@@ -492,11 +497,19 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
                 searchResults.map((place) => (
                   <SearchResultButton
                     type="button"
-                    key={place.placeNo ?? [place.X_AXIS ?? place.xAxis, place.Y_AXIS ?? place.yAxis].join("-")}
+                    key={
+                      place.placeNo ??
+                      [
+                        place.X_AXIS ?? place.xAxis,
+                        place.Y_AXIS ?? place.yAxis,
+                      ].join("-")
+                    }
                     onClick={() => selectOrigin(place)}
                   >
                     <strong>{place.placeName}</strong>
-                    <span>{place.address || place.addr || "주소 정보 없음"}</span>
+                    <span>
+                      {place.address || place.addr || "주소 정보 없음"}
+                    </span>
                     <span>출발지로 선택</span>
                   </SearchResultButton>
                 ))}
@@ -504,9 +517,13 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
           )}
           {origin && (
             <FieldMessage $success role="status">
-              <FiCheck aria-hidden="true" /> 출발지 선택 완료: {origin.placeName}
+              <FiCheck aria-hidden="true" /> 출발지 선택 완료:{" "}
+              {origin.placeName}
               {(origin.address || origin.addr) && (
-                <><br />{origin.address || origin.addr}</>
+                <>
+                  <br />
+                  {origin.address || origin.addr}
+                </>
               )}
             </FieldMessage>
           )}

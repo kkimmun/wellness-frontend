@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  FiChevronDown,
+  FiChevronUp,
   FiClock,
   FiMap,
   FiMapPin,
@@ -7,6 +9,8 @@ import {
   FiX,
 } from "react-icons/fi";
 import { CourseAPI } from "../../../api/course";
+import { getCourseRoute, readUserCourses } from "../utils/userCourseStorage";
+import CourseCover from "./CourseCover";
 import {
   CloseButton,
   CourseCard,
@@ -15,17 +19,17 @@ import {
   CourseList,
   CourseMeta,
   CourseName,
-  CourseThumbnail,
   EmptyState,
   ErrorState,
   Header,
   HeaderText,
   InfiniteScrollFooter,
   LoadingCard,
-  NumberBadge,
   PanelContainer,
   RetryButton,
   RouteInfo,
+  UserCourseHint,
+  UserCourseList,
 } from "./FixedCoursePanel.styles";
 
 const formatEstimatedTime = (minutes) => {
@@ -39,7 +43,10 @@ const formatEstimatedTime = (minutes) => {
   return `${hours}시간 ${remainingMinutes}분`;
 };
 
-const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo }) => {
+const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCourseSelect, onCreateCourse, showUserCourses = false }) => {
+  const [userCourses] = useState(readUserCourses);
+  const [userCoursesOpen, setUserCoursesOpen] = useState(showUserCourses);
+  const latestDestination = userCourses[0]?.stops.at(-1);
   const [page, setPage] = useState(1);
   const [courses, setCourses] = useState([]);
   const [hasMore, setHasMore] = useState(true);
@@ -148,33 +155,88 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo }) => {
   };
 
   return (
-    <PanelContainer aria-label="순례길 고정 코스 목록">
+    <PanelContainer aria-label="순례길 목록">
       <Header>
         <HeaderText>
           <h2>
             <FiMap aria-hidden="true" />
-            순례길 고정코스 추천
+            순례길 목록
           </h2>
           <p>
-            김포의 역사와 아름다운 자연을 느낄 수 있는 대표적인 순례
-            코스입니다.
+            내가 만든 코스와 김포의 대표 순례길을 만나보세요.
           </p>
         </HeaderText>
-        <CloseButton type="button" onClick={onClose} aria-label="고정 코스 닫기">
+        <CloseButton type="button" onClick={onClose} aria-label="순례길 목록 닫기">
           <FiX aria-hidden="true" />
         </CloseButton>
       </Header>
 
+      <CourseList ref={listRef}>
+        <li>
+          <CourseCard
+            type="button"
+            $selected={userCoursesOpen}
+            aria-expanded={userCoursesOpen}
+            aria-controls="my-pilgrim-courses"
+            onClick={() => setUserCoursesOpen((open) => !open)}
+          >
+            <CourseCover src={latestDestination?.imageUrl} name={latestDestination?.placeName} number={0} />
+            <CourseInfo>
+              <CourseName>내가 만든 코스</CourseName>
+              <CourseDescription>직접 만든 순례길을 모아 보고 다시 걸어보세요.</CourseDescription>
+              <CourseMeta>
+                <span>{userCourses.length}개 코스</span>
+                <span>{userCoursesOpen ? "접기" : "목록 보기"}{userCoursesOpen ? <FiChevronUp aria-hidden="true" /> : <FiChevronDown aria-hidden="true" />}</span>
+              </CourseMeta>
+            </CourseInfo>
+          </CourseCard>
+          <div id="my-pilgrim-courses" hidden={!userCoursesOpen}>
+            <UserCourseHint>
+              {userCourses.length === 0 && <strong>아직 만든 코스가 없습니다.</strong>}
+              <span>이 브라우저에 저장된 코스입니다.</span>
+              <RetryButton type="button" onClick={onCreateCourse}>새 순례길 제작</RetryButton>
+            </UserCourseHint>
+            {userCourses.length > 0 && (
+              <UserCourseList aria-label="내가 만든 코스 목록">
+                {userCourses.map((course, index) => {
+                  const destination = course.stops.at(-1);
+                  const route = getCourseRoute(course.routeData);
+                  return (
+                    <li key={course.id}>
+                      <CourseCard type="button" onClick={() => onUserCourseSelect(course)}>
+                        <CourseCover src={destination.imageUrl} name={destination.placeName} number={index + 1} tone={index % 5} />
+                        <CourseInfo>
+                          <CourseName>{course.courseName}</CourseName>
+                          <CourseDescription>{course.description}</CourseDescription>
+                          <CourseMeta>
+                            <RouteInfo>
+                              <FiMapPin aria-hidden="true" />
+                              <span>출발: {course.stops[0].placeName} · 도착: {destination.placeName}</span>
+                            </RouteInfo>
+                            <span><FiClock aria-hidden="true" />{formatEstimatedTime(Number.isFinite(route?.totalTime) ? Math.ceil(route.totalTime / 60) : null)}</span>
+                          </CourseMeta>
+                        </CourseInfo>
+                      </CourseCard>
+                    </li>
+                  );
+                })}
+              </UserCourseList>
+            )}
+          </div>
+        </li>
+
       {loading && (
-        <CourseList aria-label="고정 코스 목록 로딩 중" aria-busy="true">
+        <li aria-label="고정 코스 목록 로딩 중" aria-busy="true">
+          <UserCourseList>
           {[1, 2, 3, 4].map((item) => (
             <LoadingCard key={item} />
           ))}
-        </CourseList>
+          </UserCourseList>
+        </li>
       )}
 
       {!loading && error && courses.length === 0 && (
-        <ErrorState role="alert">
+        <ErrorState as="li" role="alert">
           <strong>목록을 불러오지 못했습니다.</strong>
           <span>{error}</span>
           <RetryButton type="button" onClick={handleRetry}>
@@ -184,7 +246,7 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo }) => {
       )}
 
       {!loading && !error && courses.length === 0 && (
-        <EmptyState>
+        <EmptyState as="li">
           <FiMap aria-hidden="true" />
           <strong>등록된 고정 코스가 없습니다.</strong>
           <span>새로운 순례 코스가 준비되면 이곳에 표시됩니다.</span>
@@ -192,7 +254,7 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo }) => {
       )}
 
       {courses.length > 0 && (
-        <CourseList ref={listRef} aria-busy={loadingMore}>
+        <>
           {courses.map((course, index) => {
             const isSelected =
               String(course.courseNo) === String(selectedCourseNo);
@@ -205,10 +267,7 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo }) => {
                   $selected={isSelected}
                   aria-current={isSelected ? "true" : undefined}
                 >
-                  <CourseThumbnail $tone={index % 5}>
-                    <NumberBadge>{index + 1}</NumberBadge>
-                    <FiMap aria-hidden="true" />
-                  </CourseThumbnail>
+                  <CourseCover src={course.endPlaceImg || course.endPlace?.imageUrl} name={course.endPlace?.placeName} number={index + 1} tone={index % 5} courseNo={course.courseNo} />
                   <CourseInfo>
                     <CourseName>{course.courseName}</CourseName>
                     <CourseDescription>{course.description}</CourseDescription>
@@ -245,8 +304,9 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo }) => {
               <span>모든 고정 코스를 확인했습니다.</span>
             )}
           </InfiniteScrollFooter>
-        </CourseList>
+        </>
       )}
+      </CourseList>
     </PanelContainer>
   );
 };

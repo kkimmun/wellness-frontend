@@ -25,7 +25,7 @@ function formatMetrics(route, estimatedTime) {
   return `${distance}, 소요시간 ${hours ? `${hours}시간 ` : ""}${minutes % 60 ? `${minutes % 60}분` : ""}`.trim();
 }
 
-export default function UserCourseDetail({ course, onBack, storageWarning, routeLoading = false, routeError = "", onRetryRoute }) {
+export default function UserCourseDetail({ course, onBack, backLabel = "지도 화면으로", storageWarning, routeLoading = false, routeError = "", onRetryRoute }) {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewPlace, setReviewPlace] = useState(null);
   const triggerRef = useRef(null);
@@ -55,7 +55,7 @@ export default function UserCourseDetail({ course, onBack, storageWarning, route
   return (
     <>
       <S.CourseCard aria-label={course.courseKind === "FIXED" ? "고정 코스 상세정보" : "사용자 코스 상세정보"}>
-        <S.BackRow><BackButton onClick={onBack} aria-label="지도 화면으로 돌아가기" />지도 화면으로</S.BackRow>
+        <S.BackRow><BackButton onClick={onBack} aria-label={`${backLabel} 돌아가기`} />{backLabel}</S.BackRow>
         <header>
           <h1>{course.courseName}</h1>
           <S.CourseMetrics>{formatMetrics(getCourseRoute(course.routeData), course.estimatedTime)}</S.CourseMetrics>
