@@ -1,5 +1,5 @@
 import React from "react";
-import { FaChevronLeft, FaPhoneAlt, FaEye, FaHeart } from "react-icons/fa";
+import { FaChevronLeft, FaPhoneAlt } from "react-icons/fa";
 
 import { useNavigate } from "react-router-dom";
 import {
@@ -204,12 +204,7 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
               
               <div className="stats">
                 <div className="stat-item">
-                  <FaHeart color="#ff5252" size={12} />
-                  <span>{place.likeCount}</span>
-                </div>
-                <div className="stat-item">
-                  <FaEye color="#777" size={12} />
-                  <span>{place.reviewCount || place.viewCount}</span>
+                  <span className="review-text">리뷰 {place.reviewCount || 0}</span>
                 </div>
               </div>
 
