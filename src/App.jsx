@@ -69,6 +69,7 @@ function App() {
           <Route path="/pilgrim/fixed/:courseNo" element={<MapPage />} />
           <Route path="/place/:placeNo" element={<MapPage />} />
           <Route path="/place/:placeNo/review" element={<MapPage />} />
+          <Route path="/gimpoTop10" element={<MapPage />} />
         </Route>
 
         {/* 관리자 화면 (인증 + 관리자 권한 필요) */}

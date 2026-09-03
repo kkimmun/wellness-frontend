@@ -20,7 +20,7 @@ export const ContentArea = styled.div`
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* 항상 스크롤 숨김 (지도 화면 최적화) */
+  overflow-y: auto; /* 내용 초과 시 스크롤 허용 (기존 hidden에서 변경) */
 
   /* 1024px 이하: 좌측 마진 제거 및 상단 모바일 Header 높이(56px)만큼 여백 확보 */
   @media (max-width: 1024px) {
