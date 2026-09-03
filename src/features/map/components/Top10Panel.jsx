@@ -203,9 +203,16 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
               </div>
               
               <div className="stats">
-                <div className="stat-item">
-                  <span className="review-text">리뷰 {place.reviewCount || 0}</span>
-                </div>
+                {Number.isFinite(place.reviewCount) && (
+                  <div className="stat-item">
+                    <span className="review-text">리뷰 {place.reviewCount}</span>
+                  </div>
+                )}
+                {Number.isFinite(place.avgRating) && (
+                  <div className="stat-item">
+                    <span className="rating-text">⭐ {place.avgRating.toFixed(1)}</span>
+                  </div>
+                )}
               </div>
 
               <div className="tags">

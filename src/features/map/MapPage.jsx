@@ -39,6 +39,9 @@ import {
 const MARKER_SVG =
   "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23FF7043' stroke='white' stroke-width='2'/%3E%3C/svg%3E";
 
+const MARKER_GOLD_SVG =
+  "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%23C9A227' stroke='white' stroke-width='2'/%3E%3Cpath d='M12 7l1.5 3h3.5l-2.5 2.5 1 3.5-3.5-2-3.5 2 1-3.5-2.5-2.5h3.5z' fill='white'/%3E%3C/svg%3E";
+
 // 길찾기 기능 연동: 기존 지도 장소 객체를 길찾기 패널이 사용하는 DB 장소 형식으로 변환한다.
 const toRoutePlace = (place) =>
   place
@@ -386,18 +389,34 @@ const MapPage = () => {
             navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
           }}
         >
-          {filteredPins.map((pin) => (
+          {filteredPins.map((pin) => {
+            const isTop10 = String(pin.typeDetailNo) === "18";
             // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
+            return (
+              <MapMarker
+                key={pin.placeNo}
+                position={{ lat: pin.yAxis, lng: pin.xAxis }}
+                image={{
+                  src: isTop10 ? MARKER_GOLD_SVG : MARKER_SVG,
+                  size: isTop10 ? { width: 28, height: 28 } : { width: 24, height: 24 },
+                }}
+                zIndex={isTop10 ? 10 : 1}
+                onClick={() => handleMarkerClick(pin)}
+              />
+            );
+          })}
+
+          {top10Overlay && top10Overlay.isExternal && !selectedPlace && (
             <MapMarker
-              key={pin.placeNo}
-              position={{ lat: pin.yAxis, lng: pin.xAxis }}
+              position={{ lat: top10Overlay.yAxis, lng: top10Overlay.xAxis }}
               image={{
-                src: MARKER_SVG,
-                size: { width: 24, height: 24 },
+                src: MARKER_GOLD_SVG,
+                size: { width: 28, height: 28 },
               }}
-              onClick={() => handleMarkerClick(pin)}
+              zIndex={15}
+              clickable={false}
             />
-          ))}
+          )}
 
           {/* 대중교통 경로 색상: 대중교통은 이동 단계별 색상과 도보 점선으로 표시한다. */}
           {selectedMapSegments.map((segment) => (
