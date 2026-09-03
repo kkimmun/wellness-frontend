@@ -114,6 +114,7 @@ const MapPage = () => {
 
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_MAP_KEY,
+    libraries: ["services"],
   });
 
   useEffect(() => {
@@ -186,18 +187,20 @@ const MapPage = () => {
       }
     } else {
       // 2. 핀에 없으면 카카오 주소 검색으로 좌표 가져오기
-      const geocoder = new window.kakao.maps.services.Geocoder();
-      geocoder.addressSearch(place.addr, (result, status) => {
-        if (status === window.kakao.maps.services.Status.OK) {
-          const lat = parseFloat(result[0].y);
-          const lng = parseFloat(result[0].x);
-          const geocodedPlace = { ...place, yAxis: lat, xAxis: lng, isExternal: true };
-          setTop10Overlay(geocodedPlace);
-          if (mapRef.current) {
-            mapRef.current.panTo(new window.kakao.maps.LatLng(lat, lng));
+      if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        geocoder.addressSearch(place.addr, (result, status) => {
+          if (status === window.kakao.maps.services.Status.OK) {
+            const lat = parseFloat(result[0].y);
+            const lng = parseFloat(result[0].x);
+            const geocodedPlace = { ...place, yAxis: lat, xAxis: lng, isExternal: true };
+            setTop10Overlay(geocodedPlace);
+            if (mapRef.current) {
+              mapRef.current.panTo(new window.kakao.maps.LatLng(lat, lng));
+            }
           }
-        }
-      });
+        });
+      }
     }
   };
 
@@ -386,18 +389,21 @@ const MapPage = () => {
             navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
           }}
         >
-          {filteredPins.map((pin) => (
-            // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
-            <MapMarker
-              key={pin.placeNo}
-              position={{ lat: pin.yAxis, lng: pin.xAxis }}
-              image={{
-                src: MARKER_SVG,
-                size: { width: 24, height: 24 },
-              }}
-              onClick={() => handleMarkerClick(pin)}
-            />
-          ))}
+          {filteredPins.map((pin) => {
+            if (top10Overlay && pin.placeNo === top10Overlay.placeNo) return null;
+            return (
+              // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
+              <MapMarker
+                key={pin.placeNo}
+                position={{ lat: pin.yAxis, lng: pin.xAxis }}
+                image={{
+                  src: MARKER_SVG,
+                  size: { width: 24, height: 24 },
+                }}
+                onClick={() => handleMarkerClick(pin)}
+              />
+            );
+          })}
 
           {top10Overlay && !selectedPlace && (
             <MapMarker
