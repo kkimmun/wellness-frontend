@@ -282,30 +282,6 @@ export const TagOption = styled.label`
   }
 `;
 
-export const SelectField = styled.div`
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  align-items: center;
-  gap: ${theme.spacing.sm};
-  padding: 0 12px;
-  border: 1px solid ${theme.colors.borderLight};
-  border-radius: ${theme.radius.md};
-
-  svg {
-    color: ${theme.colors.primaryHover};
-  }
-
-  select {
-    width: 100%;
-    padding: 11px 0;
-    color: ${theme.colors.textPrimary};
-    background: ${theme.colors.bgWhite};
-    border: 0;
-    outline: 0;
-    font-size: ${theme.fontSize.sm};
-  }
-`;
-
 export const RecommendationButtonRow = styled.div`
   display: flex;
   align-items: center;

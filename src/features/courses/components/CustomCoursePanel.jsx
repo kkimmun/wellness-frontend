@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiCheck,
-  FiClock,
   FiCompass,
   FiMapPin,
   FiNavigation,
@@ -33,7 +32,6 @@ import {
   SearchResults,
   Section,
   SectionHeading,
-  SelectField,
   TagGrid,
   TagOption,
 } from "./CustomCoursePanel.styles";
@@ -89,7 +87,6 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
   const [searchMessage, setSearchMessage] = useState("");
   const [destinationNo, setDestinationNo] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
-  const [estimatedTime, setEstimatedTime] = useState("");
   const [recommendations, setRecommendations] = useState(null);
   const [selectedWaypoints, setSelectedWaypoints] = useState([]);
   const [recommendationState, setRecommendationState] = useState("idle");
@@ -240,7 +237,6 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
     if (!origin) return "검색 결과에서 출발지를 선택해주세요.";
     if (!destinationNo) return "도착지를 선택해주세요.";
     if (selectedTags.length === 0) return "태그를 1개 이상 선택해주세요.";
-    if (!estimatedTime) return "예상 소요시간을 선택해주세요.";
     return "";
   };
 
@@ -284,7 +280,8 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
           ...coordinates,
           endPlaceNo: Number(destinationNo),
           tags: selectedTags,
-          estimatedTime: Number(estimatedTime),
+          // 백엔드 필수 필드 호환용 기본값(분). 추천 계산에는 사용되지 않습니다.
+          estimatedTime: 120,
         },
         controller.signal,
       );
@@ -507,29 +504,6 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
           </TagGrid>
         </Section>
 
-        <Section>
-          <SectionHeading>
-            <strong>예상 소요시간</strong>
-            <span>필수</span>
-          </SectionHeading>
-          <SelectField>
-            <FiClock aria-hidden="true" />
-            <select
-              value={estimatedTime}
-              onChange={(event) => {
-                setEstimatedTime(event.target.value);
-                clearGeneratedData();
-              }}
-            >
-              <option value="">소요시간을 선택해주세요</option>
-              <option value="60">1시간</option>
-              <option value="120">2시간</option>
-              <option value="180">3시간</option>
-              <option value="240">4시간</option>
-            </select>
-          </SelectField>
-        </Section>
-
         <RecommendationButtonRow>
           <PillButton
             type="button"
@@ -544,7 +518,7 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
               "✦ 추천받기"
             )}
           </PillButton>
-          <span>선택한 태그와 이동시간을 기준으로 추천합니다.</span>
+          <span>선택한 태그와 이동 경로를 기준으로 추천합니다.</span>
         </RecommendationButtonRow>
         {recommendationMessage && (
           <FieldMessage $error={recommendationState === "error"}>
