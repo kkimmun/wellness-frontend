@@ -151,14 +151,30 @@ const MapPage = () => {
   const location = useLocation();
   const isFixedCourseView = location.pathname.startsWith("/pilgrim/fixed");
 
-  // 기존 코드 개선: URL을 단일 기준으로 사용해 상세 장소 상태의 중복 저장을 제거한다.
-  const selectedPlace = useMemo(
+  const baseSelectedPlace = useMemo(
     () =>
       placeNo
         ? pins.find((pin) => String(pin.placeNo) === String(placeNo)) || null
         : null,
     [placeNo, pins],
   );
+
+  const [overlayDetail, setOverlayDetail] = useState(null);
+
+  useEffect(() => {
+    if (baseSelectedPlace?.placeNo) {
+      PlaceAPI.getPlaceDetail(baseSelectedPlace.placeNo)
+        .then((res) => setOverlayDetail(res.data || res))
+        .catch((err) => console.error("오버레이 상세 정보 조회 실패", err));
+    } else {
+      setOverlayDetail(null);
+    }
+  }, [baseSelectedPlace?.placeNo]);
+
+  const selectedPlace = useMemo(() => {
+    return baseSelectedPlace ? { ...baseSelectedPlace, ...overlayDetail } : null;
+  }, [baseSelectedPlace, overlayDetail]);
+
   const isDetailOpen = Boolean(placeNo && selectedPlace);
 
   // 기존 코드 개선: effect에서는 URL 상태를 다시 저장하지 않고 지도 이동만 수행한다.
@@ -178,8 +194,8 @@ const MapPage = () => {
   }, [placeNo, pins.length, selectedPlace, navigate]);
 
   const handleTop10PlaceSelect = (place) => {
-    // 1. 이미 지도에 있는 핀인지 이름으로 확인
-    const existingPin = pins.find(p => p.placeName === place.placeName);
+    // 1. 이미 지도에 있는 핀인지 placeNo로 확실히 확인
+    const existingPin = pins.find(p => String(p.placeNo) === String(place.placeNo));
     if (existingPin) {
       setTop10Overlay({ ...existingPin, isExternal: false });
       if (mapRef.current) {
@@ -390,7 +406,10 @@ const MapPage = () => {
           }}
         >
           {filteredPins.map((pin) => {
-            const isTop10 = String(pin.typeDetailNo) === "18";
+            // DB typeDetailNo를 확인하거나, 명세된 placeNo 목록을 기반으로 판별
+            const TOP10_PLACE_NOS = ["1", "4", "5", "7", "8", "9", "10", "14", "178", "1043"];
+            const isTop10 = String(pin.typeDetailNo) === "18" || TOP10_PLACE_NOS.includes(String(pin.placeNo));
+            
             // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
             return (
               <MapMarker
