@@ -85,8 +85,8 @@ const SearchPanel = ({
               addr: p.road_address_name || p.address_name,
               addrDetail: p.road_address_name ? p.address_name : "",
               phone: p.phone,
-              xAxis: parseFloat(p.y), // 위도
-              yAxis: parseFloat(p.x), // 경도
+              xAxis: parseFloat(p.x), // 경도(x)
+              yAxis: parseFloat(p.y), // 위도(y)
               reviewCount: 0,
               avgRating: 0.0,
               isExternal: true, // 외부 장소 식별 플래그
