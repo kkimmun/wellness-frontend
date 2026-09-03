@@ -39,6 +39,9 @@ import {
 const MARKER_SVG =
   "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23FF7043' stroke='white' stroke-width='2'/%3E%3C/svg%3E";
 
+const MARKER_GOLD_SVG =
+  "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%23C9A227' stroke='white' stroke-width='2'/%3E%3Cpath d='M12 7l1.5 3h3.5l-2.5 2.5 1 3.5-3.5-2-3.5 2 1-3.5-2.5-2.5h3.5z' fill='white'/%3E%3C/svg%3E";
+
 // 길찾기 기능 연동: 기존 지도 장소 객체를 길찾기 패널이 사용하는 DB 장소 형식으로 변환한다.
 const toRoutePlace = (place) =>
   place
@@ -395,6 +398,18 @@ const MapPage = () => {
               onClick={() => handleMarkerClick(pin)}
             />
           ))}
+
+          {top10Overlay && !selectedPlace && (
+            <MapMarker
+              position={{ lat: top10Overlay.yAxis, lng: top10Overlay.xAxis }}
+              image={{
+                src: MARKER_GOLD_SVG,
+                size: { width: 28, height: 28 },
+              }}
+              zIndex={15}
+              clickable={false}
+            />
+          )}
 
           {/* 대중교통 경로 색상: 대중교통은 이동 단계별 색상과 도보 점선으로 표시한다. */}
           {selectedMapSegments.map((segment) => (
