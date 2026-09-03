@@ -41,7 +41,7 @@ import {
   SearchResults,
 } from "../../map/components/RoutePanel.styles";
 
-const DESTINATION_TYPE_DETAIL_NO = 22;
+const DESTINATION_TYPE_DETAIL_NO = 19;
 
 const TAGS = [
   "사진명소",
