@@ -465,23 +465,19 @@ const MapPage = () => {
           }}
           onClick={() => {
             setTop10Overlay(null);
-            navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
-          }}
-        >
-          {filteredPins.map((pin) => {
-            // DB typeDetailNo를 확인하거나, 명세된 placeNo 목록을 기반으로 판별
-            const TOP10_PLACE_NOS = ["1", "4", "5", "7", "8", "9", "10", "14", "178", "1043"];
-            const isTop10 = String(pin.typeDetailNo) === "18" || TOP10_PLACE_NOS.includes(String(pin.placeNo));
-            
             if (isCourseMapView) return;
             navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
           }}
         >
-          {(isCourseMapView ? coursePins : filteredPins).map((pin, index) => (
+          {(isCourseMapView ? coursePins : filteredPins).map((pin, index) => {
+            // DB typeDetailNo를 확인하거나, 명세된 placeNo 목록을 기반으로 판별
+            const TOP10_PLACE_NOS = ["1", "4", "5", "7", "8", "9", "10", "14", "178", "1043"];
+            const isTop10 = String(pin.typeDetailNo) === "18" || TOP10_PLACE_NOS.includes(String(pin.placeNo));
+            
             // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
             return (
               <MapMarker
-                key={pin.placeNo}
+                key={pin.placeNo || index}
                 position={{ lat: pin.yAxis, lng: pin.xAxis }}
                 image={{
                   src: isTop10 ? MARKER_GOLD_SVG : MARKER_SVG,
