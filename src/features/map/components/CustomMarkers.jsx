@@ -19,7 +19,7 @@ const MarkerWrapper = styled.div`
   cursor: pointer;
 
   &:hover {
-    animation: ${bounceSubtle} 0.5s infinite;
+    animation: ${bounceSubtle} 0.5s 2;
   }
 `;
 
