@@ -53,7 +53,6 @@ export function buildFixedCourse(info, pins, routeData) {
     courseNo: info.courseNo,
     courseName: info.courseName,
     description: typeof info.description === "string" ? info.description : "",
-    estimatedTime: info.estimatedTime,
     tags,
     stops: namedStops,
     routeData: {
