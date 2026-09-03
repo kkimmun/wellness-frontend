@@ -1,5 +1,6 @@
 import styled, { css, keyframes } from "styled-components";
 import { theme } from "../../../styles/theme";
+import { SearchBarBox, SearchButton, SearchInput } from "../../map/components/SearchPanel.styles";
 
 const spin = keyframes`
   to { transform: rotate(360deg); }
@@ -100,40 +101,45 @@ export const SectionHeading = styled.div`
   }
 `;
 
-export const LocationField = styled.div`
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) 34px 34px;
-  align-items: center;
-  gap: ${theme.spacing.xs};
-  padding: 7px 8px 7px 12px;
-  border: 1px solid ${theme.colors.borderLight};
-  border-radius: ${theme.radius.md};
-  background: ${theme.colors.bgLight};
+export const OriginSearchBar = styled(SearchBarBox)`
+  padding: 6px 6px 6px 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 28px;
+  box-shadow: none;
+`;
 
-  > svg {
-    color: ${theme.colors.primaryHover};
-  }
+export const OriginSearchButton = styled(SearchButton)`
+  width: 42px;
+  height: 42px;
+`;
 
-  input {
-    width: 100%;
-    min-width: 0;
-    padding: ${theme.spacing.sm} ${theme.spacing.xs};
-    color: ${theme.colors.textPrimary};
-    background: transparent;
-    border: 0;
-    outline: 0;
-    font-size: ${theme.fontSize.md};
+export const OriginSearchInput = styled(SearchInput)`
+  min-width: 0;
+  font-size: 18px;
 
-    &::placeholder {
-      color: ${theme.colors.textMuted};
-    }
+  &:focus-visible {
+    outline: 2px solid #475569;
+    outline-offset: 4px;
+    border-radius: 4px;
   }
 `;
 
-export const LocationButton = styled(IconButton)`
-  color: ${theme.colors.primaryHover};
-  background: ${theme.colors.bgWhite};
-  border: 1px solid ${theme.colors.borderLight};
+export const OriginLocationButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 4px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+
+  &:hover,
+  &:focus-visible {
+    color: #334155;
+    background: #f1f5f9;
+  }
 `;
 
 export const SearchResults = styled.div`

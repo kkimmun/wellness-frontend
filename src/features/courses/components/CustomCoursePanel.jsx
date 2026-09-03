@@ -2,11 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import {
   FiCheck,
   FiCompass,
-  FiMapPin,
-  FiNavigation,
-  FiSearch,
   FiX,
 } from "react-icons/fi";
+import { FaLocationArrow, FaSearch } from "react-icons/fa";
 import { CourseAPI } from "../../../api/course";
 import { PlaceAPI } from "../../../api/place";
 import { createUserCourse } from "../utils/userCourseStorage";
@@ -24,21 +22,26 @@ import {
   Header,
   IconButton,
   InlineSpinner,
-  LocationButton,
-  LocationField,
+  OriginLocationButton,
+  OriginSearchBar,
+  OriginSearchButton,
+  OriginSearchInput,
   PanelBody,
   PanelContainer,
   PanelTitle,
   RecommendationButtonRow,
-  SearchResultButton,
-  SearchResults,
   Section,
   SectionHeading,
   TagGrid,
   TagOption,
 } from "./CustomCoursePanel.styles";
+import {
+  InlineState,
+  SearchResultButton,
+  SearchResults,
+} from "../../map/components/RoutePanel.styles";
 
-const DESTINATION_TYPE_DETAIL_NO = 19;
+const DESTINATION_TYPE_DETAIL_NO = 22;
 
 const TAGS = [
   "사진명소",
@@ -147,7 +150,18 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
     onCourseBuilt(null);
   };
 
+  const updateOriginText = (value) => {
+    searchControllerRef.current?.abort();
+    setOriginText(value);
+    setOrigin(null);
+    setSearchResults([]);
+    setSearchState("idle");
+    setSearchMessage("");
+    clearGeneratedData();
+  };
+
   const performOriginSearch = async () => {
+    searchControllerRef.current?.abort();
     const query = originText.trim();
     if (query.length < 2) {
       setSearchState("error");
@@ -164,12 +178,13 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
 
     try {
       const results = await RouteAPI.searchPlaces(query, controller.signal);
+      if (controller.signal.aborted) return;
       const safeResults = Array.isArray(results) ? results : [];
       setSearchResults(safeResults);
       setSearchState(safeResults.length > 0 ? "success" : "empty");
       setSearchMessage(safeResults.length > 0 ? "" : "검색 결과가 없습니다.");
     } catch (error) {
-      if (error?.code === "ERR_CANCELED") return;
+      if (controller.signal.aborted || error?.code === "ERR_CANCELED") return;
       setSearchResults([]);
       setSearchState("error");
       setSearchMessage(
@@ -179,6 +194,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
   };
 
   const selectOrigin = (place) => {
+    searchControllerRef.current?.abort();
     setOrigin(place);
     setOriginText(place.placeName);
     setSearchResults([]);
@@ -188,16 +204,23 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
   };
 
   const useCurrentLocation = () => {
+    searchControllerRef.current?.abort();
+    setSearchResults([]);
     if (!navigator.geolocation) {
       setSearchState("error");
       setSearchMessage("현재 브라우저에서는 위치 정보를 사용할 수 없습니다.");
       return;
     }
 
+    const controller = new AbortController();
+    searchControllerRef.current = controller;
+    setOrigin(null);
+    clearGeneratedData();
     setSearchState("loading");
     setSearchMessage("현재 위치를 확인하고 있습니다.");
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
+        if (controller.signal.aborted) return;
         setOrigin({
           placeName: "현재 위치",
           X_AXIS: coords.longitude,
@@ -210,6 +233,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
         clearGeneratedData();
       },
       () => {
+        if (controller.signal.aborted) return;
         setSearchState("error");
         setSearchMessage(
           "현재 위치를 가져오지 못했습니다. 브라우저 위치 권한을 확인해주세요.",
@@ -408,65 +432,83 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
       </Header>
 
       <PanelBody>
-        <Section>
+        <Section aria-label="출발지 선택">
           <SectionHeading>
-            <strong>출발지</strong>
-            <span>검색 결과에서 장소를 선택해주세요.</span>
+            <strong>출발지 선택</strong>
+            <span>필수 · 1곳</span>
           </SectionHeading>
-          <LocationField>
-            <FiMapPin aria-hidden="true" />
-            <input
-              value={originText}
-              placeholder="출발지를 검색하세요"
-              onChange={(event) => {
-                setOriginText(event.target.value);
-                setOrigin(null);
-                setSearchResults([]);
-                setSearchState("idle");
-                clearGeneratedData();
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") performOriginSearch();
-              }}
-            />
-            <IconButton
-              type="button"
-              onClick={performOriginSearch}
-              aria-label="출발지 검색"
-            >
-              <FiSearch aria-hidden="true" />
-            </IconButton>
-            <LocationButton
-              type="button"
-              onClick={useCurrentLocation}
-              aria-label="현재 위치를 출발지로 사용"
-              title="현재 위치"
-            >
-              <FiNavigation aria-hidden="true" />
-            </LocationButton>
-          </LocationField>
+          <form
+            role="search"
+            aria-label="출발지 검색"
+            onSubmit={(event) => {
+              event.preventDefault();
+              performOriginSearch();
+            }}
+          >
+            <OriginSearchBar>
+              <OriginSearchInput
+                id="course-origin"
+                aria-label="출발지"
+                value={originText}
+                placeholder="검색어를 입력해주세요"
+                autoComplete="off"
+                enterKeyHint="search"
+                aria-describedby="course-origin-help"
+                onChange={(event) => updateOriginText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && event.nativeEvent.isComposing) {
+                    event.preventDefault();
+                  }
+                }}
+              />
+              <OriginSearchButton type="submit" aria-label="출발지 검색" title="검색">
+                <FaSearch size={18} aria-hidden="true" />
+              </OriginSearchButton>
+            </OriginSearchBar>
+          </form>
+          <OriginLocationButton
+            type="button"
+            onClick={useCurrentLocation}
+            aria-label="현재 위치를 출발지로 사용"
+          >
+            <FaLocationArrow aria-hidden="true" />
+            현재 위치를 출발지로
+          </OriginLocationButton>
+          <FieldMessage id="course-origin-help">
+            검색 결과에서 출발지를 선택해주세요.
+          </FieldMessage>
           {searchState !== "idle" && (
-            <SearchResults>
+            <SearchResults aria-label="출발지 검색 결과" aria-busy={searchState === "loading"}>
               {searchState === "loading" && (
-                <FieldMessage>{searchMessage}</FieldMessage>
+                <InlineState role="status">{searchMessage}</InlineState>
               )}
-              {["error", "empty"].includes(searchState) && (
-                <FieldMessage $error={searchState === "error"}>
-                  {searchMessage}
-                </FieldMessage>
+              {searchState === "error" && (
+                <InlineState $error role="alert">{searchMessage}</InlineState>
+              )}
+              {searchState === "empty" && (
+                <InlineState role="status">검색 결과가 없습니다.</InlineState>
               )}
               {searchState === "success" &&
                 searchResults.map((place) => (
                   <SearchResultButton
                     type="button"
-                    key={place.placeNo ?? `${place.X_AXIS}-${place.Y_AXIS}`}
+                    key={place.placeNo ?? [place.X_AXIS ?? place.xAxis, place.Y_AXIS ?? place.yAxis].join("-")}
                     onClick={() => selectOrigin(place)}
                   >
                     <strong>{place.placeName}</strong>
-                    <span>{place.address || "주소 정보 없음"}</span>
+                    <span>{place.address || place.addr || "주소 정보 없음"}</span>
+                    <span>출발지로 선택</span>
                   </SearchResultButton>
                 ))}
             </SearchResults>
+          )}
+          {origin && (
+            <FieldMessage $success role="status">
+              <FiCheck aria-hidden="true" /> 출발지 선택 완료: {origin.placeName}
+              {(origin.address || origin.addr) && (
+                <><br />{origin.address || origin.addr}</>
+              )}
+            </FieldMessage>
           )}
         </Section>
 

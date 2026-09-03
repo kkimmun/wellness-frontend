@@ -388,7 +388,7 @@ const MapPage = () => {
         </MapStatus>
       ) : (
         <Map
-          mapTypeId={isCustomCourseView ? "HYBRID" : "ROADMAP"}
+          mapTypeId="ROADMAP"
           center={{ lat: 37.6105, lng: 126.7056 }}
           style={{ width: "100%", height: "100%" }}
           level={5}
