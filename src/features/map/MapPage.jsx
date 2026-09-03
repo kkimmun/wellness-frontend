@@ -414,7 +414,7 @@ const MapPage = () => {
         </RouteReopenButton>
       )}
 
-      {!isFixedCourseView && !isCustomCourseView && (
+      {!isFixedCourseView && !isCustomCourseView && location.pathname !== "/gimpoTop10" && (
         <FloatingTags>
           <TagList $isOpen={isTagsOpen}>
             <TagButton onClick={() => alert("#템플스테이 검색")}>
