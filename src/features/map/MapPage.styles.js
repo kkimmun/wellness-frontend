@@ -131,20 +131,54 @@ export const TagList = styled.div`
   scrollbar-width: none;
 `;
 
-export const TagButton = styled.button`
+/* DB 장소 필터 연동: 타입과 태그의 실제 DB 값을 선택하는 공통 셀렉트다. */
+export const FilterSelect = styled.select`
+  min-width: 170px;
   background-color: white;
-  border: 1px solid #E0E0E0;
-  border-radius: 30px; /* 20 * 1.5 */
-  padding: 12px 24px; /* 8,16 * 1.5 */
-  font-size: 20px; /* 13 * 1.5 (반올림) */
+  border: 1px solid
+    ${({ $isActive }) =>
+      $isActive ? theme.colors.primaryHover : theme.colors.borderLight};
+  border-radius: ${theme.radius.pill};
+  padding: 12px 38px 12px 18px;
+  font-size: ${theme.fontSize.md};
   font-weight: 700;
-  color: #333;
+  color: ${theme.colors.textPrimary};
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   white-space: nowrap;
+  outline: none;
 
-  &:hover {
-    background-color: #F5F5F5;
+  &:hover,
+  &:focus {
+    border-color: ${theme.colors.primaryHover};
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+`;
+
+/* DB 장소 필터 연동: 선택한 타입·태그 조건을 해제하고 전체 핀으로 복원한다. */
+export const FilterResetButton = styled.button`
+  min-width: 88px;
+  padding: 12px 18px;
+  border: 1px solid ${theme.colors.borderLight};
+  border-radius: ${theme.radius.pill};
+  background: ${theme.colors.bgWhite};
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  color: ${theme.colors.textSecondary};
+  font-size: ${theme.fontSize.md};
+  font-weight: 700;
+
+  &:hover:not(:disabled) {
+    border-color: ${theme.colors.primaryHover};
+    color: ${theme.colors.textPrimary};
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
   }
 `;
 
