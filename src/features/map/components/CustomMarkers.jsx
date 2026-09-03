@@ -25,15 +25,6 @@ const MarkerWrapper = styled.div`
   }
 `;
 
-const Top10Ping = styled.div`
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 12px;
-  background-color: #fbbf24;
-  border-radius: 9999px;
-  opacity: 0.3;
-  animation: ${ping} 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-`;
-
 const Top10MarkerBody = styled.div`
   width: 50px;
   height: 50px;
@@ -42,7 +33,7 @@ const Top10MarkerBody = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
   border: 3px solid white;
   z-index: 10;
   position: relative;
@@ -52,9 +43,9 @@ const Shadow = styled.div`
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  background-color: rgba(0,0,0,0.2);
-  border-radius: 9999px;
-  filter: blur(2px);
+  background-color: rgba(0,0,0,0.15);
+  border-radius: 100%;
+  /* 과부하의 주범인 filter: blur 제거 */
   z-index: 0;
   bottom: 0px;
   width: 2rem;
@@ -68,7 +59,7 @@ const GeneralMarkerBody = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
   border: 2px solid white;
   z-index: 10;
   position: relative;
@@ -82,7 +73,6 @@ const GeneralMarkerBody = styled.div`
 
 export const Top10Marker = ({ onClick }) => (
   <MarkerWrapper onClick={onClick}>
-    <Top10Ping />
     <Top10MarkerBody>
       <FaAward color="white" size={24} />
     </Top10MarkerBody>
