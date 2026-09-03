@@ -138,7 +138,7 @@ const MapPage = () => {
 
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_MAP_KEY,
-    libraries: ["services"],
+    libraries: ["services", "clusterer"],
   });
 
   useEffect(() => {
