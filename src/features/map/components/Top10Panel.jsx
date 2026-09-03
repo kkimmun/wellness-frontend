@@ -209,7 +209,7 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
                 </div>
                 <div className="stat-item">
                   <FaEye color="#777" size={12} />
-                  <span>{place.viewCount}</span>
+                  <span>{place.reviewCount || place.viewCount}</span>
                 </div>
               </div>
 
