@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FiCheck,
   FiCompass,
-  FiMapPin,
-  FiNavigation,
-  FiSearch,
   FiX,
 } from "react-icons/fi";
+import { FaLocationArrow, FaSearch } from "react-icons/fa";
 import { CourseAPI } from "../../../api/course";
+import { PlaceAPI } from "../../../api/place";
+import { createUserCourse } from "../utils/userCourseStorage";
 import { RouteAPI } from "../../../api/route";
 import {
   PillButton,
@@ -22,27 +22,26 @@ import {
   Header,
   IconButton,
   InlineSpinner,
-  LocationButton,
-  LocationField,
+  OriginLocationButton,
+  OriginSearchBar,
+  OriginSearchButton,
+  OriginSearchInput,
   PanelBody,
   PanelContainer,
   PanelTitle,
   RecommendationButtonRow,
-  SearchResultButton,
-  SearchResults,
   Section,
   SectionHeading,
   TagGrid,
   TagOption,
 } from "./CustomCoursePanel.styles";
+import {
+  InlineState,
+  SearchResultButton,
+  SearchResults,
+} from "../../map/components/RoutePanel.styles";
 
-const DESTINATION_NAMES = [
-  "문수산성 사찰",
-  "장릉사",
-  "평화사",
-  "운양사",
-  "김포성당",
-];
+const DESTINATION_TYPE_DETAIL_NO = 19;
 
 const TAGS = [
   "사진명소",
@@ -63,8 +62,6 @@ const TAGS = [
   "쇼핑",
 ];
 
-const normalizeName = (value = "") => value.replace(/\s+/g, "").toLowerCase();
-
 const getErrorMessage = (error, fallback) =>
   error?.message || error?.data?.message || fallback;
 
@@ -79,12 +76,15 @@ const toWaypoint = (candidate) => {
   };
 };
 
-const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
+const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
   const [origin, setOrigin] = useState(null);
   const [originText, setOriginText] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchState, setSearchState] = useState("idle");
   const [searchMessage, setSearchMessage] = useState("");
+  const [destinations, setDestinations] = useState([]);
+  const [destinationState, setDestinationState] = useState("loading");
+  const [destinationMessage, setDestinationMessage] = useState("");
   const [destinationNo, setDestinationNo] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
   const [recommendations, setRecommendations] = useState(null);
@@ -107,23 +107,35 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
     [],
   );
 
-  const destinations = useMemo(
-    () =>
-      DESTINATION_NAMES.map((label) => {
-        const normalizedLabel = normalizeName(label);
-        const place = pins.find((pin) => {
-          const normalizedPlace = normalizeName(pin.placeName);
-          return (
-            normalizedPlace &&
-            (normalizedPlace === normalizedLabel ||
-              normalizedPlace.includes(normalizedLabel) ||
-              normalizedLabel.includes(normalizedPlace))
-          );
-        });
-        return { label, place };
-      }),
-    [pins],
-  );
+  useEffect(() => {
+    const controller = new AbortController();
+
+    PlaceAPI.getByTypeDetail(DESTINATION_TYPE_DETAIL_NO, controller.signal)
+      .then((places) => {
+        if (controller.signal.aborted) return;
+
+        const validPlaces = Array.isArray(places)
+          ? places.filter((place) => place?.placeNo != null)
+          : [];
+        const uniquePlaces = [
+          ...new Map(
+            validPlaces.map((place) => [String(place.placeNo), place]),
+          ).values(),
+        ];
+        setDestinations(uniquePlaces);
+        setDestinationState(uniquePlaces.length > 0 ? "success" : "empty");
+      })
+      .catch((error) => {
+        if (controller.signal.aborted || error?.code === "ERR_CANCELED") return;
+
+        setDestinationState("error");
+        setDestinationMessage(
+          getErrorMessage(error, "도착지 정보를 불러오지 못했습니다."),
+        );
+      });
+
+    return () => controller.abort();
+  }, []);
 
   const clearGeneratedData = () => {
     recommendationControllerRef.current?.abort();
@@ -138,7 +150,18 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
     onCourseBuilt(null);
   };
 
+  const updateOriginText = (value) => {
+    searchControllerRef.current?.abort();
+    setOriginText(value);
+    setOrigin(null);
+    setSearchResults([]);
+    setSearchState("idle");
+    setSearchMessage("");
+    clearGeneratedData();
+  };
+
   const performOriginSearch = async () => {
+    searchControllerRef.current?.abort();
     const query = originText.trim();
     if (query.length < 2) {
       setSearchState("error");
@@ -155,14 +178,13 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
 
     try {
       const results = await RouteAPI.searchPlaces(query, controller.signal);
+      if (controller.signal.aborted) return;
       const safeResults = Array.isArray(results) ? results : [];
       setSearchResults(safeResults);
       setSearchState(safeResults.length > 0 ? "success" : "empty");
-      setSearchMessage(
-        safeResults.length > 0 ? "" : "검색 결과가 없습니다.",
-      );
+      setSearchMessage(safeResults.length > 0 ? "" : "검색 결과가 없습니다.");
     } catch (error) {
-      if (error?.code === "ERR_CANCELED") return;
+      if (controller.signal.aborted || error?.code === "ERR_CANCELED") return;
       setSearchResults([]);
       setSearchState("error");
       setSearchMessage(
@@ -172,6 +194,7 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
   };
 
   const selectOrigin = (place) => {
+    searchControllerRef.current?.abort();
     setOrigin(place);
     setOriginText(place.placeName);
     setSearchResults([]);
@@ -181,16 +204,23 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
   };
 
   const useCurrentLocation = () => {
+    searchControllerRef.current?.abort();
+    setSearchResults([]);
     if (!navigator.geolocation) {
       setSearchState("error");
       setSearchMessage("현재 브라우저에서는 위치 정보를 사용할 수 없습니다.");
       return;
     }
 
+    const controller = new AbortController();
+    searchControllerRef.current = controller;
+    setOrigin(null);
+    clearGeneratedData();
     setSearchState("loading");
     setSearchMessage("현재 위치를 확인하고 있습니다.");
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
+        if (controller.signal.aborted) return;
         setOrigin({
           placeName: "현재 위치",
           X_AXIS: coords.longitude,
@@ -203,6 +233,7 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
         clearGeneratedData();
       },
       () => {
+        if (controller.signal.aborted) return;
         setSearchState("error");
         setSearchMessage(
           "현재 위치를 가져오지 못했습니다. 브라우저 위치 권한을 확인해주세요.",
@@ -324,6 +355,7 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
   };
 
   const createCourse = async () => {
+    if (creationState === "loading") return;
     const validationMessage = validateConditions();
     if (validationMessage) {
       setCreationState("error");
@@ -350,6 +382,7 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
         },
         controller.signal,
       );
+      if (controller.signal.aborted) return;
       const routeData = routeResponse?.data;
       onCourseBuilt(routeData);
 
@@ -357,14 +390,26 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
         {
           ...coordinates,
           endPlaceNo: Number(destinationNo),
-          waypoints: selectedWaypoints,
+          waypoints: Array.isArray(routeData?.waypoints)
+            ? routeData.waypoints.map((place) => place.placeNo)
+            : selectedWaypoints,
           tags: selectedTags,
         },
         controller.signal,
       );
+      if (controller.signal.aborted) return;
+      const course = createUserCourse({
+        info: courseResponse?.data,
+        routeData,
+        origin,
+        tags: selectedTags,
+      });
       setCourseResult(courseResponse?.data || null);
       setCreationState("success");
-      setCreationMessage("순례길 코스를 만들었습니다. 지도에서 경로를 확인해보세요.");
+      setCreationMessage(
+        "순례길 코스를 만들었습니다. 지도에서 경로를 확인해보세요.",
+      );
+      onCreated?.(course);
     } catch (error) {
       if (error?.code === "ERR_CANCELED") return;
       setCreationState("error");
@@ -387,65 +432,83 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
       </Header>
 
       <PanelBody>
-        <Section>
+        <Section aria-label="출발지 선택">
           <SectionHeading>
-            <strong>출발지</strong>
-            <span>검색 결과에서 장소를 선택해주세요.</span>
+            <strong>출발지 선택</strong>
+            <span>필수 · 1곳</span>
           </SectionHeading>
-          <LocationField>
-            <FiMapPin aria-hidden="true" />
-            <input
-              value={originText}
-              placeholder="출발지를 검색하세요"
-              onChange={(event) => {
-                setOriginText(event.target.value);
-                setOrigin(null);
-                setSearchResults([]);
-                setSearchState("idle");
-                clearGeneratedData();
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") performOriginSearch();
-              }}
-            />
-            <IconButton
-              type="button"
-              onClick={performOriginSearch}
-              aria-label="출발지 검색"
-            >
-              <FiSearch aria-hidden="true" />
-            </IconButton>
-            <LocationButton
-              type="button"
-              onClick={useCurrentLocation}
-              aria-label="현재 위치를 출발지로 사용"
-              title="현재 위치"
-            >
-              <FiNavigation aria-hidden="true" />
-            </LocationButton>
-          </LocationField>
+          <form
+            role="search"
+            aria-label="출발지 검색"
+            onSubmit={(event) => {
+              event.preventDefault();
+              performOriginSearch();
+            }}
+          >
+            <OriginSearchBar>
+              <OriginSearchInput
+                id="course-origin"
+                aria-label="출발지"
+                value={originText}
+                placeholder="검색어를 입력해주세요"
+                autoComplete="off"
+                enterKeyHint="search"
+                aria-describedby="course-origin-help"
+                onChange={(event) => updateOriginText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && event.nativeEvent.isComposing) {
+                    event.preventDefault();
+                  }
+                }}
+              />
+              <OriginSearchButton type="submit" aria-label="출발지 검색" title="검색">
+                <FaSearch size={18} aria-hidden="true" />
+              </OriginSearchButton>
+            </OriginSearchBar>
+          </form>
+          <OriginLocationButton
+            type="button"
+            onClick={useCurrentLocation}
+            aria-label="현재 위치를 출발지로 사용"
+          >
+            <FaLocationArrow aria-hidden="true" />
+            현재 위치를 출발지로
+          </OriginLocationButton>
+          <FieldMessage id="course-origin-help">
+            검색 결과에서 출발지를 선택해주세요.
+          </FieldMessage>
           {searchState !== "idle" && (
-            <SearchResults>
+            <SearchResults aria-label="출발지 검색 결과" aria-busy={searchState === "loading"}>
               {searchState === "loading" && (
-                <FieldMessage>{searchMessage}</FieldMessage>
+                <InlineState role="status">{searchMessage}</InlineState>
               )}
-              {["error", "empty"].includes(searchState) && (
-                <FieldMessage $error={searchState === "error"}>
-                  {searchMessage}
-                </FieldMessage>
+              {searchState === "error" && (
+                <InlineState $error role="alert">{searchMessage}</InlineState>
+              )}
+              {searchState === "empty" && (
+                <InlineState role="status">검색 결과가 없습니다.</InlineState>
               )}
               {searchState === "success" &&
                 searchResults.map((place) => (
                   <SearchResultButton
                     type="button"
-                    key={place.placeNo ?? `${place.X_AXIS}-${place.Y_AXIS}`}
+                    key={place.placeNo ?? [place.X_AXIS ?? place.xAxis, place.Y_AXIS ?? place.yAxis].join("-")}
                     onClick={() => selectOrigin(place)}
                   >
                     <strong>{place.placeName}</strong>
-                    <span>{place.address || "주소 정보 없음"}</span>
+                    <span>{place.address || place.addr || "주소 정보 없음"}</span>
+                    <span>출발지로 선택</span>
                   </SearchResultButton>
                 ))}
             </SearchResults>
+          )}
+          {origin && (
+            <FieldMessage $success role="status">
+              <FiCheck aria-hidden="true" /> 출발지 선택 완료: {origin.placeName}
+              {(origin.address || origin.addr) && (
+                <><br />{origin.address || origin.addr}</>
+              )}
+            </FieldMessage>
           )}
         </Section>
 
@@ -454,32 +517,40 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
             <strong>도착지 선택</strong>
             <span>필수 · 1곳</span>
           </SectionHeading>
-          {pinsState === "loading" && (
-            <FieldMessage>도착지 정보를 불러오는 중입니다.</FieldMessage>
+          {destinationState === "loading" && (
+            <FieldMessage role="status">
+              도착지 정보를 불러오는 중입니다.
+            </FieldMessage>
           )}
-          {pinsState === "error" && (
-            <FieldMessage $error>도착지 정보를 불러오지 못했습니다.</FieldMessage>
+          {destinationState === "error" && (
+            <FieldMessage $error role="alert">
+              {destinationMessage}
+            </FieldMessage>
           )}
-          <CheckList>
-            {destinations.map(({ label, place }) => (
-              <ChoiceRow key={label} $disabled={!place}>
-                <input
-                  type="radio"
-                  name="pilgrim-destination"
-                  value={place?.placeNo || ""}
-                  checked={Boolean(
-                    place && String(place.placeNo) === destinationNo,
-                  )}
-                  disabled={!place}
-                  onChange={() => changeDestination(place.placeNo)}
-                />
-                <span className="check" aria-hidden="true">
-                  <FiCheck />
-                </span>
-                <span>{place?.placeName || label}</span>
-              </ChoiceRow>
-            ))}
-          </CheckList>
+          {destinationState === "empty" && (
+            <FieldMessage role="status">
+              선택할 수 있는 도착지가 없습니다.
+            </FieldMessage>
+          )}
+          {destinationState === "success" && (
+            <CheckList>
+              {destinations.map((place) => (
+                <ChoiceRow key={place.placeNo}>
+                  <input
+                    type="radio"
+                    name="pilgrim-destination"
+                    value={place.placeNo}
+                    checked={String(place.placeNo) === destinationNo}
+                    onChange={() => changeDestination(place.placeNo)}
+                  />
+                  <span className="check" aria-hidden="true">
+                    <FiCheck />
+                  </span>
+                  <span>{place.placeName}</span>
+                </ChoiceRow>
+              ))}
+            </CheckList>
+          )}
         </Section>
 
         <Section>
@@ -508,7 +579,9 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
           <PillButton
             type="button"
             onClick={requestRecommendations}
-            disabled={recommendationState === "loading"}
+            disabled={
+              recommendationState === "loading" || creationState === "loading"
+            }
           >
             {recommendationState === "loading" ? (
               <>
@@ -538,6 +611,7 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
                   <ChoiceRow key={place.placeNo}>
                     <input
                       type="checkbox"
+                      disabled={creationState === "loading"}
                       checked={selectedWaypoints.includes(place.placeNo)}
                       onChange={() => toggleWaypoint(place.placeNo)}
                     />
@@ -584,7 +658,7 @@ const CustomCoursePanel = ({ pins, pinsState, onClose, onCourseBuilt }) => {
           >
             {creationState === "loading" ? (
               <>
-                <InlineSpinner /> 코스를 만들고 있습니다
+                <InlineSpinner /> 로딩중 ...
               </>
             ) : (
               "순례길 코스 제작"
