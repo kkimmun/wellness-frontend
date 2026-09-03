@@ -17,6 +17,7 @@ import UserCourseFlow from "../courses/components/UserCourseFlow";
 import { getCourseRoute, isCoursePoint } from "../courses/utils/userCourseStorage";
 import RoutePanel from "./components/RoutePanel";
 import Top10Panel from "./components/Top10Panel";
+import { Top10Marker, GeneralMarker } from "./components/CustomMarkers";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
@@ -476,37 +477,29 @@ const MapPage = () => {
             
             // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
             return (
-              <MapMarker
+              <CustomOverlayMap
                 key={pin.placeNo || index}
                 position={{ lat: pin.yAxis, lng: pin.xAxis }}
-                image={{
-                  src: isTop10 ? MARKER_GOLD_SVG : MARKER_SVG,
-                  size: isTop10 ? { width: 28, height: 28 } : { width: 24, height: 24 },
-                }}
+                yAnchor={1} // 바닥 중앙이 좌표에 맞도록
                 zIndex={isTop10 ? 10 : 1}
-                onClick={() => handleMarkerClick(pin)}
-              />
+              >
+                {isTop10 ? (
+                  <Top10Marker onClick={() => handleMarkerClick(pin)} />
+                ) : (
+                  <GeneralMarker onClick={() => handleMarkerClick(pin)} />
+                )}
+              </CustomOverlayMap>
             );
           })}
 
           {top10Overlay && top10Overlay.isExternal && !selectedPlace && (
-            <MapMarker
+            <CustomOverlayMap
               position={{ lat: top10Overlay.yAxis, lng: top10Overlay.xAxis }}
-              image={{
-                src: MARKER_GOLD_SVG,
-                size: { width: 28, height: 28 },
-              }}
+              yAnchor={1}
               zIndex={15}
-              clickable={false}
-              key={`${pin.placeNo ?? "origin"}-${index}`}
-              position={{ lat: Number(pin.Y_AXIS ?? pin.yAxis), lng: Number(pin.X_AXIS ?? pin.xAxis) }}
-              title={pin.placeName}
-              image={{
-                src: isCourseMapView ? MARKER_SVG.replace("FF7043", "34C759") : MARKER_SVG,
-                size: { width: 24, height: 24 },
-              }}
-              onClick={() => { if (!isCourseMapView) handleMarkerClick(pin); }}
-            />
+            >
+              <Top10Marker onClick={() => {}} />
+            </CustomOverlayMap>
           )}
 
           {/* 대중교통 경로 색상: 대중교통은 이동 단계별 색상과 도보 점선으로 표시한다. */}
