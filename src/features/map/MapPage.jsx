@@ -5,6 +5,7 @@ import {
   MapMarker,
   Polyline,
   CustomOverlayMap,
+  MarkerClusterer,
   useKakaoLoader,
 } from "react-kakao-maps-sdk";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -102,6 +103,7 @@ const MapPage = () => {
   // 길찾기 표시 안정화: 경로가 바뀔 때 Kakao Polyline을 새 인스턴스로 교체하기 위한 번호다.
   const [routeRenderRevision, setRouteRenderRevision] = useState(0);
   const mapRef = useRef(null);
+  const [mapLevel, setMapLevel] = useState(5);
 
   const [top10OverlayState, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
   const [top10OverlayDetail, setTop10OverlayDetail] = useState(null);
@@ -464,33 +466,56 @@ const MapPage = () => {
             map.setMaxLevel(14);
             map.setMinLevel(2); // 과도한 확대 방지
           }}
+          onZoomChanged={(map) => setMapLevel(map.getLevel())}
           onClick={() => {
             setTop10Overlay(null);
             if (isCourseMapView) return;
             navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
           }}
         >
-          {(isCourseMapView ? coursePins : filteredPins).map((pin, index) => {
-            // DB typeDetailNo를 확인하거나, 명세된 placeNo 목록을 기반으로 판별
-            const TOP10_PLACE_NOS = ["1", "4", "5", "7", "8", "9", "10", "14", "178", "1043"];
-            const isTop10 = String(pin.typeDetailNo) === "18" || TOP10_PLACE_NOS.includes(String(pin.placeNo));
-            
-            // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
-            return (
-              <CustomOverlayMap
-                key={pin.placeNo || index}
-                position={{ lat: pin.yAxis, lng: pin.xAxis }}
-                yAnchor={1} // 바닥 중앙이 좌표에 맞도록
-                zIndex={isTop10 ? 10 : 1}
-              >
-                {isTop10 ? (
-                  <Top10Marker onClick={() => handleMarkerClick(pin)} />
-                ) : (
-                  <GeneralMarker onClick={() => handleMarkerClick(pin)} />
-                )}
-              </CustomOverlayMap>
-            );
-          })}
+          {mapLevel >= 7 ? (
+            <MarkerClusterer
+              averageCenter={true}
+              minLevel={7} // 줌아웃 시 마커가 클러스터링되는 레벨
+            >
+              {(isCourseMapView ? coursePins : filteredPins).map((pin, index) => {
+                const TOP10_PLACE_NOS = ["1", "4", "5", "7", "8", "9", "10", "14", "178", "1043"];
+                const isTop10 = String(pin.typeDetailNo) === "18" || TOP10_PLACE_NOS.includes(String(pin.placeNo));
+                
+                return (
+                  <MapMarker
+                    key={`cluster-${pin.placeNo || index}`}
+                    position={{ lat: pin.yAxis, lng: pin.xAxis }}
+                    image={{
+                      src: isTop10 ? MARKER_GOLD_SVG : MARKER_SVG,
+                      size: isTop10 ? { width: 28, height: 28 } : { width: 24, height: 24 },
+                    }}
+                    onClick={() => handleMarkerClick(pin)}
+                  />
+                );
+              })}
+            </MarkerClusterer>
+          ) : (
+            (isCourseMapView ? coursePins : filteredPins).map((pin, index) => {
+              const TOP10_PLACE_NOS = ["1", "4", "5", "7", "8", "9", "10", "14", "178", "1043"];
+              const isTop10 = String(pin.typeDetailNo) === "18" || TOP10_PLACE_NOS.includes(String(pin.placeNo));
+              
+              return (
+                <CustomOverlayMap
+                  key={`custom-${pin.placeNo || index}`}
+                  position={{ lat: pin.yAxis, lng: pin.xAxis }}
+                  yAnchor={1} // 바닥 중앙이 좌표에 맞도록
+                  zIndex={isTop10 ? 10 : 1}
+                >
+                  {isTop10 ? (
+                    <Top10Marker onClick={() => handleMarkerClick(pin)} />
+                  ) : (
+                    <GeneralMarker onClick={() => handleMarkerClick(pin)} />
+                  )}
+                </CustomOverlayMap>
+              );
+            })
+          )}
 
           {top10Overlay && top10Overlay.isExternal && !selectedPlace && (
             <CustomOverlayMap
