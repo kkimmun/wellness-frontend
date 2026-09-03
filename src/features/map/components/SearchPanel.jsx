@@ -66,23 +66,58 @@ const SearchPanel = ({
       // 검색 시 문자열 처리 (공백 제거 및 대소문자 무시)
       const searchStr = searchKeyword.replace(/\s+/g, "").toLowerCase();
 
-      const filtered = pins.filter((p) => {
-        const placeName = (p.placeName || "")
-          .replace(/\s+/g, "")
-          .toLowerCase();
+      // 1. 로컬(DB) 데이터 검색
+      const filteredLocal = pins.filter((p) => {
+        const placeName = (p.placeName || "").replace(/\s+/g, "").toLowerCase();
         const addr = (p.addr || "").replace(/\s+/g, "").toLowerCase();
         return placeName.includes(searchStr) || addr.includes(searchStr);
       });
 
-      const endIdx = currentPage * ITEMS_PER_PAGE;
-      const paginated = filtered.slice(0, endIdx);
+      // 2. 카카오 장소 검색 API 호출
+      if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+        const ps = new window.kakao.maps.services.Places();
+        ps.keywordSearch(searchKeyword, (data, status, pagination) => {
+          let externalPlaces = [];
+          if (status === window.kakao.maps.services.Status.OK) {
+            externalPlaces = data.map((p) => ({
+              placeNo: `kakao_${p.id}`,
+              placeName: p.place_name,
+              addr: p.road_address_name || p.address_name,
+              addrDetail: p.road_address_name ? p.address_name : "",
+              phone: p.phone,
+              xAxis: parseFloat(p.y), // 위도
+              yAxis: parseFloat(p.x), // 경도
+              reviewCount: 0,
+              avgRating: 0.0,
+              isExternal: true, // 외부 장소 식별 플래그
+            }));
+          }
 
-      setDisplayedResults(paginated);
-      setHasMore(endIdx < filtered.length);
-      setIsSearching(false);
+          setDisplayedResults((prev) => {
+            const newResults = currentPage === 1
+              ? [...filteredLocal, ...externalPlaces]
+              : [...prev, ...externalPlaces];
 
-      if (currentPage === 1 && onSearchResults) {
-        onSearchResults(filtered);
+            if (onSearchResults) {
+              onSearchResults(newResults);
+            }
+            return newResults;
+          });
+
+          setHasMore(pagination && pagination.hasNextPage);
+          setIsSearching(false);
+        }, { page: currentPage, size: 15 });
+      } else {
+        // 카카오 API 로드 실패 시 로컬만 처리
+        setDisplayedResults((prev) => {
+          const newResults = currentPage === 1 ? filteredLocal : [...prev, ...filteredLocal];
+          if (onSearchResults) {
+            onSearchResults(newResults);
+          }
+          return newResults;
+        });
+        setHasMore(false);
+        setIsSearching(false);
       }
     },
     [pins, onSearchResults],
@@ -172,8 +207,8 @@ const SearchPanel = ({
                 <CardHeader>
                   <TitleGroup>
                     <PlaceTitle>{place.placeName}</PlaceTitle>
-                    {/* DB 지도 핀 연동: API에 없는 리뷰 값을 목업 숫자로 채우지 않는다. */}
-                    {(Number.isFinite(place.reviewCount) ||
+                    {!place.isExternal &&
+                    (Number.isFinite(place.reviewCount) ||
                       Number.isFinite(place.avgRating)) && (
                       <ReviewInfo>
                         {Number.isFinite(place.reviewCount) && (
@@ -192,16 +227,18 @@ const SearchPanel = ({
                       </ReviewInfo>
                     )}
                   </TitleGroup>
-                  <BookmarkBtn onClick={(e) => toggleBookmark(e, place.placeNo)}>
-                    {isBookmarked ? (
-                      <BsBookmarkFill
-                        size={21}
-                        color="#C9A227"
-                      /> /* 테마의 gimpoGold 색상 활용 */
-                    ) : (
-                      <BsBookmark size={21} />
-                    )}
-                  </BookmarkBtn>
+                  {!place.isExternal && (
+                    <BookmarkBtn onClick={(e) => toggleBookmark(e, place.placeNo)}>
+                      {isBookmarked ? (
+                        <BsBookmarkFill
+                          size={21}
+                          color="#C9A227"
+                        />
+                      ) : (
+                        <BsBookmark size={21} />
+                      )}
+                    </BookmarkBtn>
+                  )}
                 </CardHeader>
 
                 <AddressRow>

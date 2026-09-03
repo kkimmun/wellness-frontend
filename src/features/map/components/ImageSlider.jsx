@@ -8,6 +8,9 @@ const ImageSlider = ({ placeImages }) => {
   const images = placeImages?.length > 0 ? placeImages : [null];
 
   const renderBoxStyle = (item) => {
+    if (item?.imageUrl) {
+      return { backgroundImage: `url(${item.imageUrl})` };
+    }
     if (!item) {
       return {
         backgroundColor: "#F8F9FA",
@@ -31,7 +34,7 @@ const ImageSlider = ({ placeImages }) => {
     if (!item) {
       return <span style={{ color: "#999" }}>등록된 이미지가 없습니다.</span>;
     }
-    if (typeof item !== "string") {
+    if (typeof item !== "string" && !item.imageUrl) {
       return (
         <span style={{ color: "#fff", fontSize: "24px", fontWeight: "bold" }}>
           {item.text}

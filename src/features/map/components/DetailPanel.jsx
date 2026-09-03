@@ -83,7 +83,7 @@ const DetailPanel = ({
       )}
 
       {/* DB 지도 핀 연동: 장소가 바뀌면 이미지 선택 상태도 첫 항목으로 초기화한다. */}
-      <ImageSlider key={place?.placeNo} placeImages={place?.images} />
+      <ImageSlider key={place?.placeNo} placeImages={place?.placeImages || place?.images} />
 
       <TabMenu>
         <div

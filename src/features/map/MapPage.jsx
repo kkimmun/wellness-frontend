@@ -13,6 +13,7 @@ import SearchPanel from "./components/SearchPanel";
 import DetailPanel from "./components/DetailPanel";
 import FixedCoursePanel from "../courses/components/FixedCoursePanel";
 import RoutePanel from "./components/RoutePanel";
+import Top10Panel from "./components/Top10Panel";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
@@ -132,7 +133,7 @@ const MapPage = () => {
         setPins([]);
         setFilteredPins([]);
         setAlertMessage(
-          "DB 장소 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
+          "장소 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
         );
         setIsAlertModalOpen(true);
       }
@@ -265,7 +266,7 @@ const MapPage = () => {
         onPlaceSelect={handlePlaceSelect}
         bookmarks={bookmarks}
         toggleBookmark={toggleBookmark}
-        isVisible={!isDetailOpen && !isRouteOpen}
+        isVisible={!isDetailOpen && !isRouteOpen && location.pathname !== "/gimpoTop10"}
         onSearchResults={setFilteredPins}
         onSetOrigin={openRouteWithOrigin}
         onSetDestination={openRouteWithDestination}
@@ -500,6 +501,11 @@ const MapPage = () => {
           selectedPlace && toggleBookmark(e, selectedPlace.placeNo)
         }
         onFindRoute={openRouteWithDestination}
+      />
+
+      <Top10Panel 
+        isOpen={location.pathname === "/gimpoTop10"}
+        onClose={() => navigate("/map")}
       />
 
       <Modal
