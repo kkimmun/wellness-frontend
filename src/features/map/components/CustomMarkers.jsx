@@ -17,8 +17,6 @@ const MarkerWrapper = styled.div`
   display: flex;
   justify-content: center;
   cursor: pointer;
-  /* yAnchor=1을 기준으로 마커의 아래쪽 그림자가 기준점이 되도록 하단 여백 부여 */
-  padding-bottom: 12px;
 
   &:hover {
     animation: ${bounceSubtle} 0.5s infinite;
@@ -37,19 +35,6 @@ const Top10MarkerBody = styled.div`
   border: 3px solid white;
   z-index: 10;
   position: relative;
-`;
-
-const Shadow = styled.div`
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0,0,0,0.15);
-  border-radius: 100%;
-  /* 과부하의 주범인 filter: blur 제거 */
-  z-index: 0;
-  bottom: 0px;
-  width: 2rem;
-  height: 0.5rem;
 `;
 
 const GeneralMarkerBody = styled.div`
@@ -76,7 +61,6 @@ export const Top10Marker = ({ onClick }) => (
     <Top10MarkerBody>
       <FaAward color="white" size={24} />
     </Top10MarkerBody>
-    <Shadow />
   </MarkerWrapper>
 );
 
@@ -87,6 +71,5 @@ export const GeneralMarker = ({ onClick }) => (
         <FaCamera color="white" size={20} />
       </div>
     </GeneralMarkerBody>
-    <Shadow style={{ bottom: "4px", width: "1.5rem" }} />
   </MarkerWrapper>
 );
