@@ -5,4 +5,13 @@ export const CourseAPI = {
     api.get("/courses", {
       params: { page },
     }),
+
+  getWaypointRecommendations: async (payload, signal) =>
+    api.post("/courses/waypoints", payload, { signal }),
+
+  getRecommendedRoute: async (payload, signal) =>
+    api.post("/courses/recommendations", payload, { signal }),
+
+  getCustomCourse: async (payload, signal) =>
+    api.post("/courses/descriptions", payload, { signal }),
 };

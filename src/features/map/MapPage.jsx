@@ -12,6 +12,7 @@ import { PlaceAPI } from "../../api/place";
 import SearchPanel from "./components/SearchPanel";
 import DetailPanel from "./components/DetailPanel";
 import FixedCoursePanel from "../courses/components/FixedCoursePanel";
+import CustomCoursePanel from "../courses/components/CustomCoursePanel";
 import RoutePanel from "./components/RoutePanel";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
@@ -76,6 +77,7 @@ const getRouteMapPoints = (route) => {
 
 const MapPage = () => {
   const [pins, setPins] = useState([]);
+  const [pinsState, setPinsState] = useState("loading");
   const [filteredPins, setFilteredPins] = useState([]); // 지도에 표시할 핀 목록
   const [isTagsOpen, setIsTagsOpen] = useState(true);
   const [bookmarks, setBookmarks] = useState({}); // { placeNo: boolean } 북마크 상태 공유용
@@ -126,11 +128,13 @@ const MapPage = () => {
         );
         setPins(validPins);
         setFilteredPins(validPins);
+        setPinsState("success");
       } catch (err) {
         console.error("핀 데이터를 불러오는 데 실패했습니다.", err);
         // DB 지도 핀 연동: 조회 실패를 가짜 장소로 숨기지 않고 사용자에게 알린다.
         setPins([]);
         setFilteredPins([]);
+        setPinsState("error");
         setAlertMessage(
           "DB 장소 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
         );
@@ -144,6 +148,7 @@ const MapPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isFixedCourseView = location.pathname.startsWith("/pilgrim/fixed");
+  const isCustomCourseView = location.pathname === "/pilgrim/create";
 
   // 기존 코드 개선: URL을 단일 기준으로 사용해 상세 장소 상태의 중복 저장을 제거한다.
   const selectedPlace = useMemo(
@@ -211,6 +216,11 @@ const MapPage = () => {
     setRouteRenderRevision((current) => current + 1);
   };
 
+  const handleCustomCourseBuilt = (routeResponse) => {
+    const firstRoute = routeResponse?.routes?.[0] || null;
+    handleRouteSelect(firstRoute, routeResponse);
+  };
+
   // 길찾기 결과 유지: 패널을 닫아도 선택 경로와 패널 내부 검색 결과는 보존한다.
   const closeRoutePanel = () => {
     setIsRouteOpen(false);
@@ -265,7 +275,7 @@ const MapPage = () => {
         onPlaceSelect={handlePlaceSelect}
         bookmarks={bookmarks}
         toggleBookmark={toggleBookmark}
-        isVisible={!isDetailOpen && !isRouteOpen}
+        isVisible={!isDetailOpen && !isRouteOpen && !isCustomCourseView}
         onSearchResults={setFilteredPins}
         onSetOrigin={openRouteWithOrigin}
         onSetDestination={openRouteWithDestination}
@@ -278,6 +288,15 @@ const MapPage = () => {
           onCourseSelect={(course) =>
             navigate(`/pilgrim/fixed/${course.courseNo}`)
           }
+        />
+      )}
+
+      {isCustomCourseView && (
+        <CustomCoursePanel
+          pins={pins}
+          pinsState={pinsState}
+          onClose={() => navigate("/map")}
+          onCourseBuilt={handleCustomCourseBuilt}
         />
       )}
 
@@ -303,7 +322,7 @@ const MapPage = () => {
         </RouteReopenButton>
       )}
 
-      {!isFixedCourseView && (
+      {!isFixedCourseView && !isCustomCourseView && (
         <FloatingTags>
           <TagList $isOpen={isTagsOpen}>
             <TagButton onClick={() => alert("#템플스테이 검색")}>
