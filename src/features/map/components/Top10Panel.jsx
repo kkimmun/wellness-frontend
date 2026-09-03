@@ -125,12 +125,13 @@ const DUMMY_TOP10 = [
   }
 ];
 
-const Top10Panel = ({ isOpen, onClose }) => {
+const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
   const navigate = useNavigate();
 
-  const handlePlaceClick = (placeNo) => {
-    // Top10 목록 클릭 시 해당 장소의 상세보기로 이동
-    navigate(`/place/${placeNo}`);
+  const handlePlaceClick = (place) => {
+    if (onPlaceClick) {
+      onPlaceClick(place);
+    }
   };
 
   return (
@@ -145,7 +146,7 @@ const Top10Panel = ({ isOpen, onClose }) => {
 
       <ListContainer>
         {DUMMY_TOP10.map((place, index) => (
-          <Top10Card key={place.placeNo} onClick={() => handlePlaceClick(place.placeNo)}>
+          <Top10Card key={place.placeNo} onClick={() => handlePlaceClick(place)}>
             <ImageWrapper>
               <img src={place.imgUrl} alt={place.placeName} />
               <div className="rank-badge">{index + 1}</div>

@@ -6,6 +6,12 @@ export const PlaceAPI = {
     return response.data;
   },
 
+  getPlaceDetail: async (placeNo) => {
+    const response = await api.get(`/place/${placeNo}`);
+    return response.data;
+  },
+
+
   createReview: async (placeNo, formData) => {
     const response = await api.post(`/places/${placeNo}/reviews`, formData, {
       headers: {

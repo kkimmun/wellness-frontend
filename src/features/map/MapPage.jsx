@@ -93,6 +93,7 @@ const MapPage = () => {
   const [routeRenderRevision, setRouteRenderRevision] = useState(0);
   const mapRef = useRef(null);
 
+  const [top10Overlay, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
   const { status } = useAuth();
 
   const toggleBookmark = (e, placeNo) => {
@@ -171,6 +172,31 @@ const MapPage = () => {
       );
     }
   }, [placeNo, pins.length, selectedPlace, navigate]);
+
+  const handleTop10PlaceSelect = (place) => {
+    // 1. 이미 지도에 있는 핀인지 이름으로 확인
+    const existingPin = pins.find(p => p.placeName === place.placeName);
+    if (existingPin) {
+      setTop10Overlay({ ...existingPin, isExternal: false });
+      if (mapRef.current) {
+        mapRef.current.panTo(new window.kakao.maps.LatLng(existingPin.yAxis, existingPin.xAxis));
+      }
+    } else {
+      // 2. 핀에 없으면 카카오 주소 검색으로 좌표 가져오기
+      const geocoder = new window.kakao.maps.services.Geocoder();
+      geocoder.addressSearch(place.addr, (result, status) => {
+        if (status === window.kakao.maps.services.Status.OK) {
+          const lat = parseFloat(result[0].y);
+          const lng = parseFloat(result[0].x);
+          const geocodedPlace = { ...place, yAxis: lat, xAxis: lng, isExternal: true };
+          setTop10Overlay(geocodedPlace);
+          if (mapRef.current) {
+            mapRef.current.panTo(new window.kakao.maps.LatLng(lat, lng));
+          }
+        }
+      });
+    }
+  };
 
   const handlePlaceSelect = (place) => {
     navigate(`/place/${place.placeNo}`);
@@ -353,6 +379,7 @@ const MapPage = () => {
             map.setMinLevel(2); // 과도한 확대 방지
           }}
           onClick={() => {
+            setTop10Overlay(null);
             navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
           }}
         >
@@ -474,6 +501,75 @@ const MapPage = () => {
               </OverlayCard>
             </CustomOverlayMap>
           )}
+
+          {top10Overlay && !selectedPlace && (
+            <CustomOverlayMap
+              position={{ lat: top10Overlay.yAxis, lng: top10Overlay.xAxis }}
+              yAnchor={1}
+              clickable={true}
+            >
+              <OverlayCard>
+                <div className="header-row">
+                  <OverlayTitle>{top10Overlay.placeName}</OverlayTitle>
+                  <div className="action-buttons">
+                    <button
+                      className="btn-start"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openRouteWithOrigin(top10Overlay);
+                      }}
+                    >
+                      출발
+                    </button>
+                    <button
+                      className="btn-end"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openRouteWithDestination(top10Overlay);
+                      }}
+                    >
+                      도착
+                    </button>
+                  </div>
+                </div>
+
+                <div className="sub-row">
+                  {!top10Overlay.isExternal && Number.isFinite(top10Overlay.reviewCount) && (
+                    <span className="review-count">리뷰 {top10Overlay.reviewCount}</span>
+                  )}
+                  {!top10Overlay.isExternal && Number.isFinite(top10Overlay.avgRating) && (
+                    <span className="rating">
+                      <span className="star">⭐</span> {top10Overlay.avgRating.toFixed(1)}
+                    </span>
+                  )}
+                  <span
+                    className="detail-link"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // 더미 데이터의 placeNo가 카카오나 DB와 어떻게 연결될지에 따라 다름
+                      // 일단 DB 핀인 경우에만 정상 동작하도록 placeNo 사용
+                      navigate(`/place/${top10Overlay.placeNo}`);
+                    }}
+                  >
+                    상세보기
+                  </span>
+                </div>
+
+                <div className="addr-row">
+                  <div className="addr-item">
+                    <span className="addr-label">도로명</span>
+                    <span className="addr-value">{top10Overlay.addr}</span>
+                  </div>
+                  {top10Overlay.addrDetail && (
+                    <div className="addr-item">
+                      <span className="addr-label">지번</span>
+                      <span className="addr-value">{top10Overlay.addrDetail}</span>
+                    </div>
+                  )}
+                </div>
+              </OverlayCard>
+            </CustomOverlayMap>
+          )}
         </Map>
       )}
 
@@ -505,7 +601,11 @@ const MapPage = () => {
 
       <Top10Panel 
         isOpen={location.pathname === "/gimpoTop10"}
-        onClose={() => navigate("/map")}
+        onClose={() => {
+          setTop10Overlay(null);
+          navigate("/map");
+        }}
+        onPlaceClick={handleTop10PlaceSelect}
       />
 
       <Modal
