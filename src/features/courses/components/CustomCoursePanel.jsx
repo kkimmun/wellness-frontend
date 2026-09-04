@@ -37,7 +37,8 @@ import {
   SearchResults,
 } from "../../map/components/RoutePanel.styles";
 
-const DESTINATION_TYPE_DETAIL_NOS = [8, 9];
+const DESTINATION_TYPE_DETAIL_NOS = [9, 10];
+const MAX_WAYPOINT_RECOMMENDATIONS = 10;
 
 const TAGS = [
   "사진명소",
@@ -67,9 +68,13 @@ const toWaypoint = (candidate) => {
     placeNo: place?.placeNo,
     placeName: candidate?.placeName || place?.placeName || "이름 없는 장소",
     imageUrl: candidate?.imageUrl || place?.imageUrl,
-    placeDescription: candidate?.placeDescription || place?.placeDescription
-      || candidate?.description || place?.description,
-    addr: candidate?.addr || place?.addr || candidate?.address || place?.address,
+    placeDescription:
+      candidate?.placeDescription ||
+      place?.placeDescription ||
+      candidate?.description ||
+      place?.description,
+    addr:
+      candidate?.addr || place?.addr || candidate?.address || place?.address,
     tags: candidate?.tags || place?.tags || [],
     distance: candidate?.distance,
   };
@@ -314,7 +319,9 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
       const response = await CourseAPI.getWaypointRecommendations(
         {
           ...coordinates,
-          ...(origin?.placeNo != null ? { startPlaceNo: Number(origin.placeNo) } : {}),
+          ...(origin?.placeNo != null
+            ? { startPlaceNo: Number(origin.placeNo) }
+            : {}),
           endPlaceNo: Number(destinationNo),
           tags: selectedTags,
           // 백엔드 필수 필드 호환용 기본값(분). 추천 계산에는 사용되지 않습니다.
@@ -331,7 +338,11 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
       const candidates = Array.isArray(response?.data) ? response.data : [];
       const normalizedCandidates = candidates
         .map(toWaypoint)
-        .filter((place) => place.placeNo && !endpointPlaceNos.has(String(place.placeNo)));
+        .filter(
+          (place) =>
+            place.placeNo && !endpointPlaceNos.has(String(place.placeNo)),
+        )
+        .slice(0, MAX_WAYPOINT_RECOMMENDATIONS);
       setRecommendations(normalizedCandidates);
       setRecommendationState(
         normalizedCandidates.length > 0 ? "success" : "empty",
