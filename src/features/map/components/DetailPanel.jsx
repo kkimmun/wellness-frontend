@@ -31,14 +31,21 @@ const DetailPanel = ({
   const navigate = useNavigate();
   const location = useLocation();
 
+  // 장소 상세 개선: MapPage가 조회해 합친 상세 데이터를 사용해 동일 API의 중복 요청을 막는다.
+  const displayPlace = place;
+  // S3 장소 이미지 연동: 상세 API가 없거나 실패해도 지도 핀에 포함된 대표 이미지를 표시한다.
+  const displayImages =
+    displayPlace?.placeImages ||
+    displayPlace?.images ||
+    (displayPlace?.imageUrl ? [displayPlace.imageUrl] : []);
   const activeTab = location.pathname.endsWith("/review") ? "리뷰" : "기본정보";
 
   const handleTabClick = (tab) => {
-    if (!place?.placeNo) return;
+    if (!displayPlace?.placeNo) return;
     if (tab === "리뷰") {
-      navigate(`/place/${place.placeNo}/review`);
+      navigate(`/place/${displayPlace.placeNo}/review`);
     } else {
-      navigate(`/place/${place.placeNo}`);
+      navigate(`/place/${displayPlace.placeNo}`);
     }
   };
 
@@ -49,7 +56,7 @@ const DetailPanel = ({
           <button className="back-btn" onClick={onClose}>
             <FaChevronLeft />
           </button>
-          <h2>{place?.placeName || "이름 없음"}</h2>
+          <h2>{displayPlace?.placeName || "이름 없음"}</h2>
         </TitleGroup>
 
         <ActionIcons>
@@ -67,23 +74,26 @@ const DetailPanel = ({
       </TopHeader>
 
       {/* DB 지도 핀 연동: 실제 리뷰 집계가 없는 장소에는 0점이라는 가짜 값을 표시하지 않는다. */}
-      {(Number.isFinite(place?.reviewCount) ||
-        Number.isFinite(place?.avgRating)) && (
+      {(Number.isFinite(displayPlace?.reviewCount) ||
+        Number.isFinite(displayPlace?.avgRating)) && (
         <RatingInfo>
-          {Number.isFinite(place?.reviewCount) && (
-            <span>리뷰 {place.reviewCount}</span>
+          {Number.isFinite(displayPlace?.reviewCount) && (
+            <span>리뷰 {displayPlace.reviewCount}</span>
           )}
-          {Number.isFinite(place?.avgRating) && (
+          {Number.isFinite(displayPlace?.avgRating) && (
             <div className="rating-box">
               <FaStar className="star" />
-              <span>{place.avgRating.toFixed(1)}</span>
+              <span>{displayPlace.avgRating.toFixed(1)}</span>
             </div>
           )}
         </RatingInfo>
       )}
 
       {/* DB 지도 핀 연동: 장소가 바뀌면 이미지 선택 상태도 첫 항목으로 초기화한다. */}
-      <ImageSlider key={place?.placeNo} placeImages={place?.images} />
+      <ImageSlider
+        key={displayPlace?.placeNo}
+        placeImages={displayImages}
+      />
 
       <TabMenu>
         <div
@@ -101,9 +111,9 @@ const DetailPanel = ({
       </TabMenu>
       
       {activeTab === "기본정보" && (
-        <BasicInfoTab place={place} onFindRoute={onFindRoute} />
+        <BasicInfoTab place={displayPlace} onFindRoute={onFindRoute} />
       )}
-      {activeTab === "리뷰" && <ReviewTab place={place} />}
+      {activeTab === "리뷰" && <ReviewTab place={displayPlace} />}
     </PanelContainer>
   );
 };

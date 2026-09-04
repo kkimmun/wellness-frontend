@@ -188,6 +188,9 @@ const RoutePanel = ({
   );
 
   const clearRouteResult = () => {
+    // 길찾기 표시 안정화: 이동수단·입력 변경 뒤 이전 요청이 늦게 도착해 경로를 다시 그리지 못하게 한다.
+    routeControllerRef.current?.abort();
+    routeControllerRef.current = null;
     setRouteState("idle");
     setRouteMessage("");
     setRouteData(null);
@@ -632,7 +635,8 @@ const RoutePanel = ({
     >
       <RouteHeader>
         <h2>경로 찾기</h2>
-        <IconButton type="button" onClick={onClose} aria-label="길찾기 닫기">
+        {/* 길찾기 UX 개선: X는 단순 숨김이 아니라 전체 길찾기 종료를 의미한다. */}
+        <IconButton type="button" onClick={onClose} aria-label="길찾기 종료">
           <FaTimes />
         </IconButton>
       </RouteHeader>

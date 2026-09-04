@@ -1,0 +1,86 @@
+S3 장소 이미지 연동 설명
+
+1. 구현 목적
+
+관리자가 장소를 생성할 때 선택한 이미지를 multipart/form-data의 imageFiles로 전송하고,
+백엔드는 기존 FileService와 S3Service를 통해 S3의 places 디렉터리에 저장한다.
+조회 시에는 프론트가 IMG_PATH와 SAVE_NAME을 직접 조립하지 않아도 되도록
+백엔드가 완성된 imageUrl을 반환하고 화면은 해당 URL을 사용해 이미지를 표시한다.
+
+
+2. 기존 백엔드 로직 확인
+
+- AdminPlaceController: @ModelAttribute와 imageFiles를 받아 장소 생성/수정 요청 처리
+- AdminPlaceService: 장소 INSERT 후 imageFiles를 순서대로 업로드하고 PLACE_IMG 저장
+- FileService: 이미지 확장자와 MIME 타입을 검증하고 UUID 파일명 생성
+- S3Service: AWS SDK S3Client로 places/{저장파일명} 키에 객체 업로드
+- 업로드 또는 DB 저장 실패 시 이미 올라간 S3 객체를 삭제해 불완전한 파일이 남는 것을 방지
+
+위 업로드 흐름은 팀 최신 코드에 이미 구현되어 있어 그대로 유지했다.
+
+
+3. 프론트엔드 수정 파일과 변경 내용
+
+3.1 src/features/admin/place/AdminPlaceDetail.jsx
+
+- placeImages[].imageUrl을 우선 사용해 S3 이미지를 표시
+- 이전 응답 형식인 imgPath + saveName 조합도 계속 지원
+
+3.2 src/features/admin/place/AdminPlaceForm.jsx
+
+- 장소 수정 화면의 기존 이미지 미리보기에서 imageUrl을 우선 사용
+- 새 이미지 선택 시 기존처럼 브라우저 임시 URL로 업로드 전 미리보기를 제공
+- 제출 시 imageFiles 이름으로 FormData에 파일을 여러 번 append하여 순서를 보존
+
+3.3 src/features/map/components/DetailPanel.jsx
+
+- 지도 핀 응답에 포함된 대표 imageUrl을 ImageSlider 입력으로 변환
+- 별도 상세 조회가 없거나 실패해도 DB/S3 대표 이미지를 표시
+- 비동기 상세 응답이 다른 장소로 전환된 뒤 도착해 현재 장소를 덮지 않도록 placeNo를 함께 확인
+
+3.4 src/features/admin/place/api/adminPlaceApi.js
+
+- 관리자 상세 응답 문서에 placeImages[].imageUrl 형식을 명시
+
+3.5 src/features/map/MapPage.jsx
+
+- 팀 최신 Top10 오버레이 병합 과정에서 반복문 밖의 pin/index를 참조하던 중복 MapMarker 속성을 제거
+- 장소 상세 비동기 응답은 요청한 placeNo와 현재 placeNo가 같을 때만 오버레이에 병합
+- 초기 렌더링에서 두 placeNo가 모두 undefined인 경우 null.data를 읽지 않도록 장소 객체 존재 여부를 먼저 확인
+
+3.6 src/features/map/components/SearchPanel.jsx, Top10Panel.jsx
+
+- 팀 최신 병합 후 남아 있던 미사용 상수·import·state를 제거해 변경 지도 파일 ESLint 오류 해소
+
+
+4. 백엔드 응답 변경
+
+- 지도 전체 핀: GET /api/places/pins
+- 타입별 핀: GET /api/places/types?type={값}
+- 태그별 핀: GET /api/places/tags?tag={값}
+
+위 응답의 각 장소에 활성 이미지 중 IMG_ORDER가 가장 빠른 이미지의 imageUrl이 포함된다.
+
+- 관리자 장소 상세: GET /api/admin/places/{placeNo}
+
+placeImages 각 항목에 IMG_PATH || SAVE_NAME으로 만든 imageUrl이 포함된다.
+기존 imgPath, saveName, originalName, imgOrder 필드는 호환을 위해 유지한다.
+
+
+5. 사용 기술
+
+5.1 multipart/form-data
+
+텍스트 필드와 여러 이미지 파일을 한 요청에 함께 보내는 HTTP 전송 형식이다.
+관리자 장소 생성/수정에서 imageFiles를 같은 키로 여러 번 추가해 이미지 순서를 보존한다.
+
+5.2 AWS SDK for Java S3Client
+
+백엔드가 AWS S3 버킷에 객체를 저장하고 실패한 업로드 객체를 삭제할 때 사용한다.
+프론트는 AWS 자격 증명을 가지지 않으며 백엔드가 반환한 S3 URL만 사용한다.
+
+5.3 MyBatis 대표 이미지 조회
+
+PLACE_IMG에서 DEL_YN='N'인 이미지 중 IMG_ORDER와 IMG_NO가 가장 빠른 항목을
+KEEP (DENSE_RANK FIRST ...)로 선택한다. 따라서 삭제된 이미지나 순서가 뒤인 이미지를
+대표 이미지로 잘못 반환하지 않는다.

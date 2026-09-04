@@ -61,27 +61,30 @@ export const LegendLine = styled.i`
   border-radius: ${theme.radius.pill};
 `;
 
-/* 길찾기 결과 유지: 닫은 길찾기 패널을 기존 결과 그대로 다시 여는 버튼이다. */
+/* 길찾기 UX 개선: 타입·태그 토글처럼 패널 상태만 여닫는 원형 버튼이다. */
 export const RouteReopenButton = styled.button`
   position: absolute;
-  top: 24px;
-  right: 24px;
-  z-index: 30;
+  top: 50%;
+  left: ${({ $isOpen }) => ($isOpen ? "552px" : "24px")};
+  z-index: 230;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 18px;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  padding: 0;
   border: 1px solid ${theme.colors.borderLight};
-  border-radius: ${theme.radius.pill};
+  border-radius: 50%;
   background: ${theme.colors.bgWhite};
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
   color: ${theme.colors.textPrimary};
-  font-size: 14px;
-  font-weight: 700;
   cursor: pointer;
+  transform: translateY(-50%);
+  transition: left 0.3s ease-in-out, background 0.2s ease-in-out;
 
   svg {
-    color: #2196f3;
+    color: ${theme.colors.textSecondary};
+    transition: transform 0.25s ease-in-out;
   }
 
   &:hover {
@@ -90,9 +93,9 @@ export const RouteReopenButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    top: 16px;
-    right: 16px;
-    padding: 10px 14px;
+    left: ${({ $isOpen }) => ($isOpen ? "calc(min(100%, 540px) - 30px)" : "16px")};
+    width: 48px;
+    height: 48px;
   }
 `;
 
@@ -163,11 +166,14 @@ export const FilterSelect = styled.select`
 export const FilterResetButton = styled.button`
   min-width: 88px;
   padding: 12px 18px;
-  border: 1px solid ${theme.colors.borderLight};
+  border: 1px solid
+    ${({ $isActive }) =>
+      $isActive ? theme.colors.primaryHover : theme.colors.borderLight};
   border-radius: ${theme.radius.pill};
   background: ${theme.colors.bgWhite};
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  color: ${theme.colors.textSecondary};
+  color: ${({ $isActive }) =>
+    $isActive ? theme.colors.textPrimary : theme.colors.textSecondary};
   font-size: ${theme.fontSize.md};
   font-weight: 700;
 
