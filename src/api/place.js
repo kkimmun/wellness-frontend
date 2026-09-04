@@ -2,7 +2,7 @@ import api from "./axios";
 
 export const PlaceAPI = {
   getByTypeDetail: async (typeDetailNo, signal) => {
-    const response = await api.get("/places/" + typeDetailNo, { signal });
+    const response = await api.get("/places/types/" + typeDetailNo, { signal });
     return response.data;
   },
 
@@ -12,7 +12,7 @@ export const PlaceAPI = {
   },
 
   getPlaceDetail: async (placeNo) => {
-    const response = await api.get(`/place/${placeNo}`);
+    const response = await api.get(`/places/${placeNo}`);
     return response.data;
   },
 
