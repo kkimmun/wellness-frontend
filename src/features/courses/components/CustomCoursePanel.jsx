@@ -420,11 +420,11 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
   };
 
   return (
-    <PanelContainer aria-label="순례길 코스 제작">
+    <PanelContainer aria-label="순례자의 길 제작">
       <Header>
         <PanelTitle>
           <FiCompass aria-hidden="true" />
-          <span>순례길 코스</span>
+          <span>순례자의 길 제작</span>
         </PanelTitle>
         <IconButton type="button" onClick={onClose} aria-label="코스 제작 닫기">
           <FiX aria-hidden="true" />

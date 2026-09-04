@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  FiChevronDown,
-  FiChevronUp,
+  FiChevronRight,
   FiClock,
   FiMap,
   FiMapPin,
@@ -13,6 +12,8 @@ import { getCourseRoute, readUserCourses } from "../utils/userCourseStorage";
 import CourseCover from "./CourseCover";
 import {
   CloseButton,
+  CourseChoiceDialog,
+  CourseChoiceActions,
   CourseCard,
   CourseDescription,
   CourseInfo,
@@ -44,8 +45,10 @@ const formatEstimatedTime = (minutes) => {
 };
 
 const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCourseSelect, onCreateCourse, showUserCourses = false }) => {
-  const [userCourses] = useState(readUserCourses);
-  const [userCoursesOpen, setUserCoursesOpen] = useState(showUserCourses);
+  const [userCourses, setUserCourses] = useState(readUserCourses);
+  const choiceDialogRef = useRef(null);
+  const [userCoursesOpen] = useState(showUserCourses);
+  const latestOrigin = userCourses[0]?.stops[0];
   const latestDestination = userCourses[0]?.stops.at(-1);
   const [page, setPage] = useState(1);
   const [courses, setCourses] = useState([]);
@@ -145,6 +148,31 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
     return () => observer.disconnect();
   }, [error, hasMore, loading, loadingMore]);
 
+  const handleUserCourseClick = () => {
+    const savedCourses = readUserCourses();
+    setUserCourses(savedCourses);
+    if (savedCourses.length === 0) {
+      onCreateCourse();
+      return;
+    }
+    choiceDialogRef.current.showModal();
+  };
+
+  const handleViewUserCourses = () => {
+    choiceDialogRef.current.close();
+    const savedCourse = readUserCourses()[0];
+    if (savedCourse) {
+      onUserCourseSelect(savedCourse);
+    } else {
+      onCreateCourse();
+    }
+  };
+
+  const handleCreateUserCourse = () => {
+    choiceDialogRef.current.close();
+    onCreateCourse();
+  };
+
   const handleRetry = () => {
     const isInitialRequest = courses.length === 0;
     requestingNextPageRef.current = !isInitialRequest;
@@ -176,25 +204,26 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
           <CourseCard
             type="button"
             $selected={userCoursesOpen}
-            aria-expanded={userCoursesOpen}
-            aria-controls="my-pilgrim-courses"
-            onClick={() => setUserCoursesOpen((open) => !open)}
+            aria-haspopup="dialog"
+            onClick={handleUserCourseClick}
           >
             <CourseCover src={latestDestination?.imageUrl} name={latestDestination?.placeName} number={0} />
             <CourseInfo>
-              <CourseName>내가 만든 코스</CourseName>
-              <CourseDescription>직접 만든 순례길을 모아 보고 다시 걸어보세요.</CourseDescription>
+              <CourseName>내가 만드는 순례자의 길</CourseName>
+              <CourseDescription>나만의 순례길을 만들거나 저장된 순례길을 만나보세요.</CourseDescription>
               <CourseMeta>
-                <span>{userCourses.length}개 코스</span>
-                <span>{userCoursesOpen ? "접기" : "목록 보기"}{userCoursesOpen ? <FiChevronUp aria-hidden="true" /> : <FiChevronDown aria-hidden="true" />}</span>
+                <RouteInfo>
+                  <FiMapPin aria-hidden="true" />
+                  <span>출발: {latestOrigin?.placeName || "미정"} · 도착: {latestDestination?.placeName || "미정"}</span>
+                </RouteInfo>
+                <span>{userCourses.length > 0 ? "보기 / 제작" : "제작하기"}<FiChevronRight aria-hidden="true" /></span>
               </CourseMeta>
             </CourseInfo>
           </CourseCard>
           <div id="my-pilgrim-courses" hidden={!userCoursesOpen}>
             <UserCourseHint>
-              {userCourses.length === 0 && <strong>아직 만든 코스가 없습니다.</strong>}
               <span>이 브라우저에 저장된 코스입니다.</span>
-              <RetryButton type="button" onClick={onCreateCourse}>새 순례길 제작</RetryButton>
+              <RetryButton type="button" onClick={onCreateCourse}>새 순례자의 길 제작</RetryButton>
             </UserCourseHint>
             {userCourses.length > 0 && (
               <UserCourseList aria-label="내가 만든 코스 목록">
@@ -307,6 +336,21 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
         </>
       )}
       </CourseList>
+      <CourseChoiceDialog ref={choiceDialogRef} aria-labelledby="course-choice-title" aria-describedby="course-choice-description">
+        <Header>
+          <HeaderText>
+            <h2 id="course-choice-title">순례자의 길이 이미 존재합니다.</h2>
+          </HeaderText>
+          <CloseButton type="button" onClick={() => choiceDialogRef.current.close()} aria-label="선택창 닫기">
+            <FiX aria-hidden="true" />
+          </CloseButton>
+        </Header>
+        <p id="course-choice-description">기존 순례자의 길을 보거나 새로운 순례자의 길을 제작해 보세요.</p>
+        <CourseChoiceActions>
+          <RetryButton type="button" onClick={handleViewUserCourses}>기존 순례자의 길 보기</RetryButton>
+          <RetryButton type="button" onClick={handleCreateUserCourse}>새로 제작하기</RetryButton>
+        </CourseChoiceActions>
+      </CourseChoiceDialog>
     </PanelContainer>
   );
 };

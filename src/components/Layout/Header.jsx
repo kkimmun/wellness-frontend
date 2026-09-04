@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 import gwLogo from "../../assets/GWLoGo2.svg";
@@ -77,8 +77,7 @@ const Header = () => {
     };
   }, []);
 
-  const isPilgrimCreateActive = location.pathname === "/pilgrim/create";
-  const isPilgrimListActive = location.pathname.startsWith("/pilgrim/fixed");
+  const isPilgrimActive = location.pathname.startsWith("/pilgrim");
 
   return (
     <>
@@ -95,16 +94,10 @@ const Header = () => {
             지도
           </NavItem>
           <NavItem
-            $active={isPilgrimCreateActive}
-            onClick={() => handleNavigate("/pilgrim/create")}
-          >
-            순례길 제작
-          </NavItem>
-          <NavItem
-            $active={isPilgrimListActive}
+            $active={isPilgrimActive}
             onClick={() => handleNavigate("/pilgrim/fixed")}
           >
-            순례길 목록
+            순례자의 길
           </NavItem>
           <NavItem
             $active={location.pathname === "/gimpoTop10"}
@@ -177,16 +170,10 @@ const Header = () => {
             지도
           </MobileNavItem>
           <MobileNavItem
-            $active={isPilgrimCreateActive}
-            onClick={() => handleNavigate("/pilgrim/create")}
-          >
-            순례길 제작
-          </MobileNavItem>
-          <MobileNavItem
-            $active={isPilgrimListActive}
+            $active={isPilgrimActive}
             onClick={() => handleNavigate("/pilgrim/fixed")}
           >
-            순례길 목록
+            순례자의 길
           </MobileNavItem>
           <MobileNavItem
             $active={location.pathname === "/gimpoTop10"}

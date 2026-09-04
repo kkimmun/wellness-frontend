@@ -4,7 +4,7 @@ import { readUserCourses } from "../utils/userCourseStorage";
 import UserCourseDetail from "./UserCourseDetail";
 import * as S from "./UserCourseDetail.styles";
 
-export default function SavedUserCourseDetail({ courseId, requestKey, onClose, onRouteChange }) {
+export default function SavedUserCourseDetail({ places, courseId, requestKey, onClose, onRouteChange, onRestaurantsChange, onRestaurantSelect }) {
   const [course] = useState(() => readUserCourses().find((item) => item.id === courseId));
 
   useEffect(() => {
@@ -21,5 +21,5 @@ export default function SavedUserCourseDetail({ courseId, requestKey, onClose, o
     );
   }
 
-  return <UserCourseDetail course={course} onBack={onClose} backLabel="순례길 목록으로" />;
+  return <UserCourseDetail onRestaurantsChange={onRestaurantsChange} onRestaurantSelect={onRestaurantSelect} places={places} course={course} onBack={onClose} backLabel="순례길 목록으로" />;
 }

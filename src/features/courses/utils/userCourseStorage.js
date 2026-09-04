@@ -19,13 +19,18 @@ export function createUserCourse({ info, routeData, origin, tags }) {
     throw new Error("코스 설명 또는 경로 정보를 확인할 수 없습니다.");
   }
   const places = Array.isArray(info.places) ? info.places : [];
+  const waypoints = Array.isArray(info.waypoints) ? info.waypoints : [];
   const points = [routeData.origin, ...(Array.isArray(routeData.waypoints) ? routeData.waypoints : []), routeData.destination];
   if (!points.every(isCoursePoint)) throw new Error("코스 장소의 좌표 정보가 올바르지 않습니다.");
   const stops = points.map((point, index) => {
     const detail = places.find((place) => place.placeNo === point.placeNo);
+    const waypoint = waypoints.find((place) => place.placeNo === point.placeNo);
     return {
       ...point,
       placeName: index === 0 ? origin?.placeName || point.placeName : point.placeName,
+      placeDescription: detail?.placeDescription || detail?.description || point.placeDescription || "",
+      waypointDescription: waypoint?.waypointDescription || detail?.waypointDescription || point.waypointDescription || "",
+      addr: detail?.addr || point.addr || "",
       imageUrl: (index === points.length - 1 ? info.endPlaceImg : null)
         || detail?.imageUrl || point.imageUrl,
     };
