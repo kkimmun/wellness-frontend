@@ -8,7 +8,7 @@ import * as S from "./UserCourseDetail.styles";
 
 const initialState = { info: null, routeData: null, status: "loading", error: "", routeError: "" };
 
-export default function FixedCourseDetail({ courseNo, pins, requestKey, onClose, onRouteChange }) {
+export default function FixedCourseDetail({ courseNo, pins, requestKey, onClose, onRouteChange, onRestaurantsChange, onRestaurantSelect }) {
   const [detail, setDetail] = useState(initialState);
   const [attempt, setAttempt] = useState(0);
 
@@ -57,7 +57,7 @@ export default function FixedCourseDetail({ courseNo, pins, requestKey, onClose,
   };
 
   if (course) {
-    return <UserCourseDetail
+    return <UserCourseDetail onRestaurantsChange={onRestaurantsChange} onRestaurantSelect={onRestaurantSelect}
       course={course}
       onBack={onClose}
       routeLoading={detail.status === "route-loading"}

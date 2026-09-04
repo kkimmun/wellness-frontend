@@ -57,11 +57,17 @@ const BasicInfoTab = ({ place, onFindRoute }) => {
       <BottomArea>
         <div className="tags" style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
           {place?.tags?.length > 0 ? (
-            place.tags.map((tag, idx) => (
-              <div key={idx} className="tag" style={{ padding: "4px 8px", backgroundColor: "#f0f0f0", borderRadius: "12px", fontSize: "12px", color: "#666" }}>
-                # {tag.tagName || tag}
-              </div>
-            ))
+            place.tags.map((tag, idx) => {
+              const tagLabel = typeof tag === "string"
+                ? tag
+                : tag.tagContent || tag.tagName || "";
+
+              return tagLabel ? (
+                <div key={tag.tagNo ?? idx} className="tag" style={{ padding: "4px 8px", backgroundColor: "#f0f0f0", borderRadius: "12px", fontSize: "12px", color: "#666" }}>
+                  # {tagLabel}
+                </div>
+              ) : null;
+            })
           ) : null}
         </div>
         <button

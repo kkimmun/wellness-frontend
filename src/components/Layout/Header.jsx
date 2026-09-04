@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 import gwLogo from "../../assets/GWLoGo2.svg";
@@ -7,8 +7,6 @@ import {
   LogoArea,
   DesktopNavList,
   NavItem,
-  SubMenuList,
-  SubMenuItem,
   DesktopUserIconArea,
   UserIconWrapper,
   HeaderProfileImg,
@@ -19,7 +17,6 @@ import {
   MobileDrawer,
   MobileNavList,
   MobileNavItem,
-  MobileSubList,
 } from "./Header.styles";
 import MyPage from "../../features/mypage/MyPage";
 
@@ -98,29 +95,9 @@ const Header = () => {
           </NavItem>
           <NavItem
             $active={isPilgrimActive}
-            onClick={() => handleNavigate("/pilgrim")}
+            onClick={() => handleNavigate("/pilgrim/fixed")}
           >
-            <span>순례길</span>
-            <SubMenuList>
-              <SubMenuItem
-                $active={location.pathname === "/pilgrim/create"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleNavigate("/pilgrim/create");
-                }}
-              >
-                코스 제작
-              </SubMenuItem>
-              <SubMenuItem
-                $active={location.pathname.startsWith("/pilgrim/fixed")}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleNavigate("/pilgrim/fixed");
-                }}
-              >
-                고정 코스
-              </SubMenuItem>
-            </SubMenuList>
+            순례자의 길
           </NavItem>
           <NavItem
             $active={location.pathname === "/gimpoTop10"}
@@ -192,16 +169,11 @@ const Header = () => {
           >
             지도
           </MobileNavItem>
-          <MobileNavItem $active={isPilgrimActive}>
-            <div onClick={() => handleNavigate("/")}>순례자길</div>
-            <MobileSubList>
-              <div onClick={() => handleNavigate("/pilgrim/create")}>
-                • 코스 제작
-              </div>
-              <div onClick={() => handleNavigate("/pilgrim/fixed")}>
-                • 고정 코스
-              </div>
-            </MobileSubList>
+          <MobileNavItem
+            $active={isPilgrimActive}
+            onClick={() => handleNavigate("/pilgrim/fixed")}
+          >
+            순례자의 길
           </MobileNavItem>
           <MobileNavItem
             $active={location.pathname === "/gimpoTop10"}

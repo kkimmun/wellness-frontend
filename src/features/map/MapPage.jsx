@@ -9,10 +9,12 @@ import {
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { PlaceAPI } from "../../api/place";
 import SearchPanel from "./components/SearchPanel";
+import CourseRouteLine from "./CourseRouteLine";
 import DetailPanel from "./components/DetailPanel";
 import FixedCoursePanel from "../courses/components/FixedCoursePanel";
 import FixedCourseDetail from "../courses/components/FixedCourseDetail";
 import UserCourseFlow from "../courses/components/UserCourseFlow";
+import SavedUserCourseDetail from "../courses/components/SavedUserCourseDetail";
 import { getCourseRoute, isCoursePoint } from "../courses/utils/userCourseStorage";
 import RoutePanel from "./components/RoutePanel";
 import RoutePolylineLayer from "./components/RoutePolylineLayer";
@@ -40,6 +42,23 @@ import {
   ROUTE_SEGMENT_LEGEND,
 } from "./routeSegmentStyles";
 
+const EMPTY_RESTAURANTS = [];
+
+const getCourseMarkerImage = (index) => {
+  const number = index + 1;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+    <circle cx="18" cy="20" r="14" fill="#163d43" opacity="0.12"/>
+    <circle cx="18" cy="18" r="14" fill="white"/>
+    <circle cx="18" cy="18" r="12.5" fill="white" stroke="#168b91" stroke-width="1.5"/>
+    <text x="18" y="18" dy=".35em" text-anchor="middle" font-family="Arial, sans-serif" font-size="${number > 99 ? 10 : number > 9 ? 12 : 14}" font-weight="600" fill="#253d43">${number}</text>
+  </svg>`;
+  return {
+    src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    size: { width: 36, height: 36 },
+    options: { offset: { x: 18, y: 18 } },
+  };
+};
+
 const MARKER_SVG =
   "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23FF7043' stroke='white' stroke-width='2'/%3E%3C/svg%3E";
 
@@ -52,9 +71,13 @@ const TYPE_OPTIONS = [
       "주요관광지",
       "의료기관",
       "관광지",
-      "생활체육시설",
+      "체육시설",
       "종교시설",
       "음식점",
+      "체험",
+      "문화시설",
+      "자연/생태",
+      "복지시설",
     ],
   },
   {
@@ -66,17 +89,27 @@ const TYPE_OPTIONS = [
       "한의원",
       "체험형",
       "전시형",
-      "실내체육시설",
-      "야외운동시설",
+      "수영장",
+      "클라이밍/암벽등반",
       "사찰",
       "성당교회",
-      "뷔페",
+      "양식",
       "생선회",
       "일식",
-      "술집",
+      "카페",
       "중식",
       "패스트푸드",
-      "탕류",
+      "한식",
+      "김포 TOP 10",
+      "공원",
+      "체험농장",
+      "전시 시설",
+      "공연 시설",
+      "문화 시설",
+      "생태 공원",
+      "외국인지원센터",
+      "청소년 시설",
+      "캠핑",
     ],
   },
 ];
@@ -182,12 +215,14 @@ const MapPage = () => {
   const [generalRoute, setSelectedRoute] = useState(null);
   const [customRoute, setCustomRoute] = useState(null);
   const [fixedCourseMap, setFixedCourseMap] = useState(null);
+  const [restaurantMap, setRestaurantMap] = useState(null);
   // 코드 리뷰 반영: placeNo가 없는 좌표 장소도 외부 입력이 바뀔 때 RoutePanel을 새 입력으로 초기화한다.
   const [routeInputRevision, setRouteInputRevision] = useState(0);
   // 길찾기 표시 안정화: 경로가 바뀔 때 Kakao Polyline을 새 인스턴스로 교체하기 위한 번호다.
   const [routeRenderRevision, setRouteRenderRevision] = useState(0);
   const mapRef = useRef(null);
   const filterRequestIdRef = useRef(0);
+  const restaurantViewportRef = useRef(null);
 
   const [top10OverlayState, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
   const [top10OverlayDetail, setTop10OverlayDetail] = useState(null);
@@ -262,16 +297,41 @@ const MapPage = () => {
     fetchPins();
   }, []);
 
-  const { placeNo, courseNo } = useParams();
+  const params = useParams();
+  const { placeNo } = params;
   const navigate = useNavigate();
   const location = useLocation();
-  const isFixedCourseView = location.pathname.startsWith("/pilgrim/fixed");
-  const isCustomCourseView = location.pathname === "/pilgrim/create";
+  // 음식점 상세는 순례길 위에 열어 조회 결과와 스크롤을 그대로 보존한다.
+  const isCourseRestaurantDetail = Boolean(placeNo && location.state?.courseBackground);
+  const courseLocation = isCourseRestaurantDetail ? location.state.courseBackground : location;
+  const courseNo = isCourseRestaurantDetail ? courseLocation.courseNo : params.courseNo;
+  const userCourseId = isCourseRestaurantDetail ? courseLocation.userCourseId : params.userCourseId;
+  const isFixedCourseView = courseLocation.pathname.startsWith("/pilgrim/fixed");
+  const isCustomCourseView = courseLocation.pathname === "/pilgrim/create";
   const isFixedCourseDetail = isFixedCourseView && Boolean(courseNo);
-  const isCourseMapView = isCustomCourseView || isFixedCourseDetail;
+  const isUserCourseDetail = isFixedCourseView && Boolean(userCourseId);
+  const isCourseMapView = isCustomCourseView || isFixedCourseDetail || isUserCourseDetail;
+  const restaurantPins = isCourseMapView && restaurantMap?.key === courseLocation.key
+    ? restaurantMap.places : EMPTY_RESTAURANTS;
+  const handleRestaurantsChange = useCallback((places) => {
+    setRestaurantMap({ key: courseLocation.key, places: places.filter(isCoursePoint) });
+  }, [courseLocation.key]);
+  const handleRestaurantSelect = (place) => {
+    const map = mapRef.current;
+    const center = map?.getCenter();
+    const background = isCourseRestaurantDetail ? courseLocation : {
+      pathname: courseLocation.pathname, key: courseLocation.key, courseNo, userCourseId,
+      viewport: center ? { lat: center.getLat(), lng: center.getLng(), level: map.getLevel() } : null,
+    };
+    restaurantViewportRef.current = { key: background.key, viewport: background.viewport };
+    navigate(`/place/${place.placeNo}`, { replace: isCourseRestaurantDetail, state: {
+      courseBackground: background,
+      restaurantPlace: { ...place, xAxis: Number(place.X_AXIS ?? place.xAxis), yAxis: Number(place.Y_AXIS ?? place.yAxis) },
+    } });
+  };
   // 현재 URL의 요청 결과만 사용해 다른 코스를 열 때 이전 경로가 남지 않게 한다.
-  const courseRouteData = isFixedCourseDetail
-    ? fixedCourseMap?.key === location.key ? fixedCourseMap.routeData : null
+  const courseRouteData = isFixedCourseDetail || isUserCourseDetail
+    ? fixedCourseMap?.key === courseLocation.key ? fixedCourseMap.routeData : null
     : customRoute;
   const selectedRoute = useMemo(() => {
     if (!isCourseMapView) return generalRoute;
@@ -285,9 +345,10 @@ const MapPage = () => {
   const baseSelectedPlace = useMemo(
     () =>
       placeNo
-        ? pins.find((pin) => String(pin.placeNo) === String(placeNo)) || null
+        ? pins.find((pin) => String(pin.placeNo) === String(placeNo))
+          || (String(location.state?.restaurantPlace?.placeNo) === String(placeNo) ? location.state.restaurantPlace : null)
         : null,
-    [placeNo, pins],
+    [placeNo, pins, location.state],
   );
 
   const [overlayDetail, setOverlayDetail] = useState(null);
@@ -429,7 +490,8 @@ const MapPage = () => {
   };
 
   const handleMarkerClick = (place) => {
-    navigate(`/place/${place.placeNo}`);
+    // 발표용 지도 동작: 핀 클릭만으로 상세 페이지로 이동하지 않고 지도 위 정보 모달을 연다.
+    setTop10Overlay({ ...place, isExternal: false });
   };
 
   // 길찾기 기능 연동: 지도/검색/상세 화면에서 선택한 장소를 패널에 전달한다.
@@ -499,16 +561,29 @@ const MapPage = () => {
 
   // 길찾기 표시 안정화: 패널 열림 상태에 맞는 여백으로 경로 전체가 보이도록 지도를 조정한다.
   useEffect(() => {
-    if (!selectedRoute || !mapRef.current || !window.kakao?.maps)
+    if (isCourseRestaurantDetail) {
+      restaurantViewportRef.current = { key: courseLocation.key, viewport: courseLocation.viewport };
+      return undefined;
+    }
+    if ((!selectedRoute && restaurantPins.length === 0) || !mapRef.current || !window.kakao?.maps)
       return undefined;
 
-    const delay = isRouteOpen ? 0 : 320;
+    const delay = isRouteOpen || restaurantViewportRef.current?.key === courseLocation.key ? 0 : 320;
     const timeoutId = window.setTimeout(() => {
       const map = mapRef.current;
-      const mapPoints = getRouteMapPoints(selectedRoute);
+      const mapPoints = restaurantPins.length > 0
+        ? toMapPath(restaurantPins) : getRouteMapPoints(selectedRoute);
       if (!map || mapPoints.length === 0) return;
 
       map.relayout();
+      const snapshot = restaurantViewportRef.current;
+      const viewport = snapshot?.key === courseLocation.key ? snapshot.viewport : null;
+      restaurantViewportRef.current = null;
+      if (isCourseMapView && viewport) {
+        map.setLevel(viewport.level);
+        map.setCenter(new window.kakao.maps.LatLng(viewport.lat, viewport.lng));
+        return;
+      }
       const bounds = new window.kakao.maps.LatLngBounds();
       mapPoints.forEach(({ lat, lng }) => {
         bounds.extend(new window.kakao.maps.LatLng(lat, lng));
@@ -524,7 +599,7 @@ const MapPage = () => {
     }, delay);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isRouteOpen, selectedRoute, isCourseMapView, loading]);
+  }, [isRouteOpen, selectedRoute, isCourseMapView, loading, restaurantPins, isCourseRestaurantDetail, courseLocation.key, courseLocation.viewport]);
 
   const selectedMapPath = useMemo(
     () => toMapPath(selectedRoute?.path),
@@ -606,9 +681,13 @@ const MapPage = () => {
         onSetDestination={openRouteWithDestination}
       />
 
-      {isFixedCourseView && !isFixedCourseDetail && (
+      {isFixedCourseView && !isFixedCourseDetail && !isUserCourseDetail && (
         <FixedCoursePanel
+          key={location.key}
           selectedCourseNo={courseNo}
+          showUserCourses={Boolean(location.state?.showUserCourses)}
+          onCreateCourse={() => navigate("/pilgrim/create")}
+          onUserCourseSelect={(course) => navigate(`/pilgrim/fixed/mine/${encodeURIComponent(course.id)}`)}
           onClose={() => navigate("/map")}
           onCourseSelect={(course) =>
             navigate(`/pilgrim/fixed/${course.courseNo}`)
@@ -616,26 +695,50 @@ const MapPage = () => {
         />
       )}
 
+      <div
+        style={{ visibility: isCourseRestaurantDetail ? "hidden" : "visible" }}
+        aria-hidden={isCourseRestaurantDetail || undefined}
+        inert={isCourseRestaurantDetail || undefined}
+      >
       {isFixedCourseDetail && (
         <FixedCourseDetail
-          key={location.key}
+          onRestaurantsChange={handleRestaurantsChange}
+          onRestaurantSelect={handleRestaurantSelect}
+          key={courseLocation.key}
           courseNo={courseNo}
           pins={pins}
-          requestKey={location.key}
+          requestKey={courseLocation.key}
           onClose={() => navigate("/map")}
+          onRouteChange={setFixedCourseMap}
+        />
+      )}
+
+      {isUserCourseDetail && (
+        <SavedUserCourseDetail
+          onRestaurantsChange={handleRestaurantsChange}
+          onRestaurantSelect={handleRestaurantSelect}
+          key={courseLocation.key}
+          courseId={userCourseId}
+          places={pins}
+          requestKey={courseLocation.key}
+          onClose={() => navigate("/pilgrim/fixed", { state: { showUserCourses: true } })}
           onRouteChange={setFixedCourseMap}
         />
       )}
 
       {isCustomCourseView && (
         <UserCourseFlow
-          key={location.key}
+          onRestaurantsChange={handleRestaurantsChange}
+          onRestaurantSelect={handleRestaurantSelect}
+          key={courseLocation.key}
           pins={pins}
           pinsState={pinsState}
           onClose={() => navigate("/map")}
           onRouteChange={setCustomRoute}
         />
       )}
+
+      </div>
 
       {/* 길찾기 기능 연동: 지도 위 독립 패널에서 입력·검색·결과 선택을 처리한다. */}
       <RoutePanel
@@ -761,21 +864,38 @@ const MapPage = () => {
             return (
               <MapMarker
                 key={pin.routeMarkerKey || pin.placeNo || index}
-                position={{ lat: pin.yAxis, lng: pin.xAxis }}
-                image={{
+                position={{
+                  lat: Number(pin.Y_AXIS ?? pin.yAxis),
+                  lng: Number(pin.X_AXIS ?? pin.xAxis),
+                }}
+                title={isCourseMapView
+                  ? `${index + 1}. ${pin.placeName || "코스 장소"}${index === 0 ? " · 출발" : index === coursePins.length - 1 ? " · 도착" : ""}`
+                  : pin.placeName}
+                image={isCourseMapView ? getCourseMarkerImage(index) : {
                   src: isTop10 ? MARKER_GOLD_SVG : MARKER_SVG,
                   size: isTop10 ? { width: 28, height: 28 } : { width: 24, height: 24 },
                 }}
-                zIndex={isTop10 ? 10 : 1}
-                clickable={!selectedRoute}
+                zIndex={isCourseMapView ? 12 : isTop10 ? 10 : 1}
+                clickable={!selectedRoute && !isCourseMapView}
                 onClick={() => {
-                  if (!selectedRoute) handleMarkerClick(pin);
+                  if (!selectedRoute && !isCourseMapView) handleMarkerClick(pin);
                 }}
               />
             );
           })}
 
-          {top10Overlay && top10Overlay.isExternal && !selectedPlace && !selectedRoute && (
+          {restaurantPins.map((place) => (
+            <MapMarker
+              key={"restaurant-" + place.placeNo}
+              position={{ lat: Number(place.Y_AXIS ?? place.yAxis), lng: Number(place.X_AXIS ?? place.xAxis) }}
+              title={place.placeName + " · 음식점 상세정보"}
+              image={{ src: MARKER_SVG, size: { width: 32, height: 32 } }}
+              zIndex={30}
+              onClick={() => handleRestaurantSelect(place)}
+            />
+          ))}
+
+          {top10Overlay && top10Overlay.isExternal && !selectedRoute && (
             <MapMarker
               key={`top10-${top10Overlay.placeNo ?? top10Overlay.placeName}`}
               position={{ lat: top10Overlay.yAxis, lng: top10Overlay.xAxis }}
@@ -790,22 +910,23 @@ const MapPage = () => {
           )}
 
           {/* 길찾기 표시 안정화: 새 경로를 그리기 전에 이전 Polyline 객체를 전부 제거한다. */}
-          <RoutePolylineLayer
-            key={`route-layer-${isCourseMapView ? location.key : routeRenderRevision}`}
-            revision={isCourseMapView ? location.key : routeRenderRevision}
-            segments={selectedMapSegments}
-            fallbackPath={selectedMapPath}
-            fallbackColor={
-              isCourseMapView ? "#34C759" : isWalkingRoute
+          {isCourseMapView && selectedMapPath.length > 1 && (
+            <CourseRouteLine path={selectedMapPath} />
+          )}
+          {!isCourseMapView && (
+            <RoutePolylineLayer
+              key={`route-layer-${routeRenderRevision}`}
+              revision={routeRenderRevision}
+              segments={selectedMapSegments}
+              fallbackPath={selectedMapPath}
+              fallbackColor={isWalkingRoute
                 ? ROUTE_SEGMENT_COLORS.WALKING
-                : ROUTE_SEGMENT_COLORS.GENERAL_BUS
-            }
-            fallbackStyle={
-              !isCourseMapView && isWalkingRoute ? "shortdash" : "solid"
-            }
-          />
+                : ROUTE_SEGMENT_COLORS.GENERAL_BUS}
+              fallbackStyle={isWalkingRoute ? "shortdash" : "solid"}
+            />
+          )}
 
-          {selectedPlace && !selectedRoute && (
+          {selectedPlace && !top10Overlay && !selectedRoute && (
             <CustomOverlayMap
               position={{ lat: selectedPlace.yAxis, lng: selectedPlace.xAxis }}
               yAnchor={1}
@@ -886,7 +1007,7 @@ const MapPage = () => {
             </CustomOverlayMap>
           )}
 
-          {top10Overlay && !selectedPlace && !selectedRoute && (
+          {top10Overlay && !selectedRoute && (
             <CustomOverlayMap
               position={{ lat: top10Overlay.yAxis, lng: top10Overlay.xAxis }}
               yAnchor={1}
@@ -961,7 +1082,7 @@ const MapPage = () => {
       )}
 
       {/* 대중교통 경로 색상: 지도 선의 의미를 사용자가 바로 확인할 수 있는 범례다. */}
-      {selectedRoute?.transportType === "PUBLIC_TRANSIT" && (
+      {!isCourseMapView && selectedRoute?.transportType === "PUBLIC_TRANSIT" && (
         <RouteLegend aria-label="대중교통 경로 색상 범례">
           {ROUTE_SEGMENT_LEGEND.map((item) => (
             <span key={item.key}>
@@ -974,10 +1095,12 @@ const MapPage = () => {
 
       {/* 길찾기 기능 연동: 상세 패널의 경로찾기는 현재 장소를 도착지로 설정한다. */}
       <DetailPanel
+        key={selectedPlace?.placeNo ?? "closed"}
         place={selectedPlace}
         isOpen={isDetailOpen && !isRouteOpen}
         onClose={() => {
-          navigate("/map");
+          if (isCourseRestaurantDetail) navigate(-1);
+          else navigate(location.state?.courseReturnTo || "/map");
         }}
         isBookmarked={selectedPlace ? bookmarks[selectedPlace.placeNo] : false}
         onBookmark={(e) =>

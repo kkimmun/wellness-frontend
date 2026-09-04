@@ -3,8 +3,10 @@ import Sidebar from "./Sidebar";
 import { AdminWrapper, AdminContent } from "./AdminLayout.styles";
 
 // 관리자 사이드바 메뉴
-// 명소 관리 외 항목은 화면설계서 확정 후 추가한다.
-const ADMIN_MENU = [{ label: "명소 관리", path: "/admin/places" }];
+const ADMIN_MENU = [
+  { label: "명소 관리", path: "/admin/places" },
+  { label: "순례자길 관리", path: "/admin/courses" },
+];
 
 function AdminLayout() {
   return (

@@ -228,11 +228,12 @@ const checkControl = css`
 
 export const ChoiceRow = styled.label`
   ${checkControl}
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  gap: ${theme.spacing.sm};
-  padding: 9px 12px;
+  min-height: 116px;
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 18px;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 12px;
   color: ${({ $disabled }) =>
     $disabled ? theme.colors.textMuted : theme.colors.textPrimary};
   background: ${({ $disabled }) =>
@@ -247,11 +248,128 @@ export const ChoiceRow = styled.label`
 
   &:has(input:checked) {
     background: #f1f8ff;
+    box-shadow: inset 3px 0 ${theme.colors.primaryHover};
   }
 
-  small {
-    margin-left: auto;
+  &:hover {
+    background: ${({ $disabled }) => $disabled ? theme.colors.bgLight : "#f1f8ff"};
+  }
+
+  > .check {
+    grid-column: 3;
+    grid-row: 1;
+    margin-top: 3px;
+    border: 1px solid ${theme.colors.textMuted};
+    background: ${theme.colors.white};
+  }
+
+  input[type="radio"] + .check {
+    border-radius: 50%;
+  }
+
+  input:checked + .check {
+    border-color: ${theme.colors.primaryHover};
+    background: ${theme.colors.primaryHover};
+  }
+
+  @media (max-width: 420px) {
+    grid-template-columns: 76px minmax(0, 1fr) 16px;
+    gap: 10px;
+    padding: 12px 10px;
+  }
+`;
+
+export const PlaceChoiceImage = styled.span`
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  width: 90px;
+  height: 90px;
+  overflow: hidden;
+  background: ${theme.colors.bgLight};
+  border-radius: ${theme.radius.md};
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .placeholder {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
     color: ${theme.colors.textSecondary};
+    font-size: 10px;
+
+    svg { width: 22px; height: 22px; }
+  }
+
+  .number {
+    position: absolute;
+    top: 0;
+    left: 0;
+    min-width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    padding: 0 4px;
+    color: ${theme.colors.white};
+    background: ${theme.colors.primary};
+    border-bottom-right-radius: ${theme.radius.md};
+    font-size: ${theme.fontSize.sm};
+    font-weight: 700;
+  }
+
+  @media (max-width: 420px) {
+    width: 76px;
+    height: 76px;
+  }
+`;
+
+export const PlaceChoiceInfo = styled.span`
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow-wrap: anywhere;
+
+  strong {
+    color: ${theme.colors.textPrimary};
+    font-size: ${theme.fontSize.md};
+    line-height: 1.4;
+  }
+
+  .address {
+    display: flex;
+    align-items: flex-start;
+    gap: 3px;
+    color: ${theme.colors.textSecondary};
+    font-size: ${theme.fontSize.xs};
+    line-height: 1.45;
+
+    svg { flex-shrink: 0; margin-top: 2px; }
+  }
+
+  .description {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: ${theme.colors.textSecondary};
+    font-size: ${theme.fontSize.sm};
+    line-height: 1.5;
+  }
+
+  .distance {
+    align-self: flex-end;
+    color: ${theme.colors.primaryHover};
     font-size: ${theme.fontSize.xs};
   }
 `;

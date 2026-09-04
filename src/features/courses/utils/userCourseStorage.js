@@ -1,4 +1,5 @@
 export const USER_COURSE_KEY = "wellness.custom-course.v1";
+export const USER_COURSES_KEY = "wellness.custom-courses.v2";
 
 const coordinate = (value) => value !== null && value !== "" && Number.isFinite(Number(value));
 
@@ -18,17 +19,31 @@ export function createUserCourse({ info, routeData, origin, tags }) {
     throw new Error("코스 설명 또는 경로 정보를 확인할 수 없습니다.");
   }
   const places = Array.isArray(info.places) ? info.places : [];
+  const waypoints = Array.isArray(info.waypoints) ? info.waypoints : [];
   const points = [routeData.origin, ...(Array.isArray(routeData.waypoints) ? routeData.waypoints : []), routeData.destination];
   if (!points.every(isCoursePoint)) throw new Error("코스 장소의 좌표 정보가 올바르지 않습니다.");
   const stops = points.map((point, index) => {
     const detail = places.find((place) => place.placeNo === point.placeNo);
+    const waypoint = waypoints.find((place) => place.placeNo === point.placeNo);
     return {
       ...point,
       placeName: index === 0 ? origin?.placeName || point.placeName : point.placeName,
-      imageUrl: index === points.length - 1 ? info.endPlaceImg : detail?.imageUrl,
+      placeDescription: detail?.placeDescription || detail?.description || point.placeDescription || "",
+      waypointDescription: waypoint?.waypointDescription || detail?.waypointDescription || point.waypointDescription || "",
+      addr: detail?.addr || point.addr || "",
+      imageUrl: (index === points.length - 1 ? info.endPlaceImg : null)
+        || detail?.imageUrl || point.imageUrl,
     };
   });
-  return { courseName: info.courseName, description: info.description || "", tags, stops, routeData };
+  return {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    courseName: info.courseName,
+    description: info.description || "",
+    tags,
+    stops,
+    routeData,
+  };
 }
 
 function isUserCourse(course) {
@@ -45,19 +60,49 @@ function isUserCourse(course) {
       && course.routeData.waypoints.every(isCoursePoint)));
 }
 
-export function readUserCourse(storage) {
+export function readUserCourses(storage) {
+  try {
+    const target = storage ?? window.localStorage;
+    const collection = target.getItem(USER_COURSES_KEY);
+    if (collection !== null) {
+      const saved = JSON.parse(collection);
+      if (saved?.version === 2 && Array.isArray(saved.courses)) {
+        const ids = new Set();
+        return saved.courses.filter((course) => {
+          if (!isUserCourse(course) || typeof course.id !== "string"
+            || !course.id.trim() || ids.has(course.id)) return false;
+          ids.add(course.id);
+          return true;
+        });
+      }
+    }
+  } catch {
+    // 이전 버전의 코스가 남아 있으면 복원한다.
+  }
   try {
     const saved = JSON.parse((storage ?? window.localStorage).getItem(USER_COURSE_KEY));
-    return saved?.version === 1 && isUserCourse(saved.course) ? saved.course : null;
+    return saved?.version === 1 && isUserCourse(saved.course)
+      ? [{ ...saved.course, id: "legacy" }] : [];
   } catch {
-    return null;
+    return [];
   }
+}
+
+export function readUserCourse(storage) {
+  return readUserCourses(storage)[0] ?? null;
 }
 
 export function saveUserCourse(course, storage) {
   try {
     if (!isUserCourse(course)) return false;
-    (storage ?? window.localStorage).setItem(USER_COURSE_KEY, JSON.stringify({ version: 1, course }));
+    const target = storage ?? window.localStorage;
+    const savedCourse = {
+      ...course,
+      id: typeof course.id === "string" && course.id.trim() ? course.id : crypto.randomUUID(),
+      createdAt: course.createdAt || new Date().toISOString(),
+    };
+    const courses = [savedCourse, ...readUserCourses(target).filter((item) => item.id !== savedCourse.id)];
+    target.setItem(USER_COURSES_KEY, JSON.stringify({ version: 2, courses }));
     return true;
   } catch {
     return false;
