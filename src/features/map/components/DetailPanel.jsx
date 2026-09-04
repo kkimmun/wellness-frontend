@@ -53,9 +53,9 @@ const DetailPanel = ({
   const handleTabClick = (tab) => {
     if (!displayPlace?.placeNo) return;
     if (tab === "리뷰") {
-      navigate(`/place/${displayPlace.placeNo}/review`);
+      navigate(`/place/${displayPlace.placeNo}/review`, { state: location.state, replace: Boolean(location.state?.courseBackground) });
     } else {
-      navigate(`/place/${displayPlace.placeNo}`);
+      navigate(`/place/${displayPlace.placeNo}`, { state: location.state, replace: Boolean(location.state?.courseBackground) });
     }
   };
 
@@ -63,7 +63,7 @@ const DetailPanel = ({
     <PanelContainer $isOpen={isOpen}>
       <TopHeader>
         <TitleGroup>
-          <button className="back-btn" onClick={onClose}>
+          <button className="back-btn" onClick={onClose} aria-label={location.state?.courseBackground ? "보던 음식점 목록으로 돌아가기" : "지도 화면으로 돌아가기"}>
             <FaChevronLeft />
           </button>
           <h2>{displayPlace?.placeName || "이름 없음"}</h2>

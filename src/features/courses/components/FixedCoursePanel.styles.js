@@ -157,6 +157,14 @@ export const CourseThumbnail = styled.div`
   background: ${({ $tone }) => thumbnailTones[$tone]};
   border-radius: ${theme.radius.md};
 
+  > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
   &::after {
     content: "";
     position: absolute;
@@ -316,5 +324,61 @@ export const InfiniteScrollFooter = styled.li`
 
   ${RetryButton} {
     margin-top: ${theme.spacing.xs};
+  }
+`;
+
+export const UserCourseList = styled.ol`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+`;
+
+export const UserCourseHint = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: ${theme.spacing.xs};
+  margin-top: 12px;
+  padding: 12px;
+  color: ${theme.colors.textSecondary};
+  background: ${theme.colors.bgLight};
+  border-radius: ${theme.radius.md};
+  font-size: ${theme.fontSize.sm};
+`;
+
+export const CourseChoiceDialog = styled.dialog`
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: ${theme.spacing.lg};
+  border: 0;
+  border-radius: ${theme.radius.lg};
+  background: ${theme.colors.bgWhite};
+  color: ${theme.colors.textPrimary};
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.2);
+
+  &::backdrop {
+    background: ${theme.colors.bgDim};
+  }
+
+  > p {
+    color: ${theme.colors.textSecondary};
+    font-size: ${theme.fontSize.sm};
+    line-height: 1.6;
+    word-break: keep-all;
+  }
+`;
+
+export const CourseChoiceActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${theme.spacing.sm};
+
+  ${RetryButton} {
+    flex: 1 1 auto;
+    justify-content: center;
   }
 `;

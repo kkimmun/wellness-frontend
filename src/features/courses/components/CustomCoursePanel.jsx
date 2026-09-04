@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  FiCheck,
-  FiCompass,
-  FiX,
-} from "react-icons/fi";
+import { FiCheck, FiCompass, FiX } from "react-icons/fi";
 import { FaLocationArrow, FaSearch } from "react-icons/fa";
 import { CourseAPI } from "../../../api/course";
 import { PlaceAPI } from "../../../api/place";
 import { createUserCourse } from "../utils/userCourseStorage";
 import { RouteAPI } from "../../../api/route";
+import CoursePlaceOption from "./CoursePlaceOption";
 import {
   PillButton,
   PrimaryButton,
@@ -16,7 +13,6 @@ import {
 import {
   ActionArea,
   CheckList,
-  ChoiceRow,
   CourseResult,
   FieldMessage,
   Header,
@@ -41,7 +37,7 @@ import {
   SearchResults,
 } from "../../map/components/RoutePanel.styles";
 
-const DESTINATION_TYPE_DETAIL_NO = 19;
+const DESTINATION_TYPE_DETAIL_NOS = [8, 9];
 
 const TAGS = [
   "사진명소",
@@ -71,6 +67,9 @@ const toWaypoint = (candidate) => {
     placeNo: place?.placeNo,
     placeName: candidate?.placeName || place?.placeName || "이름 없는 장소",
     imageUrl: candidate?.imageUrl || place?.imageUrl,
+    placeDescription: candidate?.placeDescription || place?.placeDescription
+      || candidate?.description || place?.description,
+    addr: candidate?.addr || place?.addr || candidate?.address || place?.address,
     tags: candidate?.tags || place?.tags || [],
     distance: candidate?.distance,
   };
@@ -110,13 +109,19 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
   useEffect(() => {
     const controller = new AbortController();
 
-    PlaceAPI.getByTypeDetail(DESTINATION_TYPE_DETAIL_NO, controller.signal)
-      .then((places) => {
+    Promise.all(
+      DESTINATION_TYPE_DETAIL_NOS.map((typeDetailNo) =>
+        PlaceAPI.getByTypeDetail(typeDetailNo, controller.signal),
+      ),
+    )
+      .then((placeLists) => {
         if (controller.signal.aborted) return;
 
-        const validPlaces = Array.isArray(places)
-          ? places.filter((place) => place?.placeNo != null)
-          : [];
+        const validPlaces = placeLists.flatMap((places) =>
+          Array.isArray(places)
+            ? places.filter((place) => place?.placeNo != null)
+            : [],
+        );
         const uniquePlaces = [
           ...new Map(
             validPlaces.map((place) => [String(place.placeNo), place]),
@@ -309,6 +314,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
       const response = await CourseAPI.getWaypointRecommendations(
         {
           ...coordinates,
+          ...(origin?.placeNo != null ? { startPlaceNo: Number(origin.placeNo) } : {}),
           endPlaceNo: Number(destinationNo),
           tags: selectedTags,
           // 백엔드 필수 필드 호환용 기본값(분). 추천 계산에는 사용되지 않습니다.
@@ -316,10 +322,16 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
         },
         controller.signal,
       );
+      if (controller.signal.aborted) return;
+      const endpointPlaceNos = new Set(
+        [origin?.placeNo, destinationNo]
+          .filter((placeNo) => placeNo != null && placeNo !== "")
+          .map(String),
+      );
       const candidates = Array.isArray(response?.data) ? response.data : [];
       const normalizedCandidates = candidates
         .map(toWaypoint)
-        .filter((place) => place.placeNo);
+        .filter((place) => place.placeNo && !endpointPlaceNos.has(String(place.placeNo)));
       setRecommendations(normalizedCandidates);
       setRecommendationState(
         normalizedCandidates.length > 0 ? "success" : "empty",
@@ -420,11 +432,11 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
   };
 
   return (
-    <PanelContainer aria-label="순례길 코스 제작">
+    <PanelContainer aria-label="순례자의 길 제작">
       <Header>
         <PanelTitle>
           <FiCompass aria-hidden="true" />
-          <span>순례길 코스</span>
+          <span>순례자의 길 제작</span>
         </PanelTitle>
         <IconButton type="button" onClick={onClose} aria-label="코스 제작 닫기">
           <FiX aria-hidden="true" />
@@ -461,7 +473,11 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
                   }
                 }}
               />
-              <OriginSearchButton type="submit" aria-label="출발지 검색" title="검색">
+              <OriginSearchButton
+                type="submit"
+                aria-label="출발지 검색"
+                title="검색"
+              >
                 <FaSearch size={18} aria-hidden="true" />
               </OriginSearchButton>
             </OriginSearchBar>
@@ -478,12 +494,17 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
             검색 결과에서 출발지를 선택해주세요.
           </FieldMessage>
           {searchState !== "idle" && (
-            <SearchResults aria-label="출발지 검색 결과" aria-busy={searchState === "loading"}>
+            <SearchResults
+              aria-label="출발지 검색 결과"
+              aria-busy={searchState === "loading"}
+            >
               {searchState === "loading" && (
                 <InlineState role="status">{searchMessage}</InlineState>
               )}
               {searchState === "error" && (
-                <InlineState $error role="alert">{searchMessage}</InlineState>
+                <InlineState $error role="alert">
+                  {searchMessage}
+                </InlineState>
               )}
               {searchState === "empty" && (
                 <InlineState role="status">검색 결과가 없습니다.</InlineState>
@@ -492,11 +513,19 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
                 searchResults.map((place) => (
                   <SearchResultButton
                     type="button"
-                    key={place.placeNo ?? [place.X_AXIS ?? place.xAxis, place.Y_AXIS ?? place.yAxis].join("-")}
+                    key={
+                      place.placeNo ??
+                      [
+                        place.X_AXIS ?? place.xAxis,
+                        place.Y_AXIS ?? place.yAxis,
+                      ].join("-")
+                    }
                     onClick={() => selectOrigin(place)}
                   >
                     <strong>{place.placeName}</strong>
-                    <span>{place.address || place.addr || "주소 정보 없음"}</span>
+                    <span>
+                      {place.address || place.addr || "주소 정보 없음"}
+                    </span>
                     <span>출발지로 선택</span>
                   </SearchResultButton>
                 ))}
@@ -504,15 +533,19 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
           )}
           {origin && (
             <FieldMessage $success role="status">
-              <FiCheck aria-hidden="true" /> 출발지 선택 완료: {origin.placeName}
+              <FiCheck aria-hidden="true" /> 출발지 선택 완료:{" "}
+              {origin.placeName}
               {(origin.address || origin.addr) && (
-                <><br />{origin.address || origin.addr}</>
+                <>
+                  <br />
+                  {origin.address || origin.addr}
+                </>
               )}
             </FieldMessage>
           )}
         </Section>
 
-        <Section>
+        <Section aria-label="도착지 선택">
           <SectionHeading>
             <strong>도착지 선택</strong>
             <span>필수 · 1곳</span>
@@ -533,21 +566,18 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
             </FieldMessage>
           )}
           {destinationState === "success" && (
-            <CheckList>
-              {destinations.map((place) => (
-                <ChoiceRow key={place.placeNo}>
-                  <input
-                    type="radio"
-                    name="pilgrim-destination"
-                    value={place.placeNo}
-                    checked={String(place.placeNo) === destinationNo}
-                    onChange={() => changeDestination(place.placeNo)}
-                  />
-                  <span className="check" aria-hidden="true">
-                    <FiCheck />
-                  </span>
-                  <span>{place.placeName}</span>
-                </ChoiceRow>
+            <CheckList role="radiogroup" aria-label="도착지 목록">
+              {destinations.map((place, index) => (
+                <CoursePlaceOption
+                  key={place.placeNo}
+                  place={place}
+                  index={index}
+                  type="radio"
+                  name="pilgrim-destination"
+                  checked={String(place.placeNo) === destinationNo}
+                  disabled={creationState === "loading"}
+                  onChange={() => changeDestination(place.placeNo)}
+                />
               ))}
             </CheckList>
           )}
@@ -600,29 +630,24 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
         )}
 
         {recommendations !== null && (
-          <Section>
+          <Section aria-label="중간 관광지 선택">
             <SectionHeading>
-              <strong>중간코스 추가하기</strong>
+              <strong>중간 관광지 추가하기</strong>
               <span>선택 · 최대 3곳 ({selectedWaypoints.length}/3)</span>
             </SectionHeading>
             {recommendations.length > 0 && (
-              <CheckList>
-                {recommendations.map((place) => (
-                  <ChoiceRow key={place.placeNo}>
-                    <input
-                      type="checkbox"
-                      disabled={creationState === "loading"}
-                      checked={selectedWaypoints.includes(place.placeNo)}
-                      onChange={() => toggleWaypoint(place.placeNo)}
-                    />
-                    <span className="check" aria-hidden="true">
-                      <FiCheck />
-                    </span>
-                    <span>{place.placeName}</span>
-                    {Number.isFinite(place.distance) && (
-                      <small>{Math.round(place.distance)}m</small>
-                    )}
-                  </ChoiceRow>
+              <CheckList role="group" aria-label="추천 중간 관광지 목록">
+                {recommendations.map((place, index) => (
+                  <CoursePlaceOption
+                    key={place.placeNo}
+                    place={place}
+                    index={index}
+                    type="checkbox"
+                    name="pilgrim-waypoint"
+                    disabled={creationState === "loading"}
+                    checked={selectedWaypoints.includes(place.placeNo)}
+                    onChange={() => toggleWaypoint(place.placeNo)}
+                  />
                 ))}
               </CheckList>
             )}
