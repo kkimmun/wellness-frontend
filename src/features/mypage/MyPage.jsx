@@ -24,7 +24,7 @@ import { FiAlertCircle } from "react-icons/fi";
 const MyPage = ({ onClose }) => {
   const navigate = useNavigate();
   const { user, checkAuth } = useAuth();
-  
+
   // 백엔드에서 받은 실제 사용자 데이터를 사용
   const [userInfo, setUserInfo] = useState({
     profileImage: user?.profileImage || null,
@@ -36,7 +36,7 @@ const MyPage = ({ onClose }) => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // TODO: 실제 프로젝트에서는 백엔드 API로 이미지 업로드 요청을 보내고, 
+      // TODO: 실제 프로젝트에서는 백엔드 API로 이미지 업로드 요청을 보내고,
       // 성공 시 checkAuth()를 호출하여 전역 상태를 업데이트해야 합니다.
       const imageUrl = URL.createObjectURL(file);
       setUserInfo((prev) => ({ ...prev, profileImage: imageUrl }));
@@ -73,7 +73,11 @@ const MyPage = ({ onClose }) => {
   };
 
   const handleWithdrawal = () => {
-    if (window.confirm("정말 회원탈퇴 하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+    if (
+      window.confirm(
+        "정말 회원탈퇴 하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+      )
+    ) {
       alert("회원탈퇴가 완료되었습니다.");
       AuthAPI.logout().then(() => {
         if (onClose) onClose();
@@ -118,7 +122,9 @@ const MyPage = ({ onClose }) => {
         <InfoRow>
           <InfoLabel>비밀번호</InfoLabel>
           <InfoValue>
-            <ChangePasswordButton onClick={() => alert("비밀번호 변경 모달 오픈 준비중")}>
+            <ChangePasswordButton
+              onClick={() => alert("비밀번호 변경 모달 오픈 준비중")}
+            >
               변경
             </ChangePasswordButton>
           </InfoValue>
@@ -131,7 +137,9 @@ const MyPage = ({ onClose }) => {
       </InfoList>
 
       <ActionButton onClick={handleLogout}>로그아웃</ActionButton>
-      <ActionButton $danger onClick={handleWithdrawal}>회원탈퇴</ActionButton>
+      <ActionButton $danger onClick={handleWithdrawal}>
+        회원탈퇴
+      </ActionButton>
 
       <Modal
         isOpen={isLogoutModalOpen}

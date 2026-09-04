@@ -10,6 +10,7 @@ import {
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { PlaceAPI } from "../../api/place";
 import SearchPanel from "./components/SearchPanel";
+import CourseRouteLine from "./CourseRouteLine";
 import DetailPanel from "./components/DetailPanel";
 import FixedCoursePanel from "../courses/components/FixedCoursePanel";
 import FixedCourseDetail from "../courses/components/FixedCourseDetail";
@@ -376,7 +377,7 @@ const MapPage = () => {
     return () => window.clearTimeout(timeoutId);
   }, [isRouteOpen, selectedRoute, isCourseMapView, loading, restaurantPins, isCourseRestaurantDetail, courseLocation.key, courseLocation.viewport]);
 
-  const selectedMapPath = toMapPath(selectedRoute?.path);
+  const selectedMapPath = useMemo(() => toMapPath(selectedRoute?.path), [selectedRoute]);
   // 대중교통 경로 색상: 단계별 path를 유지해 도보·버스·지하철을 각각 다른 선으로 그린다.
   const selectedMapSegments = useMemo(() => {
     if (selectedRoute?.transportType !== "PUBLIC_TRANSIT") return [];
@@ -593,7 +594,7 @@ const MapPage = () => {
           )}
 
           {/* 대중교통 경로 색상: 대중교통은 이동 단계별 색상과 도보 점선으로 표시한다. */}
-          {selectedMapSegments.map((segment) => (
+          {!isCourseMapView && selectedMapSegments.map((segment) => (
             <Polyline
               key={`${routeRenderRevision}-${segment.key}`}
               path={segment.path}
@@ -605,7 +606,10 @@ const MapPage = () => {
           ))}
 
           {/* 길찾기 기능 연동: 단일 이동수단 또는 단계 path가 없는 응답은 전체 경로를 표시한다. */}
-          {selectedMapSegments.length === 0 && selectedMapPath.length > 1 && (
+          {isCourseMapView && selectedMapPath.length > 1 && (
+            <CourseRouteLine path={selectedMapPath} />
+          )}
+          {!isCourseMapView && selectedMapSegments.length === 0 && selectedMapPath.length > 1 && (
             <Polyline
               key={`route-${isCourseMapView ? location.key : routeRenderRevision}`}
               path={selectedMapPath}
@@ -776,7 +780,7 @@ const MapPage = () => {
       )}
 
       {/* 대중교통 경로 색상: 지도 선의 의미를 사용자가 바로 확인할 수 있는 범례다. */}
-      {selectedRoute?.transportType === "PUBLIC_TRANSIT" && (
+      {!isCourseMapView && selectedRoute?.transportType === "PUBLIC_TRANSIT" && (
         <RouteLegend aria-label="대중교통 경로 색상 범례">
           {ROUTE_SEGMENT_LEGEND.map((item) => (
             <span key={item.key}>

@@ -308,6 +308,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
       const response = await CourseAPI.getWaypointRecommendations(
         {
           ...coordinates,
+          ...(origin?.placeNo != null ? { startPlaceNo: Number(origin.placeNo) } : {}),
           endPlaceNo: Number(destinationNo),
           tags: selectedTags,
           // 백엔드 필수 필드 호환용 기본값(분). 추천 계산에는 사용되지 않습니다.
@@ -316,10 +317,15 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
         controller.signal,
       );
       if (controller.signal.aborted) return;
+      const endpointPlaceNos = new Set(
+        [origin?.placeNo, destinationNo]
+          .filter((placeNo) => placeNo != null && placeNo !== "")
+          .map(String),
+      );
       const candidates = Array.isArray(response?.data) ? response.data : [];
       const normalizedCandidates = candidates
         .map(toWaypoint)
-        .filter((place) => place.placeNo);
+        .filter((place) => place.placeNo && !endpointPlaceNos.has(String(place.placeNo)));
       setRecommendations(normalizedCandidates);
       setRecommendationState(
         normalizedCandidates.length > 0 ? "success" : "empty",
