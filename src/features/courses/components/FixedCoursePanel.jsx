@@ -279,10 +279,6 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
                           {course.endPlace?.placeName || "미정"}
                         </span>
                       </RouteInfo>
-                      <span>
-                        <FiClock aria-hidden="true" />
-                        {formatEstimatedTime(course.estimatedTime)}
-                      </span>
                     </CourseMeta>
                   </CourseInfo>
                 </CourseCard>

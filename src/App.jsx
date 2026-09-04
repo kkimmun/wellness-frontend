@@ -12,6 +12,8 @@ import MapPage from "./features/map/MapPage";
 import AdminPlace from "./features/admin/place/AdminPlace";
 import AdminPlaceDetail from "./features/admin/place/AdminPlaceDetail";
 import AdminPlaceForm from "./features/admin/place/AdminPlaceForm";
+import AdminCourse from "./features/admin/course/AdminCourse";
+import AdminCourseForm from "./features/admin/course/AdminCourseForm";
 import GlobalStyles from "./styles/GlobalStyles";
 import { Modal } from "./components/Modal/Modal";
 
@@ -77,6 +79,10 @@ function App() {
         {/* 관리자 화면 (인증 + 관리자 권한 필요) */}
         <Route element={<AdminRoute />}>
           <Route element={<AdminLayout />}>
+            <Route path="/admin/courses" element={<AdminCourse />} />
+            <Route path="/admin/courses/add" element={<AdminCourseForm />} />
+            <Route path="/admin/courses/edit/:courseNo" element={<AdminCourseForm />} />
+            <Route path="/admin/courses/:courseNo/edit" element={<AdminCourseForm />} />
             <Route path="/admin/places" element={<AdminPlace />} />
             <Route path="/admin/places/add" element={<AdminPlaceForm />} />
             <Route path="/admin/places/edit/:placeNo" element={<AdminPlaceForm />} />
