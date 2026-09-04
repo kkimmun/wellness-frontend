@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  FiClock,
   FiMap,
   FiMapPin,
   FiRefreshCw,
@@ -27,17 +26,6 @@ import {
   RetryButton,
   RouteInfo,
 } from "./FixedCoursePanel.styles";
-
-const formatEstimatedTime = (minutes) => {
-  if (!Number.isFinite(minutes) || minutes <= 0) return "시간 정보 없음";
-
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-
-  if (hours === 0) return `${remainingMinutes}분`;
-  if (remainingMinutes === 0) return `${hours}시간`;
-  return `${hours}시간 ${remainingMinutes}분`;
-};
 
 const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo }) => {
   const [page, setPage] = useState(1);
@@ -220,10 +208,6 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo }) => {
                           {course.endPlace?.placeName || "미정"}
                         </span>
                       </RouteInfo>
-                      <span>
-                        <FiClock aria-hidden="true" />
-                        {formatEstimatedTime(course.estimatedTime)}
-                      </span>
                     </CourseMeta>
                   </CourseInfo>
                 </CourseCard>

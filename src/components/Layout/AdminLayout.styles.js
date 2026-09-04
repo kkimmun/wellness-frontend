@@ -11,6 +11,7 @@ export const AdminWrapper = styled.div`
 
 export const AdminContent = styled.main`
   flex: 1;
+  min-width: 0;
   height: 100%;
   overflow-y: auto;
   padding: ${theme.spacing.xl};

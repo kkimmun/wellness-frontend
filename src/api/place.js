@@ -6,8 +6,8 @@ export const PlaceAPI = {
     return response.data;
   },
 
-  getPins: async () => {
-    const response = await api.get("/places/pins");
+  getPins: async (signal) => {
+    const response = await api.get("/places/pins", { signal });
     return response.data;
   },
 

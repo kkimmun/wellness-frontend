@@ -14,12 +14,10 @@ function CoursePhoto({ src, name }) {
     : <img src={src} alt={`${name} 풍경`} onError={() => setFailed(true)} />;
 }
 
-function formatMetrics(route, estimatedTime) {
+function formatMetrics(route) {
   const distance = Number.isFinite(route?.totalDistance)
     ? `약 ${(route.totalDistance / 1000).toFixed(1).replace(/\.0$/, "")}km` : "거리 정보 없음";
-  const minutes = Number.isFinite(estimatedTime) && estimatedTime > 0
-    ? Math.ceil(estimatedTime)
-    : Number.isFinite(route?.totalTime) ? Math.max(1, Math.ceil(route.totalTime / 60)) : null;
+  const minutes = Number.isFinite(route?.totalTime) ? Math.max(1, Math.ceil(route.totalTime / 60)) : null;
   if (minutes === null) return `${distance}, 시간 정보 없음`;
   const hours = Math.floor(minutes / 60);
   return `${distance}, 소요시간 ${hours ? `${hours}시간 ` : ""}${minutes % 60 ? `${minutes % 60}분` : ""}`.trim();
@@ -58,7 +56,7 @@ export default function UserCourseDetail({ course, onBack, storageWarning, route
         <S.BackRow><BackButton onClick={onBack} aria-label="지도 화면으로 돌아가기" />지도 화면으로</S.BackRow>
         <header>
           <h1>{course.courseName}</h1>
-          <S.CourseMetrics>{formatMetrics(getCourseRoute(course.routeData), course.estimatedTime)}</S.CourseMetrics>
+          <S.CourseMetrics>{formatMetrics(getCourseRoute(course.routeData))}</S.CourseMetrics>
         </header>
         <S.Description>{course.description || "코스 설명이 없습니다."}</S.Description>
         {routeLoading && <S.Feedback role="status">코스 경로를 불러오는 중 ...</S.Feedback>}
