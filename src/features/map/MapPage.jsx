@@ -43,6 +43,21 @@ import {
 
 const EMPTY_RESTAURANTS = [];
 
+const getCourseMarkerImage = (index) => {
+  const number = index + 1;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+    <circle cx="18" cy="20" r="14" fill="#163d43" opacity="0.12"/>
+    <circle cx="18" cy="18" r="14" fill="white"/>
+    <circle cx="18" cy="18" r="12.5" fill="white" stroke="#168b91" stroke-width="1.5"/>
+    <text x="18" y="18" dy=".35em" text-anchor="middle" font-family="Arial, sans-serif" font-size="${number > 99 ? 10 : number > 9 ? 12 : 14}" font-weight="600" fill="#253d43">${number}</text>
+  </svg>`;
+  return {
+    src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    size: { width: 36, height: 36 },
+    options: { offset: { x: 18, y: 18 } },
+  };
+};
+
 const MARKER_SVG =
   "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23FF7043' stroke='white' stroke-width='2'/%3E%3C/svg%3E";
 
@@ -552,11 +567,14 @@ const MapPage = () => {
               <MapMarker
                 key={`${pin.placeNo ?? "origin"}-${index}`}
                 position={{ lat: Number(pin.Y_AXIS ?? pin.yAxis), lng: Number(pin.X_AXIS ?? pin.xAxis) }}
-                image={{
-                  src: isCourseMapView ? MARKER_SVG.replace("FF7043", "34C759") : isTop10 ? MARKER_GOLD_SVG : MARKER_SVG,
+                title={isCourseMapView
+                  ? `${index + 1}. ${pin.placeName || "코스 장소"}${index === 0 ? " · 출발" : index === coursePins.length - 1 ? " · 도착" : ""}`
+                  : pin.placeName}
+                image={isCourseMapView ? getCourseMarkerImage(index) : {
+                  src: isTop10 ? MARKER_GOLD_SVG : MARKER_SVG,
                   size: isTop10 ? { width: 28, height: 28 } : { width: 24, height: 24 },
                 }}
-                zIndex={isTop10 ? 10 : 1}
+                zIndex={isCourseMapView ? 12 : isTop10 ? 10 : 1}
                 onClick={() => { if (!isCourseMapView) handleMarkerClick(pin); }}
               />
             );
