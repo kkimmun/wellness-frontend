@@ -3,7 +3,7 @@ import CustomCoursePanel from "./CustomCoursePanel";
 import UserCourseDetail from "./UserCourseDetail";
 import { saveUserCourse } from "../utils/userCourseStorage";
 
-export default function UserCourseFlow({ pins, pinsState, onClose, onRouteChange }) {
+export default function UserCourseFlow({ pins, pinsState, onClose, onRouteChange, onRestaurantsChange, onRestaurantSelect }) {
   const [flow, setFlow] = useState({ course: null, stage: "create", warning: "" });
 
   useEffect(() => {
@@ -16,7 +16,7 @@ export default function UserCourseFlow({ pins, pinsState, onClose, onRouteChange
   };
 
   if (flow.stage === "detail") {
-    return <UserCourseDetail course={flow.course} onBack={onClose} storageWarning={flow.warning} />;
+    return <UserCourseDetail onRestaurantsChange={onRestaurantsChange} onRestaurantSelect={onRestaurantSelect} places={pins} course={flow.course} onBack={onClose} storageWarning={flow.warning} />;
   }
 
   return <CustomCoursePanel pins={pins} pinsState={pinsState} onClose={onClose} onCourseBuilt={onRouteChange} onCreated={handleCreated} />;

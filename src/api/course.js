@@ -15,6 +15,9 @@ export const CourseAPI = {
   getRecommendedRoute: async (payload, signal) =>
     api.post("/courses/recommendations", payload, { signal }),
 
+  getRestaurants: async (payload, signal) =>
+    api.post("/courses/restaurants", payload, { signal }),
+
   getCustomCourse: async (payload, signal) =>
     api.post("/courses/descriptions", payload, { signal }),
 };
