@@ -37,7 +37,7 @@ import {
   SearchResults,
 } from "../../map/components/RoutePanel.styles";
 
-const DESTINATION_TYPE_DETAIL_NO = 22;
+const DESTINATION_TYPE_DETAIL_NOS = [8, 9];
 
 const TAGS = [
   "사진명소",
@@ -109,13 +109,19 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
   useEffect(() => {
     const controller = new AbortController();
 
-    PlaceAPI.getByTypeDetail(DESTINATION_TYPE_DETAIL_NO, controller.signal)
-      .then((places) => {
+    Promise.all(
+      DESTINATION_TYPE_DETAIL_NOS.map((typeDetailNo) =>
+        PlaceAPI.getByTypeDetail(typeDetailNo, controller.signal),
+      ),
+    )
+      .then((placeLists) => {
         if (controller.signal.aborted) return;
 
-        const validPlaces = Array.isArray(places)
-          ? places.filter((place) => place?.placeNo != null)
-          : [];
+        const validPlaces = placeLists.flatMap((places) =>
+          Array.isArray(places)
+            ? places.filter((place) => place?.placeNo != null)
+            : [],
+        );
         const uniquePlaces = [
           ...new Map(
             validPlaces.map((place) => [String(place.placeNo), place]),
