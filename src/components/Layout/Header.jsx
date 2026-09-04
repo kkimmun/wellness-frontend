@@ -7,8 +7,6 @@ import {
   LogoArea,
   DesktopNavList,
   NavItem,
-  SubMenuList,
-  SubMenuItem,
   DesktopUserIconArea,
   UserIconWrapper,
   HeaderProfileImg,
@@ -19,7 +17,6 @@ import {
   MobileDrawer,
   MobileNavList,
   MobileNavItem,
-  MobileSubList,
 } from "./Header.styles";
 import MyPage from "../../features/mypage/MyPage";
 
@@ -80,7 +77,8 @@ const Header = () => {
     };
   }, []);
 
-  const isPilgrimActive = location.pathname.startsWith("/pilgrim");
+  const isPilgrimCreateActive = location.pathname === "/pilgrim/create";
+  const isPilgrimListActive = location.pathname.startsWith("/pilgrim/fixed");
 
   return (
     <>
@@ -97,30 +95,16 @@ const Header = () => {
             지도
           </NavItem>
           <NavItem
-            $active={isPilgrimActive}
-            onClick={() => handleNavigate("/pilgrim")}
+            $active={isPilgrimCreateActive}
+            onClick={() => handleNavigate("/pilgrim/create")}
           >
-            <span>순례길</span>
-            <SubMenuList>
-              <SubMenuItem
-                $active={location.pathname === "/pilgrim/create"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleNavigate("/pilgrim/create");
-                }}
-              >
-                코스 제작
-              </SubMenuItem>
-              <SubMenuItem
-                $active={location.pathname.startsWith("/pilgrim/fixed")}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleNavigate("/pilgrim/fixed");
-                }}
-              >
-                고정 코스
-              </SubMenuItem>
-            </SubMenuList>
+            순례길 제작
+          </NavItem>
+          <NavItem
+            $active={isPilgrimListActive}
+            onClick={() => handleNavigate("/pilgrim/fixed")}
+          >
+            순례길 목록
           </NavItem>
           <NavItem
             $active={location.pathname === "/gimpoTop10"}
@@ -192,16 +176,17 @@ const Header = () => {
           >
             지도
           </MobileNavItem>
-          <MobileNavItem $active={isPilgrimActive}>
-            <div onClick={() => handleNavigate("/")}>순례자길</div>
-            <MobileSubList>
-              <div onClick={() => handleNavigate("/pilgrim/create")}>
-                • 코스 제작
-              </div>
-              <div onClick={() => handleNavigate("/pilgrim/fixed")}>
-                • 고정 코스
-              </div>
-            </MobileSubList>
+          <MobileNavItem
+            $active={isPilgrimCreateActive}
+            onClick={() => handleNavigate("/pilgrim/create")}
+          >
+            순례길 제작
+          </MobileNavItem>
+          <MobileNavItem
+            $active={isPilgrimListActive}
+            onClick={() => handleNavigate("/pilgrim/fixed")}
+          >
+            순례길 목록
           </MobileNavItem>
           <MobileNavItem
             $active={location.pathname === "/gimpoTop10"}

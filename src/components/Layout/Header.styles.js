@@ -56,49 +56,12 @@ export const DesktopNavList = styled.ul`
   }
 `;
 
-export const SubMenuList = styled.ul`
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: ${theme.spacing.sm};
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition:
-    max-height 0.3s ease-in-out,
-    opacity 0.25s ease-in-out,
-    margin-top 0.3s ease;
-`;
-
-export const SubMenuItem = styled.li`
-  font-size: ${theme.fontSize.sm};
-  white-space: nowrap;
-  color: ${({ $active }) =>
-    $active ? theme.colors.gimpoGold : theme.colors.textSecondary};
-  font-weight: ${({ $active }) => ($active ? "600" : "400")};
-  cursor: pointer;
-  transition: color 0.15s ease;
-
-  &:hover {
-    color: ${theme.colors.gimpoGold};
-    font-weight: 600;
-  }
-
-  &::before {
-    content: "• ";
-    color: ${({ $active }) =>
-      $active ? theme.colors.gimpoGold : theme.colors.textMuted};
-  }
-`;
-
 export const NavItem = styled.li`
   font-size: ${theme.fontSize.md};
   cursor: pointer;
   width: 100%;
   text-align: center;
+  white-space: nowrap;
   color: ${({ $active }) =>
     $active ? theme.colors.textPrimary : theme.colors.textMuted};
   font-weight: ${({ $active }) => ($active ? "700" : "400")};
@@ -106,12 +69,6 @@ export const NavItem = styled.li`
 
   &:hover {
     color: ${theme.colors.textPrimary};
-
-    ${SubMenuList} {
-      max-height: 150px;
-      opacity: 1;
-      margin-top: 10px;
-    }
   }
 `;
 
@@ -232,16 +189,6 @@ export const MobileNavItem = styled.li`
   color: ${({ $active, $isLogout }) =>
     $isLogout ? theme.colors.error : $active ? theme.colors.textPrimary : theme.colors.textSecondary};
   cursor: pointer;
-`;
-
-export const MobileSubList = styled.div`
-  margin-top: ${theme.spacing.sm};
-  margin-left: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  font-size: ${theme.fontSize.md};
-  color: ${theme.colors.textMuted};
 `;
 
 export const SearchContainer = styled.div`

@@ -157,6 +157,14 @@ export const CourseThumbnail = styled.div`
   background: ${({ $tone }) => thumbnailTones[$tone]};
   border-radius: ${theme.radius.md};
 
+  > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
   &::after {
     content: "";
     position: absolute;
@@ -317,4 +325,26 @@ export const InfiniteScrollFooter = styled.li`
   ${RetryButton} {
     margin-top: ${theme.spacing.xs};
   }
+`;
+
+export const UserCourseList = styled.ol`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+`;
+
+export const UserCourseHint = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: ${theme.spacing.xs};
+  margin-top: 12px;
+  padding: 12px;
+  color: ${theme.colors.textSecondary};
+  background: ${theme.colors.bgLight};
+  border-radius: ${theme.radius.md};
+  font-size: ${theme.fontSize.sm};
 `;

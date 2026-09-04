@@ -14,6 +14,7 @@ import DetailPanel from "./components/DetailPanel";
 import FixedCoursePanel from "../courses/components/FixedCoursePanel";
 import FixedCourseDetail from "../courses/components/FixedCourseDetail";
 import UserCourseFlow from "../courses/components/UserCourseFlow";
+import SavedUserCourseDetail from "../courses/components/SavedUserCourseDetail";
 import { getCourseRoute, isCoursePoint } from "../courses/utils/userCourseStorage";
 import RoutePanel from "./components/RoutePanel";
 import Top10Panel from "./components/Top10Panel";
@@ -169,15 +170,16 @@ const MapPage = () => {
     fetchPins();
   }, []);
 
-  const { placeNo, courseNo } = useParams();
+  const { placeNo, courseNo, userCourseId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const isFixedCourseView = location.pathname.startsWith("/pilgrim/fixed");
   const isCustomCourseView = location.pathname === "/pilgrim/create";
   const isFixedCourseDetail = isFixedCourseView && Boolean(courseNo);
-  const isCourseMapView = isCustomCourseView || isFixedCourseDetail;
+  const isUserCourseDetail = isFixedCourseView && Boolean(userCourseId);
+  const isCourseMapView = isCustomCourseView || isFixedCourseDetail || isUserCourseDetail;
   // 현재 URL의 요청 결과만 사용해 다른 코스를 열 때 이전 경로가 남지 않게 한다.
-  const courseRouteData = isFixedCourseDetail
+  const courseRouteData = isFixedCourseDetail || isUserCourseDetail
     ? fixedCourseMap?.key === location.key ? fixedCourseMap.routeData : null
     : customRoute;
   const selectedRoute = useMemo(() => {
@@ -361,9 +363,13 @@ const MapPage = () => {
         onSetDestination={openRouteWithDestination}
       />
 
-      {isFixedCourseView && !isFixedCourseDetail && (
+      {isFixedCourseView && !isFixedCourseDetail && !isUserCourseDetail && (
         <FixedCoursePanel
+          key={location.key}
           selectedCourseNo={courseNo}
+          showUserCourses={Boolean(location.state?.showUserCourses)}
+          onCreateCourse={() => navigate("/pilgrim/create")}
+          onUserCourseSelect={(course) => navigate(`/pilgrim/fixed/mine/${encodeURIComponent(course.id)}`)}
           onClose={() => navigate("/map")}
           onCourseSelect={(course) =>
             navigate(`/pilgrim/fixed/${course.courseNo}`)
@@ -378,6 +384,16 @@ const MapPage = () => {
           pins={pins}
           requestKey={location.key}
           onClose={() => navigate("/map")}
+          onRouteChange={setFixedCourseMap}
+        />
+      )}
+
+      {isUserCourseDetail && (
+        <SavedUserCourseDetail
+          key={location.key}
+          courseId={userCourseId}
+          requestKey={location.key}
+          onClose={() => navigate("/pilgrim/fixed", { state: { showUserCourses: true } })}
           onRouteChange={setFixedCourseMap}
         />
       )}
@@ -477,14 +493,14 @@ const MapPage = () => {
             // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
             return (
               <MapMarker
-                key={pin.placeNo || index}
-                position={{ lat: pin.yAxis, lng: pin.xAxis }}
+                key={`${pin.placeNo ?? "origin"}-${index}`}
+                position={{ lat: Number(pin.Y_AXIS ?? pin.yAxis), lng: Number(pin.X_AXIS ?? pin.xAxis) }}
                 image={{
-                  src: isTop10 ? MARKER_GOLD_SVG : MARKER_SVG,
+                  src: isCourseMapView ? MARKER_SVG.replace("FF7043", "34C759") : isTop10 ? MARKER_GOLD_SVG : MARKER_SVG,
                   size: isTop10 ? { width: 28, height: 28 } : { width: 24, height: 24 },
                 }}
                 zIndex={isTop10 ? 10 : 1}
-                onClick={() => handleMarkerClick(pin)}
+                onClick={() => { if (!isCourseMapView) handleMarkerClick(pin); }}
               />
             );
           })}
