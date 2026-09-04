@@ -11,12 +11,10 @@ import CoursePhoto from "./CoursePhoto";
 import CourseRestaurants from "./CourseRestaurants";
 
 
-function formatMetrics(route, estimatedTime) {
+function formatMetrics(route) {
   const distance = Number.isFinite(route?.totalDistance)
     ? `약 ${(route.totalDistance / 1000).toFixed(1).replace(/\.0$/, "")}km` : "거리 정보 없음";
-  const minutes = Number.isFinite(estimatedTime) && estimatedTime > 0
-    ? Math.ceil(estimatedTime)
-    : Number.isFinite(route?.totalTime) ? Math.max(1, Math.ceil(route.totalTime / 60)) : null;
+  const minutes = Number.isFinite(route?.totalTime) ? Math.max(1, Math.ceil(route.totalTime / 60)) : null;
   if (minutes === null) return `${distance}, 시간 정보 없음`;
   const hours = Math.floor(minutes / 60);
   return `${distance}, 소요시간 ${hours ? `${hours}시간 ` : ""}${minutes % 60 ? `${minutes % 60}분` : ""}`.trim();
@@ -66,7 +64,7 @@ export default function UserCourseDetail({ course, places = [], onBack, backLabe
         <S.BackRow><BackButton onClick={onBack} aria-label={`${backLabel} 돌아가기`} />{backLabel}</S.BackRow>
         <header>
           <h1>{course.courseName}</h1>
-          <S.CourseMetrics>{formatMetrics(getCourseRoute(course.routeData), course.estimatedTime)}</S.CourseMetrics>
+          <S.CourseMetrics>{formatMetrics(getCourseRoute(course.routeData))}</S.CourseMetrics>
         </header>
         <S.DestinationHero aria-label="도착지 사진">
           <S.PlacePhoto><CoursePhoto src={destination.imageUrl} name={destination.placeName} /></S.PlacePhoto>

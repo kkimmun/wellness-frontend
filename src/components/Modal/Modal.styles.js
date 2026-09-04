@@ -2,6 +2,7 @@ import styled from "styled-components";
 import { theme } from "../../styles/theme";
 
 export const Overlay = styled.div`
+  padding: ${theme.spacing.md};
   position: fixed;
   top: 0;
   left: 0;
@@ -19,11 +20,13 @@ export const ModalContainer = styled.div`
   border-radius: ${theme.radius.lg};
   padding: ${theme.spacing.lg};
   width: 100%;
-  max-width: 320px;
+  max-width: ${({ $size }) => $size === "wide" ? "820px" : "320px"};
+  max-height: calc(100dvh - ${theme.spacing.xl});
+  overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  align-items: center; /* 아이콘과 텍스트 중앙 정렬을 위해 추가 */
+  align-items: ${({ $size }) => $size === "wide" ? "stretch" : "center"};
   gap: ${theme.spacing.md};
   position: relative; /* 닫기 버튼 배치를 위해 추가 */
 `;
