@@ -2,20 +2,22 @@ import api from "./axios";
 
 export const AuthAPI = {
   signup: async (memberData) => {
-    const response = await api.post("/members", memberData);
-    return response.data;
+    const body = await api.post("/members", memberData);
+    return body?.data ?? body;
   },
 
   login: async (credentials) => {
-    const response = await api.post("/auth/login", credentials);
-    // 관리자 API(Bearer 인증)용으로 응답 body의 accessToken, memberId를 localStorage에 저장
-    // 응답이 { data: { accessToken } } 또는 평탄한 { accessToken } 두 형태 모두 대응
-    const payload = response?.data ?? response ?? {};
-    const accessToken = payload.accessToken ?? response?.accessToken;
-    const memberId = payload.memberId ?? response?.memberId;
-    if (accessToken) localStorage.setItem("accessToken", accessToken);
-    if (memberId != null) localStorage.setItem("memberId", String(memberId));
-    return response.data;
+    const body = await api.post("/auth/login", credentials);
+    const loginResult = body?.data ?? body;
+    const accessToken = loginResult?.accessToken;
+
+    if (!accessToken) {
+      throw new Error("로그인 응답에서 인증 토큰을 확인할 수 없습니다.");
+    }
+
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("memberId", credentials.memberId);
+    return loginResult;
   },
 
   loginWithGoogle: () => {
@@ -23,8 +25,8 @@ export const AuthAPI = {
   },
 
   getMe: async () => {
-    const response = await api.get("/members/detail");
-    return response.data;
+    const body = await api.get("/members/detail");
+    return body?.data ?? body;
   },
 
   logout: async () => {
@@ -35,17 +37,22 @@ export const AuthAPI = {
   },
 
   sendVerificationEmail: async (email) => {
-    const response = await api.post("/email/verifications", {
-      requestEmail: email,
+    return api.post("/mail/auth", {
+      emailAddr: email,
     });
-    return response.data;
+  },
+
+  resendVerificationEmail: async (email) => {
+    return api.post("/mail/auth/resend", {
+      emailAddr: email,
+    });
   },
 
   verifyEmailCode: async (email, authCode) => {
-    const response = await api.post("/email/verifications/confirm", {
-      requestEmail: email,
-      authCode: authCode,
+    const body = await api.post("/mail/auth/verification", {
+      emailAddr: email,
+      authCode: Number(authCode),
     });
-    return response.data;
+    return body?.data ?? body;
   },
 };
