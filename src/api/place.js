@@ -2,7 +2,7 @@ import api from "./axios";
 
 export const PlaceAPI = {
   getByTypeDetail: async (typeDetailNo, signal) => {
-    const response = await api.get("/places/" + typeDetailNo, { signal });
+    const response = await api.get("/places/types/" + typeDetailNo, { signal });
     return response.data;
   },
 
@@ -46,7 +46,7 @@ export const PlaceAPI = {
 
 
   getPlaceDetail: async (placeNo) => {
-    // 장소 상세 API는 대표 이미지가 아닌 활성 이미지 전체와 설명을 반환한다.
+    // 장소 상세 API는 활성 이미지 전체와 설명을 반환한다.
     const response = await api.get(`/places/${placeNo}/detail`);
     return response.data;
   },
