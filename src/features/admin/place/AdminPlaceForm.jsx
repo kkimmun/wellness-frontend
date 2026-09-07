@@ -85,7 +85,11 @@ const AdminPlaceForm = () => {
           x_axis: data?.xAxis != null ? String(data.xAxis) : "",
           y_axis: data?.yAxis != null ? String(data.yAxis) : "",
         }));
-        setCurrentImages(data?.placeImages ?? []);
+        setCurrentImages(
+          [...(data?.placeImages ?? [])].sort(
+            (a, b) => (a.imgOrder ?? 0) - (b.imgOrder ?? 0),
+          ),
+        );
         setLoadState("ready");
       } catch (err) {
         if (ignore) return;
@@ -136,6 +140,46 @@ const AdminPlaceForm = () => {
     });
   };
 
+  const moveCurrentImage = (index, dir) => {
+    setCurrentImages((prev) => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const saveImageOrder = async () => {
+    const orderedExistingImgNos = currentImages.map((img) => img.imgNo);
+    if (orderedExistingImgNos.some((imgNo) => imgNo == null)) {
+      throw new Error("이미지 번호를 불러오지 못해 순서를 저장할 수 없습니다.");
+    }
+
+    let orderedImgNos = orderedExistingImgNos;
+
+    // 신규 이미지는 updatePlace 이후 번호가 생성되므로 다시 조회해 뒤에 붙인다.
+    if (files.length > 0) {
+      const updatedPlace = await AdminPlaceAPI.getPlace(placeNo);
+      const existingImgNos = new Set(
+        orderedExistingImgNos.map((imgNo) => String(imgNo)),
+      );
+      const newImgNos = [...(updatedPlace?.placeImages ?? [])]
+        .sort((a, b) => (a.imgOrder ?? 0) - (b.imgOrder ?? 0))
+        .filter((img) => !existingImgNos.has(String(img.imgNo)))
+        .map((img) => img.imgNo);
+
+      if (newImgNos.some((imgNo) => imgNo == null)) {
+        throw new Error("새 이미지 번호를 불러오지 못해 순서를 저장할 수 없습니다.");
+      }
+      orderedImgNos = [...orderedExistingImgNos, ...newImgNos];
+    }
+
+    if (orderedImgNos.length > 0) {
+      await AdminPlaceAPI.updatePlaceImageOrder(placeNo, orderedImgNos);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
@@ -159,7 +203,10 @@ const AdminPlaceForm = () => {
     setSubmitting(true);
     try {
       if (mode === "add") await AdminPlaceAPI.createPlace(fd);
-      else await AdminPlaceAPI.updatePlace(placeNo, fd);
+      else {
+        await AdminPlaceAPI.updatePlace(placeNo, fd);
+        await saveImageOrder();
+      }
       navigate("/admin/places");
     } catch (err) {
       setFormError(
@@ -297,12 +344,36 @@ const AdminPlaceForm = () => {
                     현재 등록된 이미지 ({currentImages.length})
                   </CurrentImageLabel>
                   <PreviewGrid>
-                    {currentImages.map((img) => (
-                      <PreviewImage
-                        key={img.saveName ?? img.imgOrder}
-                        src={buildImageUrl(img)}
-                        alt={img.originalName ?? "기존 이미지"}
-                      />
+                    {currentImages.map((img, index) => (
+                      <PreviewCard key={img.imgNo ?? img.saveName ?? img.imgOrder}>
+                        <PreviewThumbWrap>
+                          <PreviewImage
+                            src={buildImageUrl(img)}
+                            alt={img.originalName ?? "기존 이미지"}
+                          />
+                          <OrderBadge>{index + 1}</OrderBadge>
+                        </PreviewThumbWrap>
+                        <PreviewControls>
+                          <button
+                            type="button"
+                            onClick={() => moveCurrentImage(index, -1)}
+                            disabled={submitting || index === 0}
+                            aria-label={`${img.originalName ?? "기존 이미지"} 앞으로 이동`}
+                          >
+                            ▲
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveCurrentImage(index, 1)}
+                            disabled={
+                              submitting || index === currentImages.length - 1
+                            }
+                            aria-label={`${img.originalName ?? "기존 이미지"} 뒤로 이동`}
+                          >
+                            ▼
+                          </button>
+                        </PreviewControls>
+                      </PreviewCard>
                     ))}
                   </PreviewGrid>
                 </>
@@ -310,7 +381,8 @@ const AdminPlaceForm = () => {
                 <CurrentImageNote>등록된 이미지가 없습니다.</CurrentImageNote>
               )}
               <CurrentImageNote>
-                아래에서 이미지를 추가하면 표시된 순서대로 전체 교체됩니다.
+                화살표로 기존 이미지 순서를 변경할 수 있습니다. 새 이미지는 기존
+                이미지 뒤에 추가됩니다.
               </CurrentImageNote>
             </>
           )}
