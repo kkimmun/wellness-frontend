@@ -26,6 +26,9 @@ import {
   MapContainer,
   FloatingTags,
   MapStatus,
+  MapPickNotice,
+  MapPinToolbar,
+  MapPinCreateButton,
   LegendLine,
   RouteLegend,
   RouteReopenButton,
@@ -62,76 +65,11 @@ const getCourseMarkerImage = (index) => {
 const MARKER_SVG =
   "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23FF7043' stroke='white' stroke-width='2'/%3E%3C/svg%3E";
 
-
-// DB 장소 필터 연동: 제공된 TYPE, TYPE_DETAIL, TAG 테이블의 중복을 제거한 실제 선택값이다.
-const TYPE_OPTIONS = [
-  {
-    label: "대분류",
-    values: [
-      "주요관광지",
-      "의료기관",
-      "관광지",
-      "체육시설",
-      "종교시설",
-      "음식점",
-      "체험",
-      "문화시설",
-      "자연/생태",
-      "복지시설",
-    ],
-  },
-  {
-    label: "상세 타입",
-    values: [
-      "역사유적",
-      "자연명소",
-      "종합병원",
-      "한의원",
-      "체험형",
-      "전시형",
-      "수영장",
-      "클라이밍/암벽등반",
-      "사찰",
-      "성당교회",
-      "양식",
-      "생선회",
-      "일식",
-      "카페",
-      "중식",
-      "패스트푸드",
-      "한식",
-      "김포 TOP 10",
-      "공원",
-      "체험농장",
-      "전시 시설",
-      "공연 시설",
-      "문화 시설",
-      "생태 공원",
-      "외국인지원센터",
-      "청소년 시설",
-      "캠핑",
-    ],
-  },
-];
-
-const TAG_OPTIONS = [
-  "문화예술",
-  "전통",
-  "체험",
-  "가족",
-  "데이트",
-  "사진명소",
-  "유아동반",
-  "자연",
-  "산책",
-  "힐링",
-  "역사",
-  "해양",
-  "반려동물",
-  "레저",
-  "쇼핑",
-  "종교",
-];
+const EMPTY_PLACE_FILTERS = {
+  typeNo: null,
+  typeDetailNo: null,
+  tagNo: null,
+};
 
 // DB 장소 필터 연동: 백엔드 결과 중 지도에 표시할 수 있는 좌표 데이터만 사용한다.
 const toValidPins = (places = []) =>
@@ -150,12 +88,25 @@ const toRoutePlace = (place) =>
   place
     ? {
         placeNo: place.placeNo,
-        placeName: place.placeName,
+        placeName: place.placeName || place.label,
         address: place.addr || place.address,
-        X_AXIS: place.xAxis,
-        Y_AXIS: place.yAxis,
+        X_AXIS: Number(place.X_AXIS ?? place.xAxis),
+        Y_AXIS: Number(place.Y_AXIS ?? place.yAxis),
       }
     : null;
+
+const getRoutePointMarkerImage = (label, color) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="50" viewBox="0 0 42 50">
+    <path d="M21 2C10.5 2 2 10.5 2 21c0 14.5 19 27 19 27s19-12.5 19-27C40 10.5 31.5 2 21 2z" fill="${color}" stroke="white" stroke-width="2"/>
+    <circle cx="21" cy="20" r="10" fill="white"/>
+    <text x="21" y="20" dy=".35em" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="${color}">${label}</text>
+  </svg>`;
+  return {
+    src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    size: { width: 42, height: 50 },
+    options: { offset: { x: 21, y: 48 } },
+  };
+};
 
 // 길찾기 기능 연동: 백엔드의 X_AXIS(경도), Y_AXIS(위도)를 카카오 지도 좌표로 변환한다.
 const toMapPath = (path = []) =>
@@ -198,9 +149,11 @@ const MapPage = () => {
   const [pins, setPins] = useState([]);
   const [pinsState, setPinsState] = useState("loading");
   const [filteredPins, setFilteredPins] = useState([]); // 지도에 표시할 핀 목록
-  // DB 장소 필터 연동: 선택 조건의 원본 결과를 별도로 보관해 장소명 검색과 함께 사용할 수 있게 한다.
+  // DB 장소 필터 연동: 선택지와 선택된 PK를 분리해 DB 번호가 바뀌어도 화면 코드가 영향을 받지 않게 한다.
   const [filterPins, setFilterPins] = useState([]);
-  const [activeFilter, setActiveFilter] = useState(null);
+  const [typeOptions, setTypeOptions] = useState([]);
+  const [tagOptions, setTagOptions] = useState([]);
+  const [placeFilters, setPlaceFilters] = useState(EMPTY_PLACE_FILTERS);
   // 장소 핀 초기 상태: 선택 안 함에서는 빈 지도, 전체 선택을 눌렀을 때만 전체 장소를 표시한다.
   const [isAllPinsVisible, setIsAllPinsVisible] = useState(false);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
@@ -212,6 +165,7 @@ const MapPage = () => {
   const [isRouteOpen, setIsRouteOpen] = useState(false);
   const [routeOrigin, setRouteOrigin] = useState(null);
   const [routeDestination, setRouteDestination] = useState(null);
+  const [mapPickMode, setMapPickMode] = useState(null);
   const [generalRoute, setSelectedRoute] = useState(null);
   const [customRoute, setCustomRoute] = useState(null);
   const [fixedCourseMap, setFixedCourseMap] = useState(null);
@@ -296,6 +250,53 @@ const MapPage = () => {
     };
     fetchPins();
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    Promise.all([PlaceAPI.getTypeOptions(), PlaceAPI.getTagOptions()])
+      .then(([types, tags]) => {
+        if (ignore) return;
+        setTypeOptions(Array.isArray(types) ? types : []);
+        setTagOptions(Array.isArray(tags) ? tags : []);
+      })
+      .catch((err) => {
+        if (ignore) return;
+        console.error("장소 타입·태그 선택지를 불러오는 데 실패했습니다.", err);
+        setAlertMessage("장소 타입·태그 선택지를 불러오지 못했습니다.");
+        setIsAlertModalOpen(true);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const groupedTypeOptions = useMemo(() => {
+    const groups = new window.Map();
+    typeOptions.forEach((option) => {
+      if (!groups.has(option.typeNo)) {
+        groups.set(option.typeNo, {
+          typeNo: option.typeNo,
+          type: option.type,
+          details: [],
+        });
+      }
+      if (option.typeDetailNo != null) {
+        groups.get(option.typeNo).details.push(option);
+      }
+    });
+    return [...groups.values()];
+  }, [typeOptions]);
+
+  const selectedTypeValue = placeFilters.typeDetailNo
+    ? `detail:${placeFilters.typeDetailNo}`
+    : placeFilters.typeNo
+      ? `type:${placeFilters.typeNo}`
+      : "";
+  const hasPlaceFilter = Boolean(
+    placeFilters.typeNo || placeFilters.typeDetailNo || placeFilters.tagNo,
+  );
 
   const params = useParams();
   const { placeNo } = params;
@@ -433,44 +434,48 @@ const MapPage = () => {
     setIsTagsOpen((prev) => !prev);
   };
 
-  // DB 장소 필터 연동: 타입과 태그 API 중 선택한 하나를 호출하고 지도·검색의 장소 목록을 함께 갱신한다.
+  // DB 장소 필터 연동: 타입과 태그 선택을 함께 유지하고 PK 조건을 AND로 조회한다.
   const handlePlaceFilter = async (kind, value) => {
     const requestId = filterRequestIdRef.current + 1;
     filterRequestIdRef.current = requestId;
 
-    if (!value && kind) {
-      setActiveFilter(null);
-      setFilterPins([]);
-      setFilteredPins([]);
-      setIsAllPinsVisible(false);
-      setIsFilterLoading(false);
-      return;
+    let nextFilters = { ...placeFilters };
+    if (kind === "type") {
+      nextFilters = {
+        ...nextFilters,
+        typeNo: value.startsWith("type:") ? Number(value.split(":")[1]) : null,
+        typeDetailNo: value.startsWith("detail:") ? Number(value.split(":")[1]) : null,
+      };
+    } else if (kind === "tag") {
+      nextFilters = {
+        ...nextFilters,
+        tagNo: value ? Number(value) : null,
+      };
     }
 
-    if (!kind) {
-      setActiveFilter(null);
+    setPlaceFilters(nextFilters);
+    setIsAllPinsVisible(false);
+
+    const hasNextFilter = Boolean(
+      nextFilters.typeNo || nextFilters.typeDetailNo || nextFilters.tagNo,
+    );
+    if (!hasNextFilter) {
       setFilterPins([]);
-      setFilteredPins(pins);
-      setIsAllPinsVisible(true);
+      setFilteredPins([]);
       setIsFilterLoading(false);
       return;
     }
 
     setIsFilterLoading(true);
     try {
-      const response =
-        kind === "type"
-          ? await PlaceAPI.getPinsByType(value)
-          : await PlaceAPI.getPinsByTag(value);
+      const response = await PlaceAPI.getPinsByFilters(nextFilters);
 
       // 연속 선택 시 늦게 도착한 이전 응답이 최신 필터 결과를 덮지 않게 한다.
       if (requestId !== filterRequestIdRef.current) return;
 
       const validPins = toValidPins(response);
-      setActiveFilter({ kind, value });
       setFilterPins(validPins);
       setFilteredPins(validPins);
-      setIsAllPinsVisible(false);
 
       if (validPins.length === 0) {
         setAlertMessage("선택한 조건에 해당하는 장소가 없습니다.");
@@ -513,8 +518,47 @@ const MapPage = () => {
     navigate("/map");
   };
 
+  const handleRoutePointsChange = useCallback((origin, destination) => {
+    setRouteOrigin(origin);
+    setRouteDestination(destination);
+  }, []);
+
+  const handleRequestMapPick = useCallback((target) => {
+    setMapPickMode(target);
+    setTop10Overlay(null);
+    setIsRouteOpen(true);
+    navigate("/map");
+  }, [navigate]);
+
+  const handleMapClick = (_map, mouseEvent) => {
+    setTop10Overlay(null);
+
+    if (mapPickMode && mouseEvent?.latLng) {
+      const isOrigin = mapPickMode === "origin";
+      const pickedPoint = {
+        label: isOrigin ? "지도에서 선택한 출발지" : "지도에서 선택한 도착지",
+        placeName: isOrigin ? "지도에서 선택한 출발지" : "지도에서 선택한 도착지",
+        address: "지도에서 선택한 위치",
+        X_AXIS: mouseEvent.latLng.getLng(),
+        Y_AXIS: mouseEvent.latLng.getLat(),
+      };
+
+      if (isOrigin) setRouteOrigin(pickedPoint);
+      else setRouteDestination(pickedPoint);
+      setSelectedRoute(null);
+      setMapPickMode(null);
+      setRouteInputRevision((current) => current + 1);
+      setRouteRenderRevision((current) => current + 1);
+      return;
+    }
+
+    if (isCourseMapView) return;
+    navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
+  };
+
   // 길찾기 표시 안정화: 새 경로마다 렌더링 번호를 변경해 이전 Polyline을 확실히 제거한다.
   const handleRouteSelect = (route, routeResponse) => {
+    setMapPickMode(null);
     // 대중교통 경로 색상: 이동수단 정보를 선택 경로에 보존해 지도 표시 방식을 결정한다.
     const routePoints = route
       ? [
@@ -541,6 +585,7 @@ const MapPage = () => {
     setIsRouteOpen(false);
     setRouteOrigin(null);
     setRouteDestination(null);
+    setMapPickMode(null);
     setSelectedRoute(null);
     setRouteInputRevision((current) => current + 1);
     setRouteRenderRevision((current) => current + 1);
@@ -549,14 +594,19 @@ const MapPage = () => {
   const handleAllPinsToggle = () => {
     // 장소 핀 UX 개선: 전체 선택 버튼을 다시 누르면 선택 안 함 상태로 복귀한다.
     if (isAllPinsVisible) {
-      setActiveFilter(null);
+      setPlaceFilters(EMPTY_PLACE_FILTERS);
       setFilterPins([]);
       setFilteredPins([]);
       setIsAllPinsVisible(false);
       return;
     }
 
-    handlePlaceFilter(null, "");
+    filterRequestIdRef.current += 1;
+    setPlaceFilters(EMPTY_PLACE_FILTERS);
+    setFilterPins([]);
+    setFilteredPins(pins);
+    setIsAllPinsVisible(true);
+    setIsFilterLoading(false);
   };
 
   // 길찾기 표시 안정화: 패널 열림 상태에 맞는 여백으로 경로 전체가 보이도록 지도를 조정한다.
@@ -622,26 +672,34 @@ const MapPage = () => {
   const visibleMapPins = isCourseMapView
     ? coursePins
     : selectedRoute
-      ? selectedRoute.routePoints || []
+      ? (selectedRoute.routePoints || []).slice(1, -1)
       : filteredPins;
   const hasRouteSession = Boolean(
     isRouteOpen || routeOrigin || routeDestination || selectedRoute,
   );
-  const searchablePins = activeFilter ? filterPins : pins;
+  const searchablePins = hasPlaceFilter ? filterPins : pins;
+
+  const routeSelectionPins = useMemo(
+    () => [
+      routeOrigin && { ...toRoutePlace(routeOrigin), markerLabel: "출", markerColor: "#2196F3" },
+      routeDestination && { ...toRoutePlace(routeDestination), markerLabel: "도", markerColor: "#FF5A47" },
+    ].filter(Boolean),
+    [routeOrigin, routeDestination],
+  );
 
   const handleSearchResults = useCallback((results) => {
     // 선택 안 함 상태에서 검색어를 지우면 전체 핀이 자동으로 나타나지 않게 한다.
-    if (!activeFilter && !isAllPinsVisible && results === pins) {
+    if (!hasPlaceFilter && !isAllPinsVisible && results === pins) {
       setFilteredPins([]);
       return;
     }
     setFilteredPins(results);
-  }, [activeFilter, isAllPinsVisible, pins]);
+  }, [hasPlaceFilter, isAllPinsVisible, pins]);
 
   // DB 장소 필터 연동: 필터 결과의 위치가 현재 화면 밖에 있지 않도록 결과 범위로 지도를 이동한다.
   useEffect(() => {
     if (
-      !activeFilter ||
+      !hasPlaceFilter ||
       filterPins.length === 0 ||
       !mapRef.current ||
       !window.kakao?.maps
@@ -665,7 +723,7 @@ const MapPage = () => {
       bounds.extend(new window.kakao.maps.LatLng(pin.yAxis, pin.xAxis));
     });
     map.setBounds(bounds, 60, 60, 60, 60);
-  }, [activeFilter, filterPins]);
+  }, [hasPlaceFilter, filterPins]);
 
   return (
     <MapContainer>
@@ -748,6 +806,9 @@ const MapPage = () => {
         initialDestination={routeDestination}
         onClose={endRoute}
         onRouteSelect={handleRouteSelect}
+        onPointsChange={handleRoutePointsChange}
+        onRequestMapPick={handleRequestMapPick}
+        mapPickMode={mapPickMode}
       />
 
       {/* 길찾기 패널 표시 전환: 경로 상태는 유지하고 패널만 접거나 다시 연다. */}
@@ -771,17 +832,18 @@ const MapPage = () => {
             {/* DB 장소 필터 연동: 존재하지 않는 임시 태그 버튼을 실제 타입·태그 선택으로 교체한다. */}
             <FilterSelect
               aria-label="장소 타입 선택"
-              value={activeFilter?.kind === "type" ? activeFilter.value : ""}
-              $isActive={activeFilter?.kind === "type"}
+              value={selectedTypeValue}
+              $isActive={Boolean(placeFilters.typeNo || placeFilters.typeDetailNo)}
               disabled={isFilterLoading}
               onChange={(event) => handlePlaceFilter("type", event.target.value)}
             >
               <option value="">타입 선택 안 함</option>
-              {TYPE_OPTIONS.map((group) => (
-                <optgroup key={group.label} label={group.label}>
-                  {group.values.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
+              {groupedTypeOptions.map((group) => (
+                <optgroup key={group.typeNo} label={group.type}>
+                  <option value={`type:${group.typeNo}`}>{group.type} 전체</option>
+                  {group.details.map((detail) => (
+                    <option key={detail.typeDetailNo} value={`detail:${detail.typeDetailNo}`}>
+                      {detail.typeDetailContent}
                     </option>
                   ))}
                 </optgroup>
@@ -790,15 +852,15 @@ const MapPage = () => {
 
             <FilterSelect
               aria-label="장소 태그 선택"
-              value={activeFilter?.kind === "tag" ? activeFilter.value : ""}
-              $isActive={activeFilter?.kind === "tag"}
+              value={placeFilters.tagNo || ""}
+              $isActive={Boolean(placeFilters.tagNo)}
               disabled={isFilterLoading}
               onChange={(event) => handlePlaceFilter("tag", event.target.value)}
             >
               <option value="">태그 선택 안 함</option>
-              {TAG_OPTIONS.map((value) => (
-                <option key={value} value={value}>
-                  # {value}
+              {tagOptions.map((tag) => (
+                <option key={tag.tagNo} value={tag.tagNo}>
+                  # {tag.tagContent}
                 </option>
               ))}
             </FilterSelect>
@@ -827,6 +889,34 @@ const MapPage = () => {
         </FloatingTags>
       )}
 
+      {/* 지도 좌표 길찾기: DB 장소를 먼저 고르지 않아도 지도에서 출발·도착 핀을 바로 생성한다. */}
+      {!isCourseMapView && !loading && !error && (
+        <MapPinToolbar aria-label="지도 길찾기 핀 생성">
+          <MapPinCreateButton
+            type="button"
+            $color="#2196F3"
+            $active={mapPickMode === "origin"}
+            onClick={() => handleRequestMapPick("origin")}
+            aria-pressed={mapPickMode === "origin"}
+            title="지도에서 출발지 핀 생성"
+          >
+            <span><i>출</i></span>
+            <small>출발지</small>
+          </MapPinCreateButton>
+          <MapPinCreateButton
+            type="button"
+            $color="#FF5A47"
+            $active={mapPickMode === "destination"}
+            onClick={() => handleRequestMapPick("destination")}
+            aria-pressed={mapPickMode === "destination"}
+            title="지도에서 도착지 핀 생성"
+          >
+            <span><i>도</i></span>
+            <small>도착지</small>
+          </MapPinCreateButton>
+        </MapPinToolbar>
+      )}
+
       {loading || error ? (
         <MapStatus role="status">
           <strong>
@@ -837,6 +927,13 @@ const MapPage = () => {
           {error && <span>카카오 앱 키 설정을 확인해주세요.</span>}
         </MapStatus>
       ) : (
+        <>
+        {mapPickMode && (
+          <MapPickNotice role="status">
+            지도에서 {mapPickMode === "origin" ? "출발지" : "도착지"}로 사용할 위치를 클릭하세요.
+            <button type="button" onClick={() => setMapPickMode(null)}>취소</button>
+          </MapPickNotice>
+        )}
         <Map
           mapTypeId="ROADMAP"
           center={{ lat: 37.6105, lng: 126.7056 }}
@@ -849,11 +946,7 @@ const MapPage = () => {
             map.setMaxLevel(14);
             map.setMinLevel(2); // 과도한 확대 방지
           }}
-          onClick={() => {
-            setTop10Overlay(null);
-            if (isCourseMapView) return;
-            navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
-          }}
+          onClick={handleMapClick}
         >
           {visibleMapPins.map((pin, index) => {
             // DB typeDetailNo를 확인하거나, 명세된 placeNo 목록을 기반으로 판별
@@ -883,6 +976,17 @@ const MapPage = () => {
               />
             );
           })}
+
+          {!isCourseMapView && routeSelectionPins.map((pin) => (
+            <MapMarker
+              key={`route-selection-${pin.markerLabel}`}
+              position={{ lat: pin.Y_AXIS, lng: pin.X_AXIS }}
+              title={pin.placeName}
+              image={getRoutePointMarkerImage(pin.markerLabel, pin.markerColor)}
+              zIndex={40}
+              clickable={false}
+            />
+          ))}
 
           {restaurantPins.map((place) => (
             <MapMarker
@@ -1079,6 +1183,7 @@ const MapPage = () => {
             </CustomOverlayMap>
           )}
         </Map>
+        </>
       )}
 
       {/* 대중교통 경로 색상: 지도 선의 의미를 사용자가 바로 확인할 수 있는 범례다. */}

@@ -99,6 +99,89 @@ export const RouteReopenButton = styled.button`
   }
 `;
 
+export const MapPickNotice = styled.div`
+  position: absolute;
+  top: 92px;
+  left: 50%;
+  z-index: 240;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: ${theme.radius.pill};
+  background: rgba(33, 33, 33, 0.9);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  transform: translateX(-50%);
+
+  button {
+    border: 0;
+    background: transparent;
+    color: #81d4fa;
+    font-weight: 700;
+  }
+`;
+
+export const MapPinToolbar = styled.div`
+  position: absolute;
+  top: 110px;
+  right: 24px;
+  z-index: 220;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid ${theme.colors.borderLight};
+  border-radius: ${theme.radius.lg};
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+`;
+
+export const MapPinCreateButton = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 54px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: ${theme.radius.md};
+  background: ${({ $active, $color }) => ($active ? `${$color}18` : "transparent")};
+  color: ${({ $color }) => $color};
+  cursor: pointer;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50% 50% 50% 0;
+    background: ${({ $color }) => $color};
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    transform: rotate(-45deg);
+
+    i {
+      font-style: normal;
+      transform: rotate(45deg);
+    }
+  }
+
+  small {
+    color: ${theme.colors.textSecondary};
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  &:hover {
+    background: ${({ $color }) => `${$color}18`};
+  }
+`;
+
 export const FloatingTags = styled.div`
   position: absolute;
   top: 24px;

@@ -11,6 +11,22 @@ export const PlaceAPI = {
     return response.data;
   },
 
+  getPinsByFilters: async (filters, signal) => {
+    const response = await api.get("/places/pins", { params: filters, signal });
+    return response.data;
+  },
+
+  // TYPE/TYPE_DETAIL과 TAG 선택지는 DB 마스터를 조회해 화면에 동적으로 구성한다.
+  getTypeOptions: async () => {
+    const response = await api.get("/places/type-options");
+    return response.data;
+  },
+
+  getTagOptions: async () => {
+    const response = await api.get("/places/tag-options");
+    return response.data;
+  },
+
 
   // DB 장소 필터 연동: TYPE 또는 TYPE_DETAIL의 정확한 이름으로 지도 핀을 조회한다.
   getPinsByType: async (type) => {

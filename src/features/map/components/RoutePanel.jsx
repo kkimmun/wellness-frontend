@@ -7,6 +7,7 @@ import {
   FaChevronUp,
   FaExclamationCircle,
   FaLocationArrow,
+  FaMapMarkerAlt,
   FaSearch,
   FaTimes,
   FaWalking,
@@ -14,11 +15,13 @@ import {
 import { RouteAPI } from "../../../api/route";
 import {
   AddWaypointButton,
+  ClearPointButton,
   EmptyState,
   FindRouteButton,
   IconButton,
   InlineState,
   LocationButton,
+  MapPickButton,
   OptionButton,
   OptionGrid,
   PointFields,
@@ -151,6 +154,9 @@ const RoutePanel = ({
   initialDestination,
   onClose,
   onRouteSelect,
+  onPointsChange,
+  onRequestMapPick,
+  mapPickMode,
 }) => {
   const [origin, setOrigin] = useState(initialOrigin || null);
   const [destination, setDestination] = useState(initialDestination || null);
@@ -186,6 +192,10 @@ const RoutePanel = ({
     },
     [],
   );
+
+  useEffect(() => {
+    onPointsChange?.(origin, destination);
+  }, [origin, destination, onPointsChange]);
 
   const clearRouteResult = () => {
     // 길찾기 표시 안정화: 이동수단·입력 변경 뒤 이전 요청이 늦게 도착해 경로를 다시 그리지 못하게 한다.
@@ -329,6 +339,18 @@ const RoutePanel = ({
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
     );
+  };
+
+  const requestMapPick = (target) => {
+    clearRouteResult();
+    setActiveTarget(target);
+    setSearchResults([]);
+    setSearchState("idle");
+    onRequestMapPick?.(target);
+  };
+
+  const clearPoint = (target) => {
+    updatePointText(target, "");
   };
 
   const addWaypoint = () => {
@@ -661,6 +683,24 @@ const RoutePanel = ({
             >
               <FaLocationArrow />
             </LocationButton>
+            <MapPickButton
+              type="button"
+              $active={mapPickMode === "origin"}
+              title="지도에서 출발지 선택"
+              aria-label="지도에서 출발지 선택"
+              onClick={() => requestMapPick("origin")}
+            >
+              <FaMapMarkerAlt />
+            </MapPickButton>
+            <ClearPointButton
+              type="button"
+              disabled={!origin}
+              title="출발지 지우기"
+              aria-label="출발지 지우기"
+              onClick={() => clearPoint("origin")}
+            >
+              <FaTimes />
+            </ClearPointButton>
           </PointRow>
 
           <PointRow $accent="#FF7043" $last>
@@ -683,6 +723,24 @@ const RoutePanel = ({
             >
               <FaLocationArrow />
             </LocationButton>
+            <MapPickButton
+              type="button"
+              $active={mapPickMode === "destination"}
+              title="지도에서 도착지 선택"
+              aria-label="지도에서 도착지 선택"
+              onClick={() => requestMapPick("destination")}
+            >
+              <FaMapMarkerAlt />
+            </MapPickButton>
+            <ClearPointButton
+              type="button"
+              disabled={!destination}
+              title="도착지 지우기"
+              aria-label="도착지 지우기"
+              onClick={() => clearPoint("destination")}
+            >
+              <FaTimes />
+            </ClearPointButton>
           </PointRow>
         </PointFields>
 
