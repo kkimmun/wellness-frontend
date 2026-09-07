@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   SignupContainer,
   Card,
   Header,
   Title,
-  Subtitle,
   Form,
   InputGrid,
   InputGroup,
@@ -16,12 +15,18 @@ import { PrimaryButton } from "../../components/Button/Button.styles";
 import { BaseInput } from "../../components/Input/Input.styles";
 import { PasswordInput } from "../../components/Input/PasswordInput";
 import { AuthAPI } from "../../api/auth";
+import { useToast } from "../../context/ToastContext";
 
 const pwdRegex = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{6,15}$/;
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const signupCompletedRef = useRef(false);
+
   const verifiedEmail = sessionStorage.getItem("verifiedEmail") || "";
+
+  const toast = useToast();
+
   const [payload, setPayload] = useState({
     memberName: "",
     memberId: verifiedEmail,
@@ -36,11 +41,11 @@ const SignUp = () => {
 
   useEffect(() => {
     // 보안 강화를 위해 sessionStorage 사용
-    if (!verifiedEmail) {
-      alert("이메일 인증이 필요합니다.");
+    if (!verifiedEmail && !signupCompletedRef.current) {
+      toast.error("이메일 인증이 필요합니다.");
       navigate("/request-email", { replace: true });
     }
-  }, [navigate, verifiedEmail]);
+  }, [navigate, verifiedEmail, toast]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -85,9 +90,11 @@ const SignUp = () => {
         memberPwd: payload.memberPwd
       });
 
-      alert("회원가입이 완료되었습니다!");
+      // 인증 정보 삭제로 재렌더링되어도 인증 화면으로 되돌아가지 않게 완료 상태를 먼저 기록한다.
+      signupCompletedRef.current = true;
       sessionStorage.removeItem("verifiedEmail");
-      navigate("/login");
+      navigate("/login", { replace: true });
+      toast.success("회원가입이 완료되었습니다!");
     } catch (err) {
       setSignupError(err.message || "회원가입 중 오류가 발생했습니다.");
     } finally {
@@ -103,9 +110,7 @@ const SignUp = () => {
           <BackButton onClick={() => navigate(-1)} />
         </Header>
 
-        <Subtitle>
-          이미 계정이 있으신가요? <Link to="/login">로그인</Link>
-        </Subtitle>
+        {/* 로그인 링크는 EmailRequest로 이동됨 */}
 
         {signupError && <ErrorMessage style={{ textAlign: "center", marginBottom: "1rem" }}>{signupError}</ErrorMessage>}
 

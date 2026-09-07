@@ -1,5 +1,10 @@
 import api from "./axios";
 
+const clearLocalAuth = () => {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("memberId");
+};
+
 export const AuthAPI = {
   signup: async (memberData) => {
     const body = await api.post("/members", memberData);
@@ -30,10 +35,27 @@ export const AuthAPI = {
   },
 
   logout: async () => {
-    const response = await api.post("/auth/logout");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("memberId");
-    return response?.data || { code: 200, message: "로그아웃 성공" };
+    try {
+      return await api.post("/auth/logout");
+    } finally {
+      // 서버 토큰 삭제가 실패하더라도 브라우저의 로그인 상태는 반드시 종료한다.
+      clearLocalAuth();
+    }
+  },
+
+  withdraw: async () => {
+    const result = await api.delete("/members");
+
+    try {
+      // 회원 삭제 후 서버의 refresh token과 쿠키도 함께 정리한다.
+      await api.post("/auth/logout");
+    } catch {
+      // 회원 삭제는 이미 완료됐으므로 로그아웃 정리 실패로 탈퇴 성공을 뒤집지 않는다.
+    } finally {
+      clearLocalAuth();
+    }
+
+    return result?.data ?? result;
   },
 
   sendVerificationEmail: async (email) => {
