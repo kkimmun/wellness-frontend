@@ -5,6 +5,7 @@ const ImageSlider = ({ placeImages }) => {
   const [imgIndex, setImgIndex] = useState(0);
 
   // DB 지도 핀 연동: 이미지가 없을 때 목업 이미지를 만들지 않고 빈 상태를 표시한다.
+  // 장소 상세 개선: 상세 API가 IMG_ORDER 순서로 준 이미지 전체를 순환 표시한다.
   const images = placeImages?.length > 0 ? placeImages : [null];
 
   const renderBoxStyle = (item) => {

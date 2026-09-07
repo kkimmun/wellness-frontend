@@ -11,8 +11,43 @@ export const PlaceAPI = {
     return response.data;
   },
 
+  getPinsByFilters: async (filters, signal) => {
+    const response = await api.get("/places/pins", { params: filters, signal });
+    return response.data;
+  },
+
+  // TYPE/TYPE_DETAIL과 TAG 선택지는 DB 마스터를 조회해 화면에 동적으로 구성한다.
+  getTypeOptions: async () => {
+    const response = await api.get("/places/type-options");
+    return response.data;
+  },
+
+  getTagOptions: async () => {
+    const response = await api.get("/places/tag-options");
+    return response.data;
+  },
+
+
+  // DB 장소 필터 연동: TYPE 또는 TYPE_DETAIL의 정확한 이름으로 지도 핀을 조회한다.
+  getPinsByType: async (type) => {
+    const response = await api.get("/places/types", {
+      params: { type },
+    });
+    return response.data;
+  },
+
+  // DB 장소 필터 연동: TAG_CONTENT의 정확한 이름으로 지도 핀을 조회한다.
+  getPinsByTag: async (tag) => {
+    const response = await api.get("/places/tags", {
+      params: { tag },
+    });
+    return response.data;
+  },
+
+
   getPlaceDetail: async (placeNo) => {
-    const response = await api.get(`/place/${placeNo}`);
+    // 장소 상세 API는 대표 이미지가 아닌 활성 이미지 전체와 설명을 반환한다.
+    const response = await api.get(`/places/${placeNo}/detail`);
     return response.data;
   },
 
@@ -22,6 +57,7 @@ export const PlaceAPI = {
     const response = await api.get("/gimpoTop10");
     return response; // ApiResponse 형식 (code, data, message) 전체 반환
   },
+
 
 
   createReview: async (placeNo, formData) => {
