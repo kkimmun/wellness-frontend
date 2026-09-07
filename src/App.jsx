@@ -9,6 +9,7 @@ import EmailRequest from "./features/auth/EmailRequest";
 import EmailVerify from "./features/auth/EmailVerify";
 import Login from "./features/auth/Login";
 import MapPage from "./features/map/MapPage";
+import LandingPage from "./features/landing/LandingPage";
 import AdminPlace from "./features/admin/place/AdminPlace";
 import AdminPlaceDetail from "./features/admin/place/AdminPlaceDetail";
 import AdminPlaceForm from "./features/admin/place/AdminPlaceForm";
@@ -63,9 +64,11 @@ function App() {
           </Route>
         </Route>
 
+        {/* 랜딩 페이지 (단독 레이아웃) */}
+        <Route path="/" element={<LandingPage />} />
+
         {/* 메인 서비스 화면 */}
         <Route element={<MainLayout />}>
-          <Route path="/" element={<MapPage />} />
           <Route path="/map" element={<MapPage />} />
           <Route path="/pilgrim/create" element={<MapPage />} />
           <Route path="/pilgrim/fixed" element={<MapPage />} />
@@ -74,6 +77,8 @@ function App() {
           <Route path="/place/:placeNo" element={<MapPage />} />
           <Route path="/place/:placeNo/review" element={<MapPage />} />
           <Route path="/gimpoTop10" element={<MapPage />} />
+          <Route path="/gimpoTop10/:placeNo" element={<MapPage />} />
+          <Route path="/gimpoTop10/:placeNo/review" element={<MapPage />} />
         </Route>
 
         {/* 관리자 화면 (인증 + 관리자 권한 필요) */}

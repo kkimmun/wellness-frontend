@@ -6,8 +6,8 @@ import {
   CardTop,
   CardBottom,
   Header,
-  Subtitle,
   Title,
+  FooterText,
   Form,
   InputGroup,
   ErrorMessage,
@@ -89,10 +89,6 @@ const Login = () => {
             <BackButton onClick={() => navigate(-1)} />
           </Header>
 
-          <Subtitle>
-            아직 회원이 아니신가요? <Link to="/request-email">회원가입</Link>
-          </Subtitle>
-
           <Form onSubmit={handleSubmit} noValidate>
             {loginError && <FormErrorMessage>{loginError}</FormErrorMessage>}
 
@@ -139,6 +135,10 @@ const Login = () => {
             Sign in with Google
           </GoogleLoginButton>
         </CardBottom>
+        
+        <FooterText>
+          아직 회원이 아니신가요? <Link to="/request-email">회원가입</Link>
+        </FooterText>
       </Card>
     </LoginContainer>
   );
