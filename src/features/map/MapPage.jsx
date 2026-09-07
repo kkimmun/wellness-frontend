@@ -4,7 +4,6 @@ import {
   Map,
   MapMarker,
   CustomOverlayMap,
-  MarkerClusterer,
   useKakaoLoader,
 } from "react-kakao-maps-sdk";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
