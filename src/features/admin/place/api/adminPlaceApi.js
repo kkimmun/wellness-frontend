@@ -63,6 +63,18 @@ export const AdminPlaceAPI = {
   },
 
   /**
+   * 현재 장소의 활성 이미지 전체 순서 변경
+   * @param {number|string} placeNo
+   * @param {number[]} imgNos 표시할 순서대로 정렬한 이미지 번호
+   */
+  updatePlaceImageOrder: async (placeNo, imgNos) => {
+    const body = await api.patch(`/admin/places/${placeNo}/images/order`, {
+      imgNos,
+    });
+    return body;
+  },
+
+  /**
    * 명소 삭제 (del_yn = Y)
    * @param {number[]} placeNos
    */
