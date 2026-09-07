@@ -79,16 +79,34 @@ const ToastBox = styled.div`
   }
 `;
 
+// Toast 개별 아이템 (자동 삭제 타이머 로직 내장)
+const ToastItem = ({ toast, removeToast, getIcon }) => {
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      removeToast(toast.id);
+    }, 3000);
+    return () => clearTimeout(timer); // 언마운트 시 자동 정리 (메모리 누수 방지)
+  }, [toast.id, removeToast]);
+
+  return (
+    <ToastBox $type={toast.type}>
+      <div className="toast-content">
+        {getIcon(toast.type)}
+        <span className="message">{toast.message}</span>
+      </div>
+      <button className="close-btn" onClick={() => removeToast(toast.id)}>
+        <FiX size={16} />
+      </button>
+    </ToastBox>
+  );
+};
+
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
   const addToast = useCallback((message, type = 'info') => {
     const id = Date.now() + Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, message, type }]);
-
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, 3000);
   }, []);
 
   const removeToast = useCallback((id) => {
@@ -115,15 +133,7 @@ export const ToastProvider = ({ children }) => {
       {children}
       <ToastContainerWrapper>
         {toasts.map((t) => (
-          <ToastBox key={t.id} $type={t.type}>
-            <div className="toast-content">
-              {getIcon(t.type)}
-              <span className="message">{t.message}</span>
-            </div>
-            <button className="close-btn" onClick={() => removeToast(t.id)}>
-              <FiX size={16} />
-            </button>
-          </ToastBox>
+          <ToastItem key={t.id} toast={t} removeToast={removeToast} getIcon={getIcon} />
         ))}
       </ToastContainerWrapper>
     </ToastContext.Provider>
