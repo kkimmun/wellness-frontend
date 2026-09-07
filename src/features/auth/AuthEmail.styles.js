@@ -44,13 +44,28 @@ export const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-bottom: ${theme.spacing.xl};
+  margin-bottom: ${theme.spacing.xl}; /* Subtitle이 하단으로 빠졌으므로 원래 간격 복구 */
 `;
 
 export const Title = styled.h2`
   font-size: ${theme.fontSize.xl};
   color: ${theme.colors.textPrimary};
   margin: 0;
+`;
+
+export const FooterText = styled.p`
+  font-size: ${theme.fontSize.sm};
+  color: ${theme.colors.textSecondary};
+  margin-top: ${theme.spacing.xl};
+  text-align: center;
+  width: 100%;
+
+  a {
+    color: ${theme.colors.textPrimary};
+    font-weight: 600;
+    text-decoration: underline;
+    margin-left: ${theme.spacing.xs};
+  }
 `;
 
 export const Form = styled.form`

@@ -28,7 +28,7 @@ export const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: ${theme.spacing.xs};
+  margin-bottom: ${theme.spacing.xl}; /* Subtitle이 빠졌으므로 간격 원상복구 */
 `;
 
 export const Title = styled.h2`
@@ -37,10 +37,12 @@ export const Title = styled.h2`
   margin: 0;
 `;
 
-export const Subtitle = styled.p`
+export const FooterText = styled.p`
   font-size: ${theme.fontSize.sm};
   color: ${theme.colors.textSecondary};
-  margin-bottom: ${theme.spacing.xl};
+  margin-top: ${theme.spacing.xl};
+  text-align: center;
+  width: 100%;
 
   a {
     color: ${theme.colors.textPrimary};

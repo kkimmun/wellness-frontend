@@ -5,7 +5,6 @@ import {
   Card,
   Header,
   Title,
-  Subtitle,
   Form,
   InputGrid,
   InputGroup,
@@ -16,11 +15,13 @@ import { PrimaryButton } from "../../components/Button/Button.styles";
 import { BaseInput } from "../../components/Input/Input.styles";
 import { PasswordInput } from "../../components/Input/PasswordInput";
 import { AuthAPI } from "../../api/auth";
+import { useToast } from "../../context/ToastContext";
 
 const pwdRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/;
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [payload, setPayload] = useState({
     memberName: "",
     memberId: "",
@@ -37,12 +38,12 @@ const SignUp = () => {
     // 보안 강화를 위해 sessionStorage 사용
     const verifiedEmail = sessionStorage.getItem("verifiedEmail");
     if (!verifiedEmail) {
-      alert("이메일 인증이 필요합니다.");
+      toast.error("이메일 인증이 필요합니다.");
       navigate("/request-email", { replace: true });
     } else {
       setPayload((prev) => ({ ...prev, memberId: verifiedEmail }));
     }
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -87,7 +88,7 @@ const SignUp = () => {
         memberPwd: payload.memberPwd
       });
 
-      alert("회원가입이 완료되었습니다!");
+      toast.success("회원가입이 완료되었습니다!");
       sessionStorage.removeItem("verifiedEmail");
       navigate("/login");
     } catch (err) {
@@ -105,9 +106,7 @@ const SignUp = () => {
           <BackButton onClick={() => navigate(-1)} />
         </Header>
 
-        <Subtitle>
-          이미 계정이 있으신가요? <Link to="/login">로그인</Link>
-        </Subtitle>
+        {/* 로그인 링크는 EmailRequest로 이동됨 */}
 
         {signupError && <ErrorMessage style={{ textAlign: "center", marginBottom: "1rem" }}>{signupError}</ErrorMessage>}
 

@@ -24,6 +24,13 @@ export const PanelContainer = styled.div`
     width: 480px;
     max-height: 80vh;
   }
+
+  @media (max-width: 768px) {
+    top: 12px;
+    left: 12px;
+    width: calc(100vw - 24px); /* 화면 폭 꽉 차게 */
+    max-height: 50vh; /* 모바일에서는 지도를 봐야 하므로 높이도 제한 */
+  }
 `;
 
 export const SearchHeader = styled.div`
@@ -39,6 +46,10 @@ export const SearchBarBox = styled.div`
   border-radius: 30px; /* 더 둥글게 (알약 형태) */
   padding: 9px 9px 9px 24px; /* 1.5배 */
   box-shadow: 0 4px 16px rgba(0,0,0,0.12); /* 항상 고정된 부드러운 그림자 */
+
+  @media (max-width: 768px) {
+    padding: 6px 6px 6px 16px;
+  }
 `;
 
 export const SearchInput = styled.input`
@@ -51,6 +62,10 @@ export const SearchInput = styled.input`
 
   &::placeholder {
     color: ${theme.colors.textMuted};
+  }
+
+  @media (max-width: 768px) {
+    font-size: 16px;
   }
 `;
 
@@ -70,6 +85,11 @@ export const SearchButton = styled.button`
 
   &:hover {
     background-color: #334155;
+  }
+
+  @media (max-width: 768px) {
+    width: 40px;
+    height: 40px;
   }
 `;
 

@@ -42,10 +42,13 @@ const DetailPanel = ({
 
   const handleTabClick = (tab) => {
     if (!displayPlace?.placeNo) return;
+    const basePath = location.pathname.startsWith("/gimpoTop10") ? "/gimpoTop10" : "/place";
     if (tab === "리뷰") {
-      navigate(`/place/${displayPlace.placeNo}/review`, { state: location.state, replace: Boolean(location.state?.courseBackground) });
+
+      navigate(`${basePath}/${displayPlace.placeNo}/review`);
     } else {
-      navigate(`/place/${displayPlace.placeNo}`, { state: location.state, replace: Boolean(location.state?.courseBackground) });
+      navigate(`${basePath}/${displayPlace.placeNo}`);
+
     }
   };
 
@@ -73,21 +76,14 @@ const DetailPanel = ({
         </ActionIcons>
       </TopHeader>
 
-      {/* DB 지도 핀 연동: 실제 리뷰 집계가 없는 장소에는 0점이라는 가짜 값을 표시하지 않는다. */}
-      {(Number.isFinite(displayPlace?.reviewCount) ||
-        Number.isFinite(displayPlace?.avgRating)) && (
-        <RatingInfo>
-          {Number.isFinite(displayPlace?.reviewCount) && (
-            <span>리뷰 {displayPlace.reviewCount}</span>
-          )}
-          {Number.isFinite(displayPlace?.avgRating) && (
-            <div className="rating-box">
-              <FaStar className="star" />
-              <span>{displayPlace.avgRating.toFixed(1)}</span>
-            </div>
-          )}
-        </RatingInfo>
-      )}
+      {/* 리뷰 집계가 null이거나 없을 경우 무조건 0으로 표시되도록 수정 */}
+      <RatingInfo>
+        <span>리뷰 {displayPlace?.reviewCount ?? 0}</span>
+        <div className="rating-box">
+          <FaStar className="star" />
+          <span>{(displayPlace?.avgRating ?? 0).toFixed(1)}</span>
+        </div>
+      </RatingInfo>
 
       {/* DB 지도 핀 연동: 장소가 바뀌면 이미지 선택 상태도 첫 항목으로 초기화한다. */}
       <ImageSlider
