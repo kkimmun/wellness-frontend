@@ -220,6 +220,15 @@ export const InfoRow = styled.div`
     flex-direction: column;
     gap: 8px;
     color: #333;
+    min-width: 0;
+    flex: 1;
+
+    &.description-group {
+      line-height: 1.7;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: #555;
+    }
 
     .addr-line {
       display: flex;

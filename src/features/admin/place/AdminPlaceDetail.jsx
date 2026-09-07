@@ -16,7 +16,9 @@ import {
   StateBox,
 } from "./AdminPlaceDetail.styles";
 
-const buildImageUrl = (img) => `${img.imgPath ?? ""}${img.saveName ?? ""}`;
+// S3 장소 이미지 연동: 백엔드가 만든 완성 URL을 우선 사용하고 기존 분리 응답도 호환한다.
+const buildImageUrl = (img) =>
+  img.imageUrl || `${img.imgPath ?? ""}${img.saveName ?? ""}`;
 
 const AdminPlaceDetail = () => {
   const navigate = useNavigate();
