@@ -61,27 +61,30 @@ export const LegendLine = styled.i`
   border-radius: ${theme.radius.pill};
 `;
 
-/* 길찾기 결과 유지: 닫은 길찾기 패널을 기존 결과 그대로 다시 여는 버튼이다. */
+/* 길찾기 UX 개선: 타입·태그 토글처럼 패널 상태만 여닫는 원형 버튼이다. */
 export const RouteReopenButton = styled.button`
   position: absolute;
-  top: 24px;
-  right: 24px;
-  z-index: 30;
+  top: 50%;
+  left: ${({ $isOpen }) => ($isOpen ? "552px" : "24px")};
+  z-index: 230;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 18px;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  padding: 0;
   border: 1px solid ${theme.colors.borderLight};
-  border-radius: ${theme.radius.pill};
+  border-radius: 50%;
   background: ${theme.colors.bgWhite};
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
   color: ${theme.colors.textPrimary};
-  font-size: 14px;
-  font-weight: 700;
   cursor: pointer;
+  transform: translateY(-50%);
+  transition: left 0.3s ease-in-out, background 0.2s ease-in-out;
 
   svg {
-    color: #2196f3;
+    color: ${theme.colors.textSecondary};
+    transition: transform 0.25s ease-in-out;
   }
 
   &:hover {
@@ -90,9 +93,92 @@ export const RouteReopenButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    top: 16px;
-    right: 16px;
-    padding: 10px 14px;
+    left: ${({ $isOpen }) => ($isOpen ? "calc(min(100%, 540px) - 30px)" : "16px")};
+    width: 48px;
+    height: 48px;
+  }
+`;
+
+export const MapPickNotice = styled.div`
+  position: absolute;
+  top: 92px;
+  left: 50%;
+  z-index: 240;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: ${theme.radius.pill};
+  background: rgba(33, 33, 33, 0.9);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  transform: translateX(-50%);
+
+  button {
+    border: 0;
+    background: transparent;
+    color: #81d4fa;
+    font-weight: 700;
+  }
+`;
+
+export const MapPinToolbar = styled.div`
+  position: absolute;
+  top: 110px;
+  right: 24px;
+  z-index: 220;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid ${theme.colors.borderLight};
+  border-radius: ${theme.radius.lg};
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+`;
+
+export const MapPinCreateButton = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 54px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: ${theme.radius.md};
+  background: ${({ $active, $color }) => ($active ? `${$color}18` : "transparent")};
+  color: ${({ $color }) => $color};
+  cursor: pointer;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50% 50% 50% 0;
+    background: ${({ $color }) => $color};
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    transform: rotate(-45deg);
+
+    i {
+      font-style: normal;
+      transform: rotate(45deg);
+    }
+  }
+
+  small {
+    color: ${theme.colors.textSecondary};
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  &:hover {
+    background: ${({ $color }) => `${$color}18`};
   }
 `;
 
@@ -131,20 +217,57 @@ export const TagList = styled.div`
   scrollbar-width: none;
 `;
 
-export const TagButton = styled.button`
+/* DB 장소 필터 연동: 타입과 태그의 실제 DB 값을 선택하는 공통 셀렉트다. */
+export const FilterSelect = styled.select`
+  min-width: 170px;
   background-color: white;
-  border: 1px solid #E0E0E0;
-  border-radius: 30px; /* 20 * 1.5 */
-  padding: 12px 24px; /* 8,16 * 1.5 */
-  font-size: 20px; /* 13 * 1.5 (반올림) */
+  border: 1px solid
+    ${({ $isActive }) =>
+      $isActive ? theme.colors.primaryHover : theme.colors.borderLight};
+  border-radius: ${theme.radius.pill};
+  padding: 12px 38px 12px 18px;
+  font-size: ${theme.fontSize.md};
   font-weight: 700;
-  color: #333;
+  color: ${theme.colors.textPrimary};
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   white-space: nowrap;
+  outline: none;
 
-  &:hover {
-    background-color: #F5F5F5;
+  &:hover,
+  &:focus {
+    border-color: ${theme.colors.primaryHover};
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+`;
+
+/* DB 장소 필터 연동: 선택한 타입·태그 조건을 해제하고 전체 핀으로 복원한다. */
+export const FilterResetButton = styled.button`
+  min-width: 88px;
+  padding: 12px 18px;
+  border: 1px solid
+    ${({ $isActive }) =>
+      $isActive ? theme.colors.primaryHover : theme.colors.borderLight};
+  border-radius: ${theme.radius.pill};
+  background: ${theme.colors.bgWhite};
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  color: ${({ $isActive }) =>
+    $isActive ? theme.colors.textPrimary : theme.colors.textSecondary};
+  font-size: ${theme.fontSize.md};
+  font-weight: 700;
+
+  &:hover:not(:disabled) {
+    border-color: ${theme.colors.primaryHover};
+    color: ${theme.colors.textPrimary};
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
   }
 `;
 

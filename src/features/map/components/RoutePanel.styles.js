@@ -79,7 +79,7 @@ export const PointFields = styled.div`
 
 export const PointRow = styled.div`
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) 36px;
+  grid-template-columns: 58px minmax(0, 1fr) 36px 36px 36px;
   align-items: center;
   gap: 10px;
   padding: 9px 0;
@@ -122,6 +122,20 @@ export const LocationButton = styled.button`
   &:hover {
     border-color: ${theme.colors.primary};
     background: #eefaff;
+  }
+`;
+
+export const MapPickButton = styled(LocationButton)`
+  color: ${({ $active }) => ($active ? "white" : theme.colors.primaryHover)};
+  background: ${({ $active }) => ($active ? theme.colors.primaryHover : theme.colors.bgWhite)};
+  border-color: ${({ $active }) => ($active ? theme.colors.primaryHover : theme.colors.borderLight)};
+`;
+
+export const ClearPointButton = styled(LocationButton)`
+  color: ${theme.colors.textMuted};
+
+  &:disabled {
+    visibility: hidden;
   }
 `;
 

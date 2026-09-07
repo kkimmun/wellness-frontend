@@ -41,7 +41,9 @@ const EMPTY_FORM = {
   y_axis: "",
 };
 
-const buildImageUrl = (img) => `${img.imgPath ?? ""}${img.saveName ?? ""}`;
+// S3 장소 이미지 연동: 수정 화면의 기존 이미지는 백엔드가 반환한 완성 URL로 표시한다.
+const buildImageUrl = (img) =>
+  img.imageUrl || `${img.imgPath ?? ""}${img.saveName ?? ""}`;
 
 const AdminPlaceForm = () => {
   const navigate = useNavigate();
