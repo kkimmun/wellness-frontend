@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { FaChevronRight, FaRoute } from "react-icons/fa";
 import {
   Map,
@@ -7,17 +7,25 @@ import {
   CustomOverlayMap,
   useKakaoLoader,
 } from "react-kakao-maps-sdk";
-import { useParams, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { PlaceAPI } from "../../api/place";
 import SearchPanel from "./components/SearchPanel";
+import CourseRouteLine from "./CourseRouteLine";
 import DetailPanel from "./components/DetailPanel";
+import FixedCoursePanel from "../courses/components/FixedCoursePanel";
+import FixedCourseDetail from "../courses/components/FixedCourseDetail";
+import UserCourseFlow from "../courses/components/UserCourseFlow";
+import SavedUserCourseDetail from "../courses/components/SavedUserCourseDetail";
+import { getCourseRoute, isCoursePoint } from "../courses/utils/userCourseStorage";
 import RoutePanel from "./components/RoutePanel";
+import Top10Panel from "./components/Top10Panel";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import {
   MapContainer,
   FloatingTags,
+  MapStatus,
   LegendLine,
   RouteLegend,
   RouteReopenButton,
@@ -33,7 +41,28 @@ import {
   ROUTE_SEGMENT_LEGEND,
 } from "./routeSegmentStyles";
 
-const MARKER_SVG = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23FF7043' stroke='white' stroke-width='2'/%3E%3C/svg%3E";
+const EMPTY_RESTAURANTS = [];
+
+const getCourseMarkerImage = (index) => {
+  const number = index + 1;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+    <circle cx="18" cy="20" r="14" fill="#163d43" opacity="0.12"/>
+    <circle cx="18" cy="18" r="14" fill="white"/>
+    <circle cx="18" cy="18" r="12.5" fill="white" stroke="#168b91" stroke-width="1.5"/>
+    <text x="18" y="18" dy=".35em" text-anchor="middle" font-family="Arial, sans-serif" font-size="${number > 99 ? 10 : number > 9 ? 12 : 14}" font-weight="600" fill="#253d43">${number}</text>
+  </svg>`;
+  return {
+    src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    size: { width: 36, height: 36 },
+    options: { offset: { x: 18, y: 18 } },
+  };
+};
+
+const MARKER_SVG =
+  "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23FF7043' stroke='white' stroke-width='2'/%3E%3C/svg%3E";
+
+const MARKER_GOLD_SVG =
+  "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%23C9A227' stroke='white' stroke-width='2'/%3E%3Cpath d='M12 7l1.5 3h3.5l-2.5 2.5 1 3.5-3.5-2-3.5 2 1-3.5-2.5-2.5h3.5z' fill='white'/%3E%3C/svg%3E";
 
 // 길찾기 기능 연동: 기존 지도 장소 객체를 길찾기 패널이 사용하는 DB 장소 형식으로 변환한다.
 const toRoutePlace = (place) =>
@@ -73,6 +102,7 @@ const getRouteMapPoints = (route) => {
 
 const MapPage = () => {
   const [pins, setPins] = useState([]);
+  const [pinsState, setPinsState] = useState("loading");
   const [filteredPins, setFilteredPins] = useState([]); // 지도에 표시할 핀 목록
   const [isTagsOpen, setIsTagsOpen] = useState(true);
   const [bookmarks, setBookmarks] = useState({}); // { placeNo: boolean } 북마크 상태 공유용
@@ -82,13 +112,33 @@ const MapPage = () => {
   const [isRouteOpen, setIsRouteOpen] = useState(false);
   const [routeOrigin, setRouteOrigin] = useState(null);
   const [routeDestination, setRouteDestination] = useState(null);
-  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [generalRoute, setSelectedRoute] = useState(null);
+  const [customRoute, setCustomRoute] = useState(null);
+  const [fixedCourseMap, setFixedCourseMap] = useState(null);
+  const [restaurantMap, setRestaurantMap] = useState(null);
   // 코드 리뷰 반영: placeNo가 없는 좌표 장소도 외부 입력이 바뀔 때 RoutePanel을 새 입력으로 초기화한다.
   const [routeInputRevision, setRouteInputRevision] = useState(0);
   // 길찾기 표시 안정화: 경로가 바뀔 때 Kakao Polyline을 새 인스턴스로 교체하기 위한 번호다.
   const [routeRenderRevision, setRouteRenderRevision] = useState(0);
   const mapRef = useRef(null);
+  const restaurantViewportRef = useRef(null);
 
+  const [top10OverlayState, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
+  const [top10OverlayDetail, setTop10OverlayDetail] = useState(null);
+
+  useEffect(() => {
+    if (top10OverlayState && !top10OverlayState.isExternal && top10OverlayState.placeNo) {
+      PlaceAPI.getPlaceDetail(top10OverlayState.placeNo)
+        .then((res) => setTop10OverlayDetail(res.data || res))
+        .catch((err) => console.error("Top10 상세 정보 조회 실패", err));
+    } else {
+      setTop10OverlayDetail(null);
+    }
+  }, [top10OverlayState?.placeNo, top10OverlayState?.isExternal]);
+
+  const top10Overlay = useMemo(() => {
+    return top10OverlayState ? { ...top10OverlayState, ...top10OverlayDetail } : null;
+  }, [top10OverlayState, top10OverlayDetail]);
   const { status } = useAuth();
 
   const toggleBookmark = (e, placeNo) => {
@@ -106,6 +156,7 @@ const MapPage = () => {
 
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_MAP_KEY,
+    libraries: ["services"],
   });
 
   useEffect(() => {
@@ -123,29 +174,92 @@ const MapPage = () => {
         );
         setPins(validPins);
         setFilteredPins(validPins);
+        setPinsState("success");
       } catch (err) {
         console.error("핀 데이터를 불러오는 데 실패했습니다.", err);
         // DB 지도 핀 연동: 조회 실패를 가짜 장소로 숨기지 않고 사용자에게 알린다.
         setPins([]);
         setFilteredPins([]);
-        setAlertMessage("DB 장소 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+        setPinsState("error");
+        setAlertMessage(
+          "장소 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
+        );
         setIsAlertModalOpen(true);
       }
     };
     fetchPins();
   }, []);
 
-  const { placeNo } = useParams();
+  const params = useParams();
+  const { placeNo } = params;
   const navigate = useNavigate();
+  const location = useLocation();
+  // 음식점 상세는 순례길 위에 열어 조회 결과와 스크롤을 그대로 보존한다.
+  const isCourseRestaurantDetail = Boolean(placeNo && location.state?.courseBackground);
+  const courseLocation = isCourseRestaurantDetail ? location.state.courseBackground : location;
+  const courseNo = isCourseRestaurantDetail ? courseLocation.courseNo : params.courseNo;
+  const userCourseId = isCourseRestaurantDetail ? courseLocation.userCourseId : params.userCourseId;
+  const isFixedCourseView = courseLocation.pathname.startsWith("/pilgrim/fixed");
+  const isCustomCourseView = courseLocation.pathname === "/pilgrim/create";
+  const isFixedCourseDetail = isFixedCourseView && Boolean(courseNo);
+  const isUserCourseDetail = isFixedCourseView && Boolean(userCourseId);
+  const isCourseMapView = isCustomCourseView || isFixedCourseDetail || isUserCourseDetail;
+  const restaurantPins = isCourseMapView && restaurantMap?.key === courseLocation.key
+    ? restaurantMap.places : EMPTY_RESTAURANTS;
+  const handleRestaurantsChange = useCallback((places) => {
+    setRestaurantMap({ key: courseLocation.key, places: places.filter(isCoursePoint) });
+  }, [courseLocation.key]);
+  const handleRestaurantSelect = (place) => {
+    const map = mapRef.current;
+    const center = map?.getCenter();
+    const background = isCourseRestaurantDetail ? courseLocation : {
+      pathname: courseLocation.pathname, key: courseLocation.key, courseNo, userCourseId,
+      viewport: center ? { lat: center.getLat(), lng: center.getLng(), level: map.getLevel() } : null,
+    };
+    restaurantViewportRef.current = { key: background.key, viewport: background.viewport };
+    navigate(`/place/${place.placeNo}`, { replace: isCourseRestaurantDetail, state: {
+      courseBackground: background,
+      restaurantPlace: { ...place, xAxis: Number(place.X_AXIS ?? place.xAxis), yAxis: Number(place.Y_AXIS ?? place.yAxis) },
+    } });
+  };
+  // 현재 URL의 요청 결과만 사용해 다른 코스를 열 때 이전 경로가 남지 않게 한다.
+  const courseRouteData = isFixedCourseDetail || isUserCourseDetail
+    ? fixedCourseMap?.key === courseLocation.key ? fixedCourseMap.routeData : null
+    : customRoute;
+  const selectedRoute = useMemo(() => {
+    if (!isCourseMapView) return generalRoute;
+    const route = getCourseRoute(courseRouteData);
+    return route ? { ...route, transportType: courseRouteData.transportType } : null;
+  }, [isCourseMapView, generalRoute, courseRouteData]);
+  const coursePins = isCourseMapView && courseRouteData
+    ? [courseRouteData.origin, ...(courseRouteData.waypoints || []), courseRouteData.destination].filter(isCoursePoint)
+    : [];
 
-  // 기존 코드 개선: URL을 단일 기준으로 사용해 상세 장소 상태의 중복 저장을 제거한다.
-  const selectedPlace = useMemo(
+  const baseSelectedPlace = useMemo(
     () =>
       placeNo
-        ? pins.find((pin) => String(pin.placeNo) === String(placeNo)) || null
+        ? pins.find((pin) => String(pin.placeNo) === String(placeNo))
+          || (String(location.state?.restaurantPlace?.placeNo) === String(placeNo) ? location.state.restaurantPlace : null)
         : null,
-    [placeNo, pins],
+    [placeNo, pins, location.state],
   );
+
+  const [overlayDetail, setOverlayDetail] = useState(null);
+
+  useEffect(() => {
+    if (baseSelectedPlace?.placeNo) {
+      PlaceAPI.getPlaceDetail(baseSelectedPlace.placeNo)
+        .then((res) => setOverlayDetail(res.data || res))
+        .catch((err) => console.error("오버레이 상세 정보 조회 실패", err));
+    } else {
+      setOverlayDetail(null);
+    }
+  }, [baseSelectedPlace?.placeNo]);
+
+  const selectedPlace = useMemo(() => {
+    return baseSelectedPlace ? { ...baseSelectedPlace, ...overlayDetail } : null;
+  }, [baseSelectedPlace, overlayDetail]);
+
   const isDetailOpen = Boolean(placeNo && selectedPlace);
 
   // 기존 코드 개선: effect에서는 URL 상태를 다시 저장하지 않고 지도 이동만 수행한다.
@@ -159,13 +273,37 @@ const MapPage = () => {
 
     if (mapRef.current) {
       mapRef.current.panTo(
-        new window.kakao.maps.LatLng(
-          selectedPlace.yAxis,
-          selectedPlace.xAxis,
-        ),
+        new window.kakao.maps.LatLng(selectedPlace.yAxis, selectedPlace.xAxis),
       );
     }
   }, [placeNo, pins.length, selectedPlace, navigate]);
+
+  const handleTop10PlaceSelect = (place) => {
+    // 1. 이미 지도에 있는 핀인지 placeNo로 확실히 확인
+    const existingPin = pins.find(p => String(p.placeNo) === String(place.placeNo));
+    if (existingPin) {
+      setTop10Overlay({ ...existingPin, isExternal: false });
+      if (mapRef.current) {
+        mapRef.current.panTo(new window.kakao.maps.LatLng(existingPin.yAxis, existingPin.xAxis));
+      }
+    } else {
+      // 2. 핀에 없으면 카카오 주소 검색으로 좌표 가져오기
+      if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        geocoder.addressSearch(place.addr, (result, status) => {
+          if (status === window.kakao.maps.services.Status.OK) {
+            const lat = parseFloat(result[0].y);
+            const lng = parseFloat(result[0].x);
+            const geocodedPlace = { ...place, yAxis: lat, xAxis: lng, isExternal: true };
+            setTop10Overlay(geocodedPlace);
+            if (mapRef.current) {
+              mapRef.current.panTo(new window.kakao.maps.LatLng(lat, lng));
+            }
+          }
+        });
+      }
+    }
+  };
 
   const handlePlaceSelect = (place) => {
     navigate(`/place/${place.placeNo}`);
@@ -202,9 +340,7 @@ const MapPage = () => {
   const handleRouteSelect = (route, routeResponse) => {
     // 대중교통 경로 색상: 이동수단 정보를 선택 경로에 보존해 지도 표시 방식을 결정한다.
     setSelectedRoute(
-      route
-        ? { ...route, transportType: routeResponse?.transportType }
-        : null,
+      route ? { ...route, transportType: routeResponse?.transportType } : null,
     );
     setRouteRenderRevision((current) => current + 1);
   };
@@ -216,29 +352,47 @@ const MapPage = () => {
 
   // 길찾기 표시 안정화: 패널 열림 상태에 맞는 여백으로 경로 전체가 보이도록 지도를 조정한다.
   useEffect(() => {
-    if (!selectedRoute || !mapRef.current || !window.kakao?.maps) return undefined;
+    if (isCourseRestaurantDetail) {
+      restaurantViewportRef.current = { key: courseLocation.key, viewport: courseLocation.viewport };
+      return undefined;
+    }
+    if ((!selectedRoute && restaurantPins.length === 0) || !mapRef.current || !window.kakao?.maps)
+      return undefined;
 
-    const delay = isRouteOpen ? 0 : 320;
+    const delay = isRouteOpen || restaurantViewportRef.current?.key === courseLocation.key ? 0 : 320;
     const timeoutId = window.setTimeout(() => {
       const map = mapRef.current;
-      const mapPoints = getRouteMapPoints(selectedRoute);
+      const mapPoints = restaurantPins.length > 0
+        ? toMapPath(restaurantPins) : getRouteMapPoints(selectedRoute);
       if (!map || mapPoints.length === 0) return;
 
       map.relayout();
+      const snapshot = restaurantViewportRef.current;
+      const viewport = snapshot?.key === courseLocation.key ? snapshot.viewport : null;
+      restaurantViewportRef.current = null;
+      if (isCourseMapView && viewport) {
+        map.setLevel(viewport.level);
+        map.setCenter(new window.kakao.maps.LatLng(viewport.lat, viewport.lng));
+        return;
+      }
       const bounds = new window.kakao.maps.LatLngBounds();
       mapPoints.forEach(({ lat, lng }) => {
         bounds.extend(new window.kakao.maps.LatLng(lat, lng));
       });
 
       const sidePadding = window.innerWidth <= 768 ? 32 : 60;
-      const leftPadding = isRouteOpen && window.innerWidth > 768 ? 600 : sidePadding;
-      map.setBounds(bounds, 60, sidePadding, 60, leftPadding);
+      const leftPadding = window.innerWidth > 768
+        ? isCourseMapView ? 500 : isRouteOpen ? 600 : sidePadding
+        : sidePadding;
+      const bottomPadding = isCourseMapView && window.innerWidth <= 768
+        ? Math.round(window.innerHeight * 0.6) : 60;
+      map.setBounds(bounds, 60, sidePadding, bottomPadding, leftPadding);
     }, delay);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isRouteOpen, selectedRoute]);
+  }, [isRouteOpen, selectedRoute, isCourseMapView, loading, restaurantPins, isCourseRestaurantDetail, courseLocation.key, courseLocation.viewport]);
 
-  const selectedMapPath = toMapPath(selectedRoute?.path);
+  const selectedMapPath = useMemo(() => toMapPath(selectedRoute?.path), [selectedRoute]);
   // 대중교통 경로 색상: 단계별 path를 유지해 도보·버스·지하철을 각각 다른 선으로 그린다.
   const selectedMapSegments = useMemo(() => {
     if (selectedRoute?.transportType !== "PUBLIC_TRANSIT") return [];
@@ -253,14 +407,6 @@ const MapPage = () => {
   }, [selectedRoute]);
   const isWalkingRoute = selectedRoute?.transportType === "WALK";
 
-  if (loading) return <div>지도를 불러오는 중입니다...</div>;
-  if (error)
-    return (
-      <div>
-        지도를 불러오는 데 실패했습니다. 카카오 앱 키 설정을 확인해주세요.
-      </div>
-    );
-
   return (
     <MapContainer>
       {/* 길찾기 기능 연동: 검색 목록의 출발/도착 버튼을 실제 패널과 연결한다. */}
@@ -269,16 +415,75 @@ const MapPage = () => {
         onPlaceSelect={handlePlaceSelect}
         bookmarks={bookmarks}
         toggleBookmark={toggleBookmark}
-        isVisible={!isDetailOpen && !isRouteOpen}
+        isVisible={!isDetailOpen && !isRouteOpen && !isCourseMapView}
         onSearchResults={setFilteredPins}
         onSetOrigin={openRouteWithOrigin}
         onSetDestination={openRouteWithDestination}
       />
 
+      {isFixedCourseView && !isFixedCourseDetail && !isUserCourseDetail && (
+        <FixedCoursePanel
+          key={location.key}
+          selectedCourseNo={courseNo}
+          showUserCourses={Boolean(location.state?.showUserCourses)}
+          onCreateCourse={() => navigate("/pilgrim/create")}
+          onUserCourseSelect={(course) => navigate(`/pilgrim/fixed/mine/${encodeURIComponent(course.id)}`)}
+          onClose={() => navigate("/map")}
+          onCourseSelect={(course) =>
+            navigate(`/pilgrim/fixed/${course.courseNo}`)
+          }
+        />
+      )}
+
+      <div
+        style={{ visibility: isCourseRestaurantDetail ? "hidden" : "visible" }}
+        aria-hidden={isCourseRestaurantDetail || undefined}
+        inert={isCourseRestaurantDetail || undefined}
+      >
+      {isFixedCourseDetail && (
+        <FixedCourseDetail
+          onRestaurantsChange={handleRestaurantsChange}
+          onRestaurantSelect={handleRestaurantSelect}
+          key={courseLocation.key}
+          courseNo={courseNo}
+          pins={pins}
+          requestKey={courseLocation.key}
+          onClose={() => navigate("/map")}
+          onRouteChange={setFixedCourseMap}
+        />
+      )}
+
+      {isUserCourseDetail && (
+        <SavedUserCourseDetail
+          onRestaurantsChange={handleRestaurantsChange}
+          onRestaurantSelect={handleRestaurantSelect}
+          key={courseLocation.key}
+          courseId={userCourseId}
+          places={pins}
+          requestKey={courseLocation.key}
+          onClose={() => navigate("/pilgrim/fixed", { state: { showUserCourses: true } })}
+          onRouteChange={setFixedCourseMap}
+        />
+      )}
+
+      {isCustomCourseView && (
+        <UserCourseFlow
+          onRestaurantsChange={handleRestaurantsChange}
+          onRestaurantSelect={handleRestaurantSelect}
+          key={courseLocation.key}
+          pins={pins}
+          pinsState={pinsState}
+          onClose={() => navigate("/map")}
+          onRouteChange={setCustomRoute}
+        />
+      )}
+
+      </div>
+
       {/* 길찾기 기능 연동: 지도 위 독립 패널에서 입력·검색·결과 선택을 처리한다. */}
       <RoutePanel
         key={`route-input-${routeInputRevision}`}
-        isOpen={isRouteOpen}
+        isOpen={isRouteOpen && !isCourseMapView}
         initialOrigin={routeOrigin}
         initialDestination={routeDestination}
         onClose={closeRoutePanel}
@@ -286,7 +491,7 @@ const MapPage = () => {
       />
 
       {/* 길찾기 결과 유지: 닫은 패널을 기존 결과와 입력값 그대로 다시 열 수 있다. */}
-      {!isRouteOpen && selectedRoute && (
+      {!isCourseMapView && !isRouteOpen && selectedRoute && (
         <RouteReopenButton
           type="button"
           onClick={() => setIsRouteOpen(true)}
@@ -297,165 +502,303 @@ const MapPage = () => {
         </RouteReopenButton>
       )}
 
-      <FloatingTags>
-        <TagList $isOpen={isTagsOpen}>
-          <TagButton onClick={() => alert("#템플스테이 검색")}>
-            # 템플스테이
-          </TagButton>
-          <TagButton onClick={() => alert("#가족동반 검색")}>
-            # 가족동반
-          </TagButton>
-          <TagButton onClick={() => alert("#반려동물 검색")}>
-            # 반려동물
-          </TagButton>
-        </TagList>
+      {!isFixedCourseView && !isCustomCourseView && (
+        <FloatingTags>
+          <TagList $isOpen={isTagsOpen}>
+            <TagButton onClick={() => alert("#템플스테이 검색")}>
+              # 템플스테이
+            </TagButton>
+            <TagButton onClick={() => alert("#가족동반 검색")}>
+              # 가족동반
+            </TagButton>
+            <TagButton onClick={() => alert("#반려동물 검색")}>
+              # 반려동물
+            </TagButton>
+          </TagList>
 
-        <ToggleButton onClick={handleToggleTags}>
-          {isTagsOpen ? (
-            <FaChevronRight size={21} style={{ transform: "rotate(180deg)" }} />
-          ) : (
-            <FaChevronRight size={21} />
+          <ToggleButton onClick={handleToggleTags}>
+            {isTagsOpen ? (
+              <FaChevronRight
+                size={21}
+                style={{ transform: "rotate(180deg)" }}
+              />
+            ) : (
+              <FaChevronRight size={21} />
+            )}
+          </ToggleButton>
+        </FloatingTags>
+      )}
+
+      {loading || error ? (
+        <MapStatus role="status">
+          <strong>
+            {loading
+              ? "지도를 불러오는 중입니다."
+              : "지도를 불러오는 데 실패했습니다."}
+          </strong>
+          {error && <span>카카오 앱 키 설정을 확인해주세요.</span>}
+        </MapStatus>
+      ) : (
+        <Map
+          mapTypeId="ROADMAP"
+          center={{ lat: 37.6105, lng: 126.7056 }}
+          style={{ width: "100%", height: "100%" }}
+          level={5}
+          onCreate={(map) => {
+            // 길찾기 기능 연동: 경로 범위 조정을 위해 실제 Kakao Map 인스턴스를 보관한다.
+            mapRef.current = map;
+            // 길찾기 표시 안정화: 장거리 경로도 한 화면에 담을 수 있도록 최대 축소 레벨을 허용한다.
+            map.setMaxLevel(14);
+            map.setMinLevel(2); // 과도한 확대 방지
+          }}
+          onClick={() => {
+            setTop10Overlay(null);
+            if (isCourseMapView) return;
+            navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
+          }}
+        >
+          {(isCourseMapView ? coursePins : filteredPins).map((pin, index) => {
+            // DB typeDetailNo를 확인하거나, 명세된 placeNo 목록을 기반으로 판별
+            const TOP10_PLACE_NOS = ["1", "4", "5", "7", "8", "9", "10", "14", "178", "1043"];
+            const isTop10 = String(pin.typeDetailNo) === "18" || TOP10_PLACE_NOS.includes(String(pin.placeNo));
+            
+            // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
+            return (
+              <MapMarker
+                key={`${pin.placeNo ?? "origin"}-${index}`}
+                position={{ lat: Number(pin.Y_AXIS ?? pin.yAxis), lng: Number(pin.X_AXIS ?? pin.xAxis) }}
+                title={isCourseMapView
+                  ? `${index + 1}. ${pin.placeName || "코스 장소"}${index === 0 ? " · 출발" : index === coursePins.length - 1 ? " · 도착" : ""}`
+                  : pin.placeName}
+                image={isCourseMapView ? getCourseMarkerImage(index) : {
+                  src: isTop10 ? MARKER_GOLD_SVG : MARKER_SVG,
+                  size: isTop10 ? { width: 28, height: 28 } : { width: 24, height: 24 },
+                }}
+                zIndex={isCourseMapView ? 12 : isTop10 ? 10 : 1}
+                onClick={() => { if (!isCourseMapView) handleMarkerClick(pin); }}
+              />
+            );
+          })}
+
+          {restaurantPins.map((place) => (
+            <MapMarker
+              key={"restaurant-" + place.placeNo}
+              position={{ lat: Number(place.Y_AXIS ?? place.yAxis), lng: Number(place.X_AXIS ?? place.xAxis) }}
+              title={place.placeName + " · 음식점 상세정보"}
+              image={{ src: MARKER_SVG, size: { width: 32, height: 32 } }}
+              zIndex={30}
+              onClick={() => handleRestaurantSelect(place)}
+            />
+          ))}
+
+          {top10Overlay && top10Overlay.isExternal && !selectedPlace && (
+            <MapMarker
+              position={{ lat: top10Overlay.yAxis, lng: top10Overlay.xAxis }}
+              image={{
+                src: MARKER_GOLD_SVG,
+                size: { width: 28, height: 28 },
+              }}
+              zIndex={15}
+              clickable={false}
+              key={`${pin.placeNo ?? "origin"}-${index}`}
+              position={{ lat: Number(pin.Y_AXIS ?? pin.yAxis), lng: Number(pin.X_AXIS ?? pin.xAxis) }}
+              title={pin.placeName}
+              image={{
+                src: isCourseMapView ? MARKER_SVG.replace("FF7043", "34C759") : MARKER_SVG,
+                size: { width: 24, height: 24 },
+              }}
+              onClick={() => { if (!isCourseMapView) handleMarkerClick(pin); }}
+            />
           )}
-        </ToggleButton>
-      </FloatingTags>
 
-      <Map
-        center={{ lat: 37.6105, lng: 126.7056 }}
-        style={{ width: "100%", height: "100%" }}
-        level={5}
-        onCreate={(map) => {
-          // 길찾기 기능 연동: 경로 범위 조정을 위해 실제 Kakao Map 인스턴스를 보관한다.
-          mapRef.current = map;
-          // 길찾기 표시 안정화: 장거리 경로도 한 화면에 담을 수 있도록 최대 축소 레벨을 허용한다.
-          map.setMaxLevel(14);
-          map.setMinLevel(2); // 과도한 확대 방지
-        }}
-        onClick={() => {
-          navigate("/map");
-        }}
-      >
-        {filteredPins.map((pin) => (
-          // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
-          <MapMarker
-            key={pin.placeNo}
-            position={{ lat: pin.yAxis, lng: pin.xAxis }}
-            image={{
-              src: MARKER_SVG,
-              size: { width: 24, height: 24 },
-            }}
-            onClick={() => handleMarkerClick(pin)}
-          />
-        ))}
+          {/* 대중교통 경로 색상: 대중교통은 이동 단계별 색상과 도보 점선으로 표시한다. */}
+          {!isCourseMapView && selectedMapSegments.map((segment) => (
+            <Polyline
+              key={`${routeRenderRevision}-${segment.key}`}
+              path={segment.path}
+              strokeWeight={7}
+              strokeColor={segment.color}
+              strokeOpacity={0.9}
+              strokeStyle={segment.strokeStyle}
+            />
+          ))}
 
-        {/* 대중교통 경로 색상: 대중교통은 이동 단계별 색상과 도보 점선으로 표시한다. */}
-        {selectedMapSegments.map((segment) => (
-          <Polyline
-            key={`${routeRenderRevision}-${segment.key}`}
-            path={segment.path}
-            strokeWeight={7}
-            strokeColor={segment.color}
-            strokeOpacity={0.9}
-            strokeStyle={segment.strokeStyle}
-          />
-        ))}
+          {/* 길찾기 기능 연동: 단일 이동수단 또는 단계 path가 없는 응답은 전체 경로를 표시한다. */}
+          {isCourseMapView && selectedMapPath.length > 1 && (
+            <CourseRouteLine path={selectedMapPath} />
+          )}
+          {!isCourseMapView && selectedMapSegments.length === 0 && selectedMapPath.length > 1 && (
+            <Polyline
+              key={`route-${isCourseMapView ? location.key : routeRenderRevision}`}
+              path={selectedMapPath}
+              strokeWeight={7}
+              strokeColor={
+                isCourseMapView ? "#34C759" : isWalkingRoute
+                  ? ROUTE_SEGMENT_COLORS.WALKING
+                  : ROUTE_SEGMENT_COLORS.GENERAL_BUS
+              }
+              strokeOpacity={0.9}
+              strokeStyle={!isCourseMapView && isWalkingRoute ? "shortdash" : "solid"}
+            />
+          )}
 
-        {/* 길찾기 기능 연동: 단일 이동수단 또는 단계 path가 없는 응답은 전체 경로를 표시한다. */}
-        {selectedMapSegments.length === 0 && selectedMapPath.length > 1 && (
-          <Polyline
-            key={`route-${routeRenderRevision}`}
-            path={selectedMapPath}
-            strokeWeight={7}
-            strokeColor={
-              isWalkingRoute
-                ? ROUTE_SEGMENT_COLORS.WALKING
-                : ROUTE_SEGMENT_COLORS.GENERAL_BUS
-            }
-            strokeOpacity={0.9}
-            strokeStyle={isWalkingRoute ? "shortdash" : "solid"}
-          />
-        )}
-
-        {selectedPlace && (
-          <CustomOverlayMap
-            position={{ lat: selectedPlace.yAxis, lng: selectedPlace.xAxis }}
-            yAnchor={1}
-            clickable={true}
-          >
-            <OverlayCard>
-              {/* 상단: 장소명 및 출발/도착 버튼 */}
-              <div className="header-row">
-                <OverlayTitle>{selectedPlace.placeName}</OverlayTitle>
-                <div className="action-buttons">
-                  <button
-                    className="btn-start"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // 길찾기 기능 연동: 기존 임시 alert를 출발지 설정으로 교체한다.
-                      openRouteWithOrigin(selectedPlace);
-                    }}
-                  >
-                    출발
-                  </button>
-                  <button
-                    className="btn-end"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // 길찾기 기능 연동: 기존 임시 alert를 도착지 설정으로 교체한다.
-                      openRouteWithDestination(selectedPlace);
-                    }}
-                  >
-                    도착
-                  </button>
-                </div>
-              </div>
-
-              {/* 중단: 리뷰, 평점, 상세보기 */}
-              <div className="sub-row">
-                {/* DB 지도 핀 연동: 조회되지 않은 리뷰 값을 임의의 숫자로 표시하지 않는다. */}
-                {Number.isFinite(selectedPlace.reviewCount) && (
-                  <span className="review-count">
-                    리뷰 {selectedPlace.reviewCount}
-                  </span>
-                )}
-                {Number.isFinite(selectedPlace.avgRating) && (
-                  <span className="rating">
-                    <span className="star">⭐</span>{" "}
-                    {selectedPlace.avgRating.toFixed(1)}
-                  </span>
-                )}
-                <span
-                  className="detail-link"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/place/${selectedPlace.placeNo}`);
-                  }}
-                >
-                  상세보기
-                </span>
-              </div>
-
-              {/* 하단: 주소 정보 */}
-              <div className="addr-row">
-                <div className="addr-item">
-                  <span className="addr-label">도로명</span>
-                  <span className="addr-value">{selectedPlace.addr}</span>
-                </div>
-                {selectedPlace.addrDetail && (
-                  <div className="addr-item">
-                    <span className="addr-label">지번</span>
-                    <span className="addr-value">
-                      {selectedPlace.addrDetail}
-                    </span>
+          {selectedPlace && (
+            <CustomOverlayMap
+              position={{ lat: selectedPlace.yAxis, lng: selectedPlace.xAxis }}
+              yAnchor={1}
+              clickable={true}
+              zIndex={20}
+            >
+              <div style={{ marginBottom: "28px" }}>
+                <OverlayCard>
+                {/* 상단: 장소명 및 출발/도착 버튼 */}
+                <div className="header-row">
+                  <OverlayTitle>{selectedPlace.placeName}</OverlayTitle>
+                  <div className="action-buttons">
+                    <button
+                      className="btn-start"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // 길찾기 기능 연동: 기존 임시 alert를 출발지 설정으로 교체한다.
+                        openRouteWithOrigin(selectedPlace);
+                      }}
+                    >
+                      출발
+                    </button>
+                    <button
+                      className="btn-end"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // 길찾기 기능 연동: 기존 임시 alert를 도착지 설정으로 교체한다.
+                        openRouteWithDestination(selectedPlace);
+                      }}
+                    >
+                      도착
+                    </button>
                   </div>
-                )}
+                </div>
+
+                {/* 중단: 리뷰, 평점, 상세보기 */}
+                <div className="sub-row">
+                  {/* DB 지도 핀 연동: 조회되지 않은 리뷰 값을 임의의 숫자로 표시하지 않는다. */}
+                  {Number.isFinite(selectedPlace.reviewCount) && (
+                    <span className="review-count">
+                      리뷰 {selectedPlace.reviewCount}
+                    </span>
+                  )}
+                  {Number.isFinite(selectedPlace.avgRating) && (
+                    <span className="rating">
+                      <span className="star">⭐</span>{" "}
+                      {selectedPlace.avgRating.toFixed(1)}
+                    </span>
+                  )}
+                  <span
+                    className="detail-link"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/place/${selectedPlace.placeNo}`);
+                    }}
+                  >
+                    상세보기
+                  </span>
+                </div>
+
+                {/* 하단: 주소 정보 */}
+                <div className="addr-row">
+                  <div className="addr-item">
+                    <span className="addr-label">도로명</span>
+                    <span className="addr-value">{selectedPlace.addr}</span>
+                  </div>
+                  {selectedPlace.addrDetail && (
+                    <div className="addr-item">
+                      <span className="addr-label">지번</span>
+                      <span className="addr-value">
+                        {selectedPlace.addrDetail}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </OverlayCard>
               </div>
-            </OverlayCard>
-          </CustomOverlayMap>
-        )}
-      </Map>
+            </CustomOverlayMap>
+          )}
+
+          {top10Overlay && !selectedPlace && (
+            <CustomOverlayMap
+              position={{ lat: top10Overlay.yAxis, lng: top10Overlay.xAxis }}
+              yAnchor={1}
+              clickable={true}
+              zIndex={20}
+            >
+              <div style={{ marginBottom: "28px" }}>
+                <OverlayCard>
+                <div className="header-row">
+                  <OverlayTitle>{top10Overlay.placeName}</OverlayTitle>
+                  <div className="action-buttons">
+                    <button
+                      className="btn-start"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openRouteWithOrigin(top10Overlay);
+                      }}
+                    >
+                      출발
+                    </button>
+                    <button
+                      className="btn-end"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openRouteWithDestination(top10Overlay);
+                      }}
+                    >
+                      도착
+                    </button>
+                  </div>
+                </div>
+
+                <div className="sub-row">
+                  {!top10Overlay.isExternal && Number.isFinite(top10Overlay.reviewCount) && (
+                    <span className="review-count">리뷰 {top10Overlay.reviewCount}</span>
+                  )}
+                  {!top10Overlay.isExternal && Number.isFinite(top10Overlay.avgRating) && (
+                    <span className="rating">
+                      <span className="star">⭐</span> {top10Overlay.avgRating.toFixed(1)}
+                    </span>
+                  )}
+                  <span
+                    className="detail-link"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // 더미 데이터의 placeNo가 카카오나 DB와 어떻게 연결될지에 따라 다름
+                      // 일단 DB 핀인 경우에만 정상 동작하도록 placeNo 사용
+                      navigate(`/place/${top10Overlay.placeNo}`);
+                    }}
+                  >
+                    상세보기
+                  </span>
+                </div>
+
+                <div className="addr-row">
+                  <div className="addr-item">
+                    <span className="addr-label">도로명</span>
+                    <span className="addr-value">{top10Overlay.addr}</span>
+                  </div>
+                  {top10Overlay.addrDetail && (
+                    <div className="addr-item">
+                      <span className="addr-label">지번</span>
+                      <span className="addr-value">{top10Overlay.addrDetail}</span>
+                    </div>
+                  )}
+                </div>
+              </OverlayCard>
+              </div>
+            </CustomOverlayMap>
+          )}
+        </Map>
+      )}
 
       {/* 대중교통 경로 색상: 지도 선의 의미를 사용자가 바로 확인할 수 있는 범례다. */}
-      {selectedRoute?.transportType === "PUBLIC_TRANSIT" && (
+      {!isCourseMapView && selectedRoute?.transportType === "PUBLIC_TRANSIT" && (
         <RouteLegend aria-label="대중교통 경로 색상 범례">
           {ROUTE_SEGMENT_LEGEND.map((item) => (
             <span key={item.key}>
@@ -468,16 +811,27 @@ const MapPage = () => {
 
       {/* 길찾기 기능 연동: 상세 패널의 경로찾기는 현재 장소를 도착지로 설정한다. */}
       <DetailPanel
+        key={selectedPlace?.placeNo ?? "closed"}
         place={selectedPlace}
         isOpen={isDetailOpen && !isRouteOpen}
         onClose={() => {
-          navigate("/map");
+          if (isCourseRestaurantDetail) navigate(-1);
+          else navigate(location.state?.courseReturnTo || "/map");
         }}
         isBookmarked={selectedPlace ? bookmarks[selectedPlace.placeNo] : false}
         onBookmark={(e) =>
           selectedPlace && toggleBookmark(e, selectedPlace.placeNo)
         }
         onFindRoute={openRouteWithDestination}
+      />
+
+      <Top10Panel 
+        isOpen={location.pathname === "/gimpoTop10"}
+        onClose={() => {
+          setTop10Overlay(null);
+          navigate("/map");
+        }}
+        onPlaceClick={handleTop10PlaceSelect}
       />
 
       <Modal

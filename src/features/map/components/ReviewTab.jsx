@@ -407,7 +407,7 @@ const ReviewTab = ({ place }) => {
                     <span className="date">{review.date}</span>
                   </div>
                 </div>
-                {review.isMine && (
+                {status === "authenticated" && review.isMine && (
                   <div className="edit-actions">
                     <button onClick={() => handleEditClick(review)}>
                       수정

@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FooterContainer,
@@ -13,11 +12,10 @@ const FOOTER_MENUS = [
   { id: "map", label: "지도", path: "/map" },
   {
     id: "pilgrim",
-    label: "순례길",
-    path: "/pilgrim",
+    label: "순례자의 길",
+    path: "/pilgrim/fixed",
     subMenus: [
-      { id: "pilgrim-create", label: "코스 제작", path: "/pilgrim/create" },
-      { id: "pilgrim-fixed", label: "고정 코스", path: "/pilgrim/fixed" },
+      { id: "pilgrim-fixed", label: "순례길 목록", path: "/pilgrim/fixed" },
     ],
   },
   { id: "gimpoTop10", label: "김포 Top10", path: "/gimpoTop10" },
