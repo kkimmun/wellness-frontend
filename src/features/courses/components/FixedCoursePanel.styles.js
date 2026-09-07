@@ -112,17 +112,22 @@ export const CourseList = styled.ol`
 `;
 
 export const CourseCard = styled.button`
+  position: relative;
   width: 100%;
   min-height: 112px;
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
   gap: ${theme.spacing.md};
   padding: 12px;
+  overflow: hidden;
   text-align: left;
-  background: ${theme.colors.bgWhite};
-  border: 1px solid
-    ${({ $selected }) =>
-      $selected ? theme.colors.primaryHover : theme.colors.borderLight};
+  background: ${({ $custom }) =>
+    $custom
+      ? "#eef9fc"
+      : theme.colors.bgWhite};
+  border: ${({ $custom }) => ($custom ? "1.5px dashed" : "1px solid")}
+    ${({ $custom, $selected }) =>
+      $custom || $selected ? theme.colors.primaryHover : theme.colors.borderLight};
   border-radius: ${theme.radius.lg};
   transition:
     border-color 0.18s ease,
@@ -134,6 +139,18 @@ export const CourseCard = styled.button`
     box-shadow: 0 5px 16px rgba(107, 187, 221, 0.16);
     outline: none;
   }
+
+  ${({ $custom }) =>
+    $custom &&
+    css`
+      &::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: #54bce1;
+      }
+    `}
 
   ${({ $selected }) =>
     $selected &&

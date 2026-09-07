@@ -203,6 +203,7 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
         <li>
           <CourseCard
             type="button"
+            $custom
             $selected={userCoursesOpen}
             aria-haspopup="dialog"
             onClick={handleUserCourseClick}
