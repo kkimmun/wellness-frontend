@@ -30,7 +30,7 @@ export const AdminPlaceAPI = {
   /**
    * 명소 상세 조회 (수정 화면 최초 진입 시에도 사용)
    * @param {number|string} placeNo
-   * @returns {{ createDate, placeName, placeDescrpition, xAxis, yAxis, typeDetailNo, addr, placeImages: [] }}
+   * @returns {{ createDate, placeName, placeDescription, xAxis, yAxis, typeDetailNo, addr, placeImages: Array<{ imageUrl: string }> }}
    */
   getPlace: async (placeNo) => {
     const body = await api.get(`/admin/places/${placeNo}`);

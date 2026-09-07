@@ -42,7 +42,6 @@ const SearchPanel = ({
   const [lastSearchedKeyword, setLastSearchedKeyword] = useState(""); // 추가: 마지막으로 실제 검색을 수행한 키워드
 
   const observerTarget = useRef(null);
-  const ITEMS_PER_PAGE = 3;
 
   // 기존 코드 개선: 핀 변경 시 최신 목록으로 검색하도록 함수 의존성을 명확히 고정한다.
   const executeSearch = useCallback(
@@ -124,8 +123,8 @@ const SearchPanel = ({
   );
 
   useEffect(() => {
-    // 핀 데이터가 변경되더라도, 유저가 이미 검색을 한 상태일 때만 재검색 적용
-    if (pins && pins.length > 0 && hasSearched) {
+    // DB 장소 필터 연동: 필터 결과가 0건이어도 이전 검색 결과가 남지 않게 빈 배열까지 재검색한다.
+    if (hasSearched) {
       // 기존 코드 개선: effect 본문에서 동기 setState가 발생하지 않도록 다음 작업으로 예약한다.
       const timeoutId = window.setTimeout(
         () => executeSearch(lastSearchedKeyword, 1),

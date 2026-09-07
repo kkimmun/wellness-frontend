@@ -50,13 +50,21 @@ export const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-bottom: ${theme.spacing.xs};
+  margin-bottom: ${theme.spacing.xl};
 `;
 
-export const Subtitle = styled.p`
+export const Title = styled.h2`
+  font-size: ${theme.fontSize.xl};
+  color: ${theme.colors.textPrimary};
+  margin: 0;
+`;
+
+export const FooterText = styled.p`
   font-size: ${theme.fontSize.sm};
   color: ${theme.colors.textSecondary};
-  margin-bottom: ${theme.spacing.xl};
+  margin-top: ${theme.spacing.xl};
+  text-align: center;
+  width: 100%;
 
   a {
     color: ${theme.colors.textPrimary};
@@ -66,11 +74,7 @@ export const Subtitle = styled.p`
   }
 `;
 
-export const Title = styled.h2`
-  font-size: ${theme.fontSize.xl};
-  color: ${theme.colors.textPrimary};
-  margin: 0;
-`;
+
 
 export const Form = styled.form`
   width: 100%;

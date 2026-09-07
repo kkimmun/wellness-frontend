@@ -46,7 +46,7 @@ export const ListContainer = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto; 
+  overflow-y: auto;
   padding: 10px;
   gap: 15px;
 
@@ -140,7 +140,7 @@ export const InfoWrapper = styled.div`
     color: #888;
     margin-bottom: 5px;
     margin-top: -10px;
-    
+
     .stat-item {
       display: flex;
       align-items: center;

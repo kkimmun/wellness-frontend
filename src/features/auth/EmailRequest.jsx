@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   AuthContainer,
   Card,
   CardTop,
   Header,
   Title,
+  FooterText,
   Form,
   InputGroup,
   ErrorMessage,
@@ -79,6 +80,10 @@ const EmailRequest = () => {
               {isLoading ? "발송 중..." : "보내기"}
             </PrimaryButton>
           </Form>
+          
+          <FooterText>
+            이미 계정이 있으신가요? <Link to="/login">로그인</Link>
+          </FooterText>
         </CardTop>
       </Card>
     </AuthContainer>

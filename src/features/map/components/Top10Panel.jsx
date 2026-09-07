@@ -1,7 +1,4 @@
-import React from "react";
 import { FaChevronLeft, FaPhoneAlt } from "react-icons/fa";
-
-import { useNavigate } from "react-router-dom";
 import {
   PanelContainer,
   Header,
@@ -118,13 +115,11 @@ import { useState, useEffect } from "react";
 import { PlaceAPI } from "../../../api/place";
 
 const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
-  const navigate = useNavigate();
   const [top10List, setTop10List] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (isOpen && top10List.length === 0 && !loading && !error) {
+    if (isOpen && top10List.length === 0 && !loading) {
       const fetchTop10 = async () => {
         setLoading(true);
         try {
@@ -145,7 +140,7 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
       };
       fetchTop10();
     }
-  }, [isOpen, top10List.length, loading, error]);
+  }, [isOpen, top10List.length, loading]);
 
   const handlePlaceClick = (place) => {
     // onPlaceClick 사용을 위해 addr 파라미터를 API 응답의 address로 맞춰준다 (하위 호환)
@@ -190,7 +185,7 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
                   {place.phoneNumber || place.phone || "번호없음"}
                 </div>
               </div>
-              
+
               <div className="stats">
                 {Number.isFinite(place.reviewCount) && (
                   <div className="stat-item">
