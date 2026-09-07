@@ -2,7 +2,7 @@ import api from "./axios";
 
 export const PlaceAPI = {
   getByTypeDetail: async (typeDetailNo, signal) => {
-    const response = await api.get("/places/types/" + typeDetailNo, { signal });
+    const response = await api.get(`/places/${typeDetailNo}`, { signal });
     return response.data;
   },
 
