@@ -24,6 +24,16 @@ import RoutePanel from "./components/RoutePanel";
 import RoutePolylineLayer from "./components/RoutePolylineLayer";
 import PlanModePanel from "./components/PlanModePanel";
 import Top10Panel from "./components/Top10Panel";
+import {
+  Top10Marker,
+  GeneralMarker,
+  MedicalMarker,
+  FoodMarker,
+  TouristMarker,
+  SportsMarker,
+  ReligionMarker,
+  EventMarker,
+} from "./components/CustomMarkers";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
@@ -757,6 +767,12 @@ const MapPage = () => {
 
   // DB 장소 필터 연동: 타입과 태그 선택을 함께 유지하고 PK 조건을 AND로 조회한다.
   const handlePlaceFilter = async (kind, value) => {
+    // 필터가 바뀌면 기존 장소 요약 오버레이를 닫고 일반 지도 주소로 복귀한다.
+    setTop10Overlay(null);
+    if (placeNo) {
+      navigate(isPlanMode ? "/map?mode=j" : "/map");
+    }
+
     const requestId = filterRequestIdRef.current + 1;
     filterRequestIdRef.current = requestId;
 
@@ -1475,38 +1491,62 @@ const MapPage = () => {
                 String(pin.typeDetailNo) === "18" ||
                 TOP10_PLACE_NOS.includes(String(pin.placeNo));
 
-              // DB 지도 핀 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)로 사용한다.
+              const lat = Number(pin.Y_AXIS ?? pin.yAxis);
+              const lng = Number(pin.X_AXIS ?? pin.xAxis);
+
+              if (isCourseMapView) {
+                return (
+                  <MapMarker
+                    key={pin.routeMarkerKey || pin.placeNo || index}
+                    position={{ lat, lng }}
+                    title={`${index + 1}. ${pin.placeName || "코스 장소"}${index === 0 ? " · 출발" : index === coursePins.length - 1 ? " · 도착" : ""}`}
+                    image={getCourseMarkerImage(index)}
+                    zIndex={12}
+                    clickable={false}
+                  />
+                );
+              }
+
+              let MarkerComponent = GeneralMarker;
+              if (pin.type === "의료기관") MarkerComponent = MedicalMarker;
+              else if (pin.type === "음식점" || pin.type === "카페")
+                MarkerComponent = FoodMarker;
+              else if (
+                pin.type === "주요관광지" ||
+                pin.type === "관광명소" ||
+                pin.type === "관광지"
+              )
+                MarkerComponent = TouristMarker;
+              else if (pin.type === "생활체육시설")
+                MarkerComponent = SportsMarker;
+              else if (pin.type === "종교시설")
+                MarkerComponent = ReligionMarker;
+              else if (pin.type === "이벤트" || pin.type === "축제")
+                MarkerComponent = EventMarker;
+
+              const handleVisiblePinClick = () => {
+                if (selectedRoute) return;
+                if (isPlanMode) handlePlanPlacePreview(pin);
+                else handleMarkerClick(pin);
+              };
+
               return (
-                <MapMarker
+                <CustomOverlayMap
                   key={pin.routeMarkerKey || pin.placeNo || index}
-                  position={{
-                    lat: Number(pin.Y_AXIS ?? pin.yAxis),
-                    lng: Number(pin.X_AXIS ?? pin.xAxis),
-                  }}
-                  title={
-                    isCourseMapView
-                      ? `${index + 1}. ${pin.placeName || "코스 장소"}${index === 0 ? " · 출발" : index === coursePins.length - 1 ? " · 도착" : ""}`
-                      : pin.placeName
-                  }
-                  image={
-                    isCourseMapView
-                      ? getCourseMarkerImage(index)
-                      : {
-                          src: isTop10 ? MARKER_GOLD_SVG : MARKER_SVG,
-                          size: isTop10
-                            ? { width: 28, height: 28 }
-                            : { width: 24, height: 24 },
-                        }
-                  }
-                  zIndex={isCourseMapView ? 12 : isTop10 ? 10 : 1}
-                  clickable={!selectedRoute && !isCourseMapView}
-                  onClick={() => {
-                    if (!selectedRoute && !isCourseMapView) {
-                      if (isPlanMode) handlePlanPlacePreview(pin);
-                      else handleMarkerClick(pin);
-                    }
-                  }}
-                />
+                  position={{ lat, lng }}
+                  yAnchor={1}
+                  zIndex={isTop10 ? 10 : 1}
+                  clickable={!selectedRoute}
+                >
+                  {isTop10 ? (
+                    <Top10Marker
+                      placeName={pin.placeName}
+                      onClick={handleVisiblePinClick}
+                    />
+                  ) : (
+                    <MarkerComponent onClick={handleVisiblePinClick} />
+                  )}
+                </CustomOverlayMap>
               );
             })}
 

@@ -72,7 +72,10 @@ function App() {
           <Route path="/map" element={<MapPage />} />
           <Route path="/pilgrim/create" element={<MapPage />} />
           <Route path="/pilgrim/fixed" element={<MapPage />} />
-          <Route path="/pilgrim/fixed/mine/:userCourseId" element={<MapPage />} />
+          <Route
+            path="/pilgrim/fixed/mine/:userCourseId"
+            element={<MapPage />}
+          />
           <Route path="/pilgrim/fixed/:courseNo" element={<MapPage />} />
           <Route path="/place/:placeNo" element={<MapPage />} />
           <Route path="/place/:placeNo/review" element={<MapPage />} />
@@ -86,12 +89,24 @@ function App() {
           <Route element={<AdminLayout />}>
             <Route path="/admin/courses" element={<AdminCourse />} />
             <Route path="/admin/courses/add" element={<AdminCourseForm />} />
-            <Route path="/admin/courses/edit/:courseNo" element={<AdminCourseForm />} />
-            <Route path="/admin/courses/:courseNo/edit" element={<AdminCourseForm />} />
+            <Route
+              path="/admin/courses/edit/:courseNo"
+              element={<AdminCourseForm />}
+            />
+            <Route
+              path="/admin/courses/:courseNo/edit"
+              element={<AdminCourseForm />}
+            />
             <Route path="/admin/places" element={<AdminPlace />} />
             <Route path="/admin/places/add" element={<AdminPlaceForm />} />
-            <Route path="/admin/places/edit/:placeNo" element={<AdminPlaceForm />} />
-            <Route path="/admin/places/:placeNo" element={<AdminPlaceDetail />} />
+            <Route
+              path="/admin/places/edit/:placeNo"
+              element={<AdminPlaceForm />}
+            />
+            <Route
+              path="/admin/places/:placeNo"
+              element={<AdminPlaceDetail />}
+            />
           </Route>
         </Route>
       </Routes>

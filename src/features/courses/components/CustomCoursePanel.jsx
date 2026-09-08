@@ -187,7 +187,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
     setSearchMessage("출발지를 검색하고 있습니다.");
 
     try {
-      const results = await RouteAPI.searchPlaces(query, controller.signal);
+      const results = await RouteAPI.searchOriginPlaces(query, controller.signal);
       if (controller.signal.aborted) return;
       const safeResults = Array.isArray(results) ? results : [];
       setSearchResults(safeResults);
