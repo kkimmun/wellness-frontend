@@ -26,6 +26,14 @@ import {
   OrderBadge,
   CurrentImageNote,
   CurrentImageLabel,
+  LicenseSection,
+  LicenseCard,
+  LicenseHeader,
+  LicenseThumb,
+  LicenseMeta,
+  LicenseToggle,
+  LicenseFields,
+  LicenseField,
   FormError,
   FieldError,
   Actions,
@@ -41,9 +49,164 @@ const EMPTY_FORM = {
   y_axis: "",
 };
 
+const EMPTY_LICENSE = {
+  enabled: false,
+  sourceName: "",
+  sourcePageUrl: "",
+  authorName: "",
+  licenseCode: "",
+  licenseUrl: "",
+  attributionText: "",
+};
+
+const LICENSE_FIELDS = [
+  "sourceName",
+  "sourcePageUrl",
+  "authorName",
+  "licenseCode",
+  "licenseUrl",
+  "attributionText",
+];
+
+const createLicenseForm = (license) => ({
+  ...EMPTY_LICENSE,
+  enabled: Boolean(license),
+  sourceName: license?.sourceName ?? "",
+  sourcePageUrl: license?.sourcePageUrl ?? "",
+  authorName: license?.authorName ?? "",
+  licenseCode: license?.licenseCode ?? "",
+  licenseUrl: license?.licenseUrl ?? "",
+  attributionText: license?.attributionText ?? "",
+});
+
+const hasRequiredLicenseFields = (license) =>
+  license.sourceName.trim() &&
+  license.sourcePageUrl.trim() &&
+  license.licenseCode.trim() &&
+  license.attributionText.trim();
+
+const toLicensePayload = (imgNo, license) => ({
+  imgNo,
+  sourceName: license.sourceName.trim(),
+  sourcePageUrl: license.sourcePageUrl.trim(),
+  authorName: license.authorName.trim() || null,
+  licenseCode: license.licenseCode.trim(),
+  licenseUrl: license.licenseUrl.trim() || null,
+  attributionText: license.attributionText.trim(),
+});
+
 // S3 장소 이미지 연동: 수정 화면의 기존 이미지는 백엔드가 반환한 완성 URL로 표시한다.
 const buildImageUrl = (img) =>
   img.imageUrl || `${img.imgPath ?? ""}${img.saveName ?? ""}`;
+
+const ImageLicenseEditor = ({
+  idPrefix,
+  imageUrl,
+  imageName,
+  order,
+  value,
+  disabled,
+  onToggle,
+  onChange,
+}) => (
+  <LicenseCard>
+    <LicenseHeader>
+      <LicenseThumb src={imageUrl} alt={imageName} />
+      <LicenseMeta>
+        <strong>
+          {order}. {imageName}
+        </strong>
+        <LicenseToggle htmlFor={`${idPrefix}-enabled`}>
+          <input
+            id={`${idPrefix}-enabled`}
+            type="checkbox"
+            checked={value.enabled}
+            disabled={disabled}
+            onChange={(e) => onToggle(e.target.checked)}
+          />
+          출처·라이선스 정보 입력
+        </LicenseToggle>
+      </LicenseMeta>
+    </LicenseHeader>
+
+    {value.enabled && (
+      <LicenseFields>
+        <LicenseField>
+          <label htmlFor={`${idPrefix}-sourceName`}>출처명 *</label>
+          <BaseInput
+            id={`${idPrefix}-sourceName`}
+            value={value.sourceName}
+            maxLength={100}
+            disabled={disabled}
+            placeholder="예: 김포시 문화관광"
+            onChange={(e) => onChange("sourceName", e.target.value)}
+          />
+        </LicenseField>
+        <LicenseField>
+          <label htmlFor={`${idPrefix}-authorName`}>저작자</label>
+          <BaseInput
+            id={`${idPrefix}-authorName`}
+            value={value.authorName}
+            maxLength={200}
+            disabled={disabled}
+            placeholder="선택 입력"
+            onChange={(e) => onChange("authorName", e.target.value)}
+          />
+        </LicenseField>
+        <LicenseField $wide>
+          <label htmlFor={`${idPrefix}-sourcePageUrl`}>
+            출처 페이지 URL *
+          </label>
+          <BaseInput
+            id={`${idPrefix}-sourcePageUrl`}
+            type="url"
+            value={value.sourcePageUrl}
+            maxLength={2000}
+            disabled={disabled}
+            placeholder="https://..."
+            onChange={(e) => onChange("sourcePageUrl", e.target.value)}
+          />
+        </LicenseField>
+        <LicenseField>
+          <label htmlFor={`${idPrefix}-licenseCode`}>라이선스 코드 *</label>
+          <BaseInput
+            id={`${idPrefix}-licenseCode`}
+            value={value.licenseCode}
+            maxLength={50}
+            disabled={disabled}
+            placeholder="예: CC BY 4.0"
+            onChange={(e) => onChange("licenseCode", e.target.value)}
+          />
+        </LicenseField>
+        <LicenseField>
+          <label htmlFor={`${idPrefix}-licenseUrl`}>라이선스 URL</label>
+          <BaseInput
+            id={`${idPrefix}-licenseUrl`}
+            type="url"
+            value={value.licenseUrl}
+            maxLength={2000}
+            disabled={disabled}
+            placeholder="선택 입력"
+            onChange={(e) => onChange("licenseUrl", e.target.value)}
+          />
+        </LicenseField>
+        <LicenseField $wide>
+          <label htmlFor={`${idPrefix}-attributionText`}>
+            귀속 표기 문구 *
+          </label>
+          <BaseTextarea
+            id={`${idPrefix}-attributionText`}
+            value={value.attributionText}
+            maxLength={1000}
+            disabled={disabled}
+            placeholder="예: 사진: 김포시, CC BY 4.0"
+            onChange={(e) => onChange("attributionText", e.target.value)}
+          />
+        </LicenseField>
+      </LicenseFields>
+    )}
+  </LicenseCard>
+);
 
 const AdminPlaceForm = () => {
   const navigate = useNavigate();
@@ -52,6 +215,7 @@ const AdminPlaceForm = () => {
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [files, setFiles] = useState([]); // 업로드할 이미지 (순서 = imgOrder)
+  const [fileLicenses, setFileLicenses] = useState([]);
   const [currentImages, setCurrentImages] = useState([]); // edit: 기존 등록 이미지
 
   // edit 모드에서 기존 데이터를 불러오는 상태
@@ -88,9 +252,12 @@ const AdminPlaceForm = () => {
           y_axis: data?.yAxis != null ? String(data.yAxis) : "",
         }));
         setCurrentImages(
-          [...(data?.placeImages ?? [])].sort(
-            (a, b) => (a.imgOrder ?? 0) - (b.imgOrder ?? 0),
-          ),
+          [...(data?.placeImages ?? [])]
+            .sort((a, b) => (a.imgOrder ?? 0) - (b.imgOrder ?? 0))
+            .map((image) => ({
+              ...image,
+              licenseForm: createLicenseForm(image.license),
+            })),
         );
         setLoadState("ready");
       } catch (err) {
@@ -125,15 +292,27 @@ const AdminPlaceForm = () => {
   const handleAddFiles = (e) => {
     const picked = Array.from(e.target.files);
     setFiles((prev) => [...prev, ...picked]);
+    setFileLicenses((prev) => [
+      ...prev,
+      ...picked.map(() => createLicenseForm()),
+    ]);
     e.target.value = ""; // 같은 파일 다시 선택 가능하도록
   };
 
   const removeFile = (index) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+    setFileLicenses((prev) => prev.filter((_, i) => i !== index));
   };
 
   const moveFile = (index, dir) => {
     setFiles((prev) => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+    setFileLicenses((prev) => {
       const next = [...prev];
       const target = index + dir;
       if (target < 0 || target >= next.length) return prev;
@@ -152,34 +331,56 @@ const AdminPlaceForm = () => {
     });
   };
 
-  const saveImageOrder = async () => {
+  const updateCurrentImageLicense = (index, field, value) => {
+    setCurrentImages((prev) =>
+      prev.map((image, imageIndex) =>
+        imageIndex === index
+          ? {
+              ...image,
+              licenseForm: { ...image.licenseForm, [field]: value },
+            }
+          : image,
+      ),
+    );
+  };
+
+  const updateFileLicense = (index, field, value) => {
+    setFileLicenses((prev) =>
+      prev.map((license, licenseIndex) =>
+        licenseIndex === index ? { ...license, [field]: value } : license,
+      ),
+    );
+  };
+
+  const saveImageOrderAndLicenses = async (newImgNos) => {
     const orderedExistingImgNos = currentImages.map((img) => img.imgNo);
     if (orderedExistingImgNos.some((imgNo) => imgNo == null)) {
       throw new Error("이미지 번호를 불러오지 못해 순서를 저장할 수 없습니다.");
     }
 
-    let orderedImgNos = orderedExistingImgNos;
-
-    // 신규 이미지는 updatePlace 이후 번호가 생성되므로 다시 조회해 뒤에 붙인다.
-    if (files.length > 0) {
-      const updatedPlace = await AdminPlaceAPI.getPlace(placeNo);
-      const existingImgNos = new Set(
-        orderedExistingImgNos.map((imgNo) => String(imgNo)),
-      );
-      const newImgNos = [...(updatedPlace?.placeImages ?? [])]
-        .sort((a, b) => (a.imgOrder ?? 0) - (b.imgOrder ?? 0))
-        .filter((img) => !existingImgNos.has(String(img.imgNo)))
-        .map((img) => img.imgNo);
-
-      if (newImgNos.some((imgNo) => imgNo == null)) {
-        throw new Error("새 이미지 번호를 불러오지 못해 순서를 저장할 수 없습니다.");
-      }
-      orderedImgNos = [...orderedExistingImgNos, ...newImgNos];
+    if (
+      newImgNos.length !== files.length ||
+      newImgNos.some((imgNo) => imgNo == null)
+    ) {
+      throw new Error("서버가 반환한 새 이미지 번호를 확인할 수 없습니다.");
     }
 
+    const orderedImgNos = [...orderedExistingImgNos, ...newImgNos];
     if (orderedImgNos.length > 0) {
       await AdminPlaceAPI.updatePlaceImageOrder(placeNo, orderedImgNos);
     }
+
+    const licenses = [
+      ...currentImages
+        .filter((image) => image.licenseForm.enabled)
+        .map((image) => toLicensePayload(image.imgNo, image.licenseForm)),
+      ...newImgNos.flatMap((imgNo, index) =>
+        fileLicenses[index]?.enabled
+          ? [toLicensePayload(imgNo, fileLicenses[index])]
+          : [],
+      ),
+    ];
+    await AdminPlaceAPI.updatePlaceImageLicenses(placeNo, licenses);
   };
 
   const handleSubmit = async (e) => {
@@ -188,6 +389,26 @@ const AdminPlaceForm = () => {
 
     if (!form.placeName.trim()) {
       setFieldError("명소명을 입력해주세요.");
+      return;
+    }
+
+    const licenseForms = [
+      ...currentImages.map((image) => ({
+        name: image.originalName ?? "기존 이미지",
+        value: image.licenseForm,
+      })),
+      ...files.map((file, index) => ({
+        name: file.name,
+        value: fileLicenses[index],
+      })),
+    ];
+    const invalidLicense = licenseForms.find(
+      ({ value }) => value?.enabled && !hasRequiredLicenseFields(value),
+    );
+    if (invalidLicense) {
+      setFormError(
+        `${invalidLicense.name}: 출처명, 출처 페이지 URL, 라이선스 코드, 귀속 표기 문구를 입력해주세요.`,
+      );
       return;
     }
 
@@ -201,13 +422,21 @@ const AdminPlaceForm = () => {
     if (mode === "add") fd.append("viewCount", "0");
     // 이미지: 표시된 순서대로 imageFiles 를 여러 개 추가 (append 순서 = imgOrder)
     files.forEach((file) => fd.append("imageFiles", file));
+    fileLicenses.forEach((license, index) => {
+      fd.append(`imageLicenses[${index}].enabled`, String(license.enabled));
+      if (license.enabled) {
+        LICENSE_FIELDS.forEach((field) => {
+          fd.append(`imageLicenses[${index}].${field}`, license[field]);
+        });
+      }
+    });
 
     setSubmitting(true);
     try {
       if (mode === "add") await AdminPlaceAPI.createPlace(fd);
       else {
-        await AdminPlaceAPI.updatePlace(placeNo, fd);
-        await saveImageOrder();
+        const result = await AdminPlaceAPI.updatePlace(placeNo, fd);
+        await saveImageOrderAndLicenses(result?.newImgNos ?? []);
       }
       navigate("/admin/places");
     } catch (err) {
@@ -405,7 +634,7 @@ const AdminPlaceForm = () => {
                       <button
                         type="button"
                         onClick={() => moveFile(index, -1)}
-                        disabled={index === 0}
+                        disabled={submitting || index === 0}
                         aria-label="앞으로 이동"
                       >
                         ▲
@@ -413,7 +642,7 @@ const AdminPlaceForm = () => {
                       <button
                         type="button"
                         onClick={() => moveFile(index, 1)}
-                        disabled={index === previews.length - 1}
+                        disabled={submitting || index === previews.length - 1}
                         aria-label="뒤로 이동"
                       >
                         ▼
@@ -421,6 +650,7 @@ const AdminPlaceForm = () => {
                       <button
                         type="button"
                         onClick={() => removeFile(index)}
+                        disabled={submitting}
                         aria-label="제거"
                       >
                         ✕
@@ -430,6 +660,52 @@ const AdminPlaceForm = () => {
                 ))}
               </PreviewGrid>
             </>
+          )}
+
+          {(currentImages.length > 0 || previews.length > 0) && (
+            <LicenseSection>
+              <CurrentImageLabel>이미지별 출처·라이선스 정보</CurrentImageLabel>
+              <CurrentImageNote>
+                저작권 표기가 필요한 이미지만 체크하세요. 기존 이미지의 체크를
+                해제하고 저장하면 등록된 라이선스 정보가 제거됩니다.
+              </CurrentImageNote>
+
+              {currentImages.map((image, index) => (
+                <ImageLicenseEditor
+                  key={`current-license-${image.imgNo}`}
+                  idPrefix={`current-license-${image.imgNo}`}
+                  imageUrl={buildImageUrl(image)}
+                  imageName={image.originalName ?? "기존 이미지"}
+                  order={index + 1}
+                  value={image.licenseForm}
+                  disabled={submitting}
+                  onToggle={(checked) =>
+                    updateCurrentImageLicense(index, "enabled", checked)
+                  }
+                  onChange={(field, value) =>
+                    updateCurrentImageLicense(index, field, value)
+                  }
+                />
+              ))}
+
+              {previews.map((preview, index) => (
+                <ImageLicenseEditor
+                  key={`new-license-${preview.url}`}
+                  idPrefix={`new-license-${index}`}
+                  imageUrl={preview.url}
+                  imageName={preview.file.name}
+                  order={currentImages.length + index + 1}
+                  value={fileLicenses[index] ?? createLicenseForm()}
+                  disabled={submitting}
+                  onToggle={(checked) =>
+                    updateFileLicense(index, "enabled", checked)
+                  }
+                  onChange={(field, value) =>
+                    updateFileLicense(index, field, value)
+                  }
+                />
+              ))}
+            </LicenseSection>
           )}
         </Field>
 

@@ -134,6 +134,91 @@ export const CurrentImageLabel = styled.p`
   color: ${theme.colors.textSecondary};
 `;
 
+export const LicenseSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.sm};
+  margin-top: ${theme.spacing.md};
+`;
+
+export const LicenseCard = styled.div`
+  padding: ${theme.spacing.md};
+  background-color: ${theme.colors.bgLight};
+  border: 1px solid ${theme.colors.borderLight};
+  border-radius: ${theme.radius.md};
+`;
+
+export const LicenseHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.sm};
+`;
+
+export const LicenseThumb = styled.img`
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  border: 1px solid ${theme.colors.borderLight};
+  border-radius: ${theme.radius.sm};
+`;
+
+export const LicenseMeta = styled.div`
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: ${theme.spacing.xs};
+
+  strong {
+    overflow: hidden;
+    color: ${theme.colors.textPrimary};
+    font-size: ${theme.fontSize.sm};
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`;
+
+export const LicenseToggle = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: ${theme.spacing.xs};
+  font-size: ${theme.fontSize.sm};
+  font-weight: 500;
+  color: ${theme.colors.textSecondary};
+  cursor: pointer;
+
+  input {
+    margin: 0;
+    accent-color: ${theme.colors.primaryHover};
+  }
+`;
+
+export const LicenseFields = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: ${theme.spacing.sm} ${theme.spacing.md};
+  margin-top: ${theme.spacing.md};
+
+  @media (max-width: ${theme.breakpoints.sm}) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const LicenseField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.xs};
+
+  ${({ $wide }) => $wide && "grid-column: 1 / -1;"}
+
+  label {
+    font-size: ${theme.fontSize.xs};
+    font-weight: 600;
+    color: ${theme.colors.textSecondary};
+  }
+`;
+
 export const FormError = styled.p`
   margin: 0;
   color: ${theme.colors.error};
