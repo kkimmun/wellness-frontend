@@ -1,7 +1,8 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { FiX } from "react-icons/fi";
 import * as S from "./Modal.styles";
+import { modalStack } from "./modalStack";
 
 export const Modal = ({
   isOpen,
@@ -19,19 +20,28 @@ export const Modal = ({
   pending = false,
   children,
   size = "default",
+  priority = 0,
 }) => {
   const containerRef = useRef(null);
   const titleId = useId();
   const messageId = useId();
 
+  const activeId = useSyncExternalStore(modalStack.subscribe, modalStack.getSnapshot, modalStack.getSnapshot);
+  const visible = isOpen && activeId === titleId;
+
+  useLayoutEffect(() => {
+    if (isOpen) return modalStack.register(titleId, priority);
+  }, [isOpen, titleId, priority]);
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!visible) return;
     const previousFocus = document.activeElement;
-    containerRef.current?.focus();
+    const container = containerRef.current;
+    container?.focus();
     return () => {
-      if (previousFocus?.isConnected) previousFocus.focus();
+      if (container?.contains(document.activeElement) && previousFocus?.isConnected) previousFocus.focus();
     };
-  }, [isOpen]);
+  }, [visible]);
 
   if (!isOpen) return null;
 
@@ -46,7 +56,7 @@ export const Modal = ({
   };
 
   return createPortal(
-    <S.Overlay onClick={handleOverlayClick}>
+    <S.Overlay $visible={visible} aria-hidden={!visible} inert={!visible} onClick={handleOverlayClick}>
       {/* 모달 본체 클릭 시 이벤트 버블링 차단 */}
       <S.ModalContainer
         ref={containerRef}
@@ -60,7 +70,10 @@ export const Modal = ({
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(event) => {
-          if (event.key === "Escape" && isConfirmMode && !pending) onCancel();
+          if (event.key === "Escape") {
+            event.stopPropagation();
+            if (isConfirmMode && !pending) onCancel();
+          }
           if (event.key !== "Tab") return;
           const focusable = [...event.currentTarget.querySelectorAll("button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex='0']")];
           const first = focusable[0];

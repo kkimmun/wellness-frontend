@@ -16,6 +16,7 @@ import {
 } from "./DetailPanel.styles";
 import ReviewTab from "./ReviewTab";
 import ImageSlider from "./ImageSlider";
+import { getDefaultPlaceImage, DEFAULT_IMAGE_LICENSE } from "../../../utils/placeImage";
 import BasicInfoTab from "./BasicInfoTab";
 
 import { useEffect, useState } from "react";
@@ -38,10 +39,14 @@ const DetailPanel = ({
   // 장소 상세 개선: MapPage가 조회해 합친 상세 데이터를 사용해 동일 API의 중복 요청을 막는다.
   const displayPlace = place;
   // S3 장소 이미지 연동: 상세 API가 없거나 실패해도 지도 핀에 포함된 대표 이미지를 표시한다.
-  const displayImages =
+  const registeredImages =
     displayPlace?.placeImages ||
     displayPlace?.images ||
     (displayPlace?.imageUrl ? [displayPlace.imageUrl] : []);
+  const displayImages = registeredImages.length ? registeredImages : [{
+    imageUrl: getDefaultPlaceImage(displayPlace),
+    license: DEFAULT_IMAGE_LICENSE,
+  }];
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const activeImage = displayImages[activeImageIndex];
   const activeLicense =
@@ -103,6 +108,7 @@ const DetailPanel = ({
       <ImageSlider
         key={displayPlace?.placeNo}
         placeImages={displayImages}
+        place={displayPlace}
         imgIndex={activeImageIndex}
         onImageChange={setActiveImageIndex}
       />

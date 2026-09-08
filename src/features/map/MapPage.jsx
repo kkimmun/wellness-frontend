@@ -377,6 +377,7 @@ const MapPage = () => {
   const isFixedCourseView =
     courseLocation.pathname.startsWith("/pilgrim/fixed");
   const isCustomCourseView = courseLocation.pathname === "/pilgrim/create";
+  const isCourseView = isFixedCourseView || isCustomCourseView;
   const isFixedCourseDetail = isFixedCourseView && Boolean(courseNo);
   const isUserCourseDetail = isFixedCourseView && Boolean(userCourseId);
   const isCourseMapView =
@@ -656,12 +657,12 @@ const MapPage = () => {
         : null
       : customRoute;
   const selectedRoute = useMemo(() => {
-    if (!isCourseMapView) return generalRoute;
+    if (!isCourseMapView) return isCourseView ? null : generalRoute;
     const route = getCourseRoute(courseRouteData);
     return route
       ? { ...route, transportType: courseRouteData.transportType }
       : null;
-  }, [isCourseMapView, generalRoute, courseRouteData]);
+  }, [isCourseMapView, isCourseView, generalRoute, courseRouteData]);
   const coursePins =
     isCourseMapView && courseRouteData
       ? [
@@ -904,7 +905,7 @@ const MapPage = () => {
       return;
     }
 
-    if (mapPickMode && mouseEvent?.latLng) {
+    if (!isCourseView && mapPickMode && mouseEvent?.latLng) {
       const isOrigin = mapPickMode === "origin";
       const pickedPoint = {
         label: isOrigin ? "지도에서 선택한 출발지" : "지도에서 선택한 도착지",
@@ -1199,7 +1200,7 @@ const MapPage = () => {
         bookmarks={bookmarks}
         toggleBookmark={toggleBookmark}
         isVisible={
-          !isPlanMode && !isDetailOpen && !hasRouteSession && !isCourseMapView
+          !isPlanMode && !isDetailOpen && !hasRouteSession && !isCourseView
         }
         onSearchResults={handleSearchResults}
         onSetOrigin={openRouteWithOrigin}
@@ -1267,7 +1268,7 @@ const MapPage = () => {
             courseNo={courseNo}
             pins={pins}
             requestKey={courseLocation.key}
-            onClose={() => navigate("/map")}
+            onClose={() => navigate("/pilgrim/fixed")}
             onRouteChange={setFixedCourseMap}
           />
         )}
@@ -1303,7 +1304,7 @@ const MapPage = () => {
       {/* 길찾기 기능 연동: 지도 위 독립 패널에서 입력·검색·결과 선택을 처리한다. */}
       <RoutePanel
         key={`route-input-${routeInputRevision}`}
-        isOpen={isRouteOpen && !isCourseMapView && !isPlanMode}
+        isOpen={isRouteOpen && !isCourseView && !isPlanMode}
         initialOrigin={routeOrigin}
         initialDestination={routeDestination}
         onClose={endRoute}
@@ -1314,7 +1315,7 @@ const MapPage = () => {
       />
 
       {/* 길찾기 패널 표시 전환: 경로 상태는 유지하고 패널만 접거나 다시 연다. */}
-      {!isPlanMode && !isCourseMapView && hasRouteSession && (
+      {!isPlanMode && !isCourseView && hasRouteSession && (
         <RouteReopenButton
           type="button"
           $isOpen={isRouteOpen}
@@ -1401,7 +1402,7 @@ const MapPage = () => {
       )}
 
       {/* 지도 좌표 길찾기: DB 장소를 먼저 고르지 않아도 지도에서 출발·도착 핀을 바로 생성한다. */}
-      {!isPlanMode && !isCourseMapView && !loading && !error && (
+      {!isPlanMode && !isCourseView && !loading && !error && (
         <MapPinToolbar aria-label="지도 길찾기 핀 생성">
           <MapPinCreateButton
             type="button"
@@ -1443,7 +1444,7 @@ const MapPage = () => {
         </MapStatus>
       ) : (
         <>
-          {(mapPickMode || isPlanOriginPickMode) && (
+          {(!isCourseView && (isPlanMode ? isPlanOriginPickMode : mapPickMode)) && (
             <MapPickNotice role="status">
               지도에서 {isPlanOriginPickMode ? "계획 시작 위치" : mapPickMode === "origin" ? "출발지" : "도착지"}로 사용할 위치를 클릭하세요.
               <button
@@ -1590,7 +1591,7 @@ const MapPage = () => {
               />
             )}
 
-            {!isCourseMapView &&
+            {!isPlanMode && !isCourseView &&
               routeSelectionPins.map((pin) => (
                 <MapMarker
                   key={`route-selection-${pin.markerLabel}`}
@@ -1637,7 +1638,7 @@ const MapPage = () => {
             {isCourseMapView && selectedMapPath.length > 1 && (
               <CourseRouteLine path={selectedMapPath} />
             )}
-            {!isPlanMode && !isCourseMapView && (
+            {!isPlanMode && !isCourseView && (
               <RoutePolylineLayer
                 key={`route-layer-${routeRenderRevision}`}
                 revision={routeRenderRevision}
@@ -1851,7 +1852,7 @@ const MapPage = () => {
       )}
 
       {/* 대중교통 경로 색상: 지도 선의 의미를 사용자가 바로 확인할 수 있는 범례다. */}
-      {!isPlanMode && !isCourseMapView &&
+      {!isPlanMode && !isCourseView &&
         selectedRoute?.transportType === "PUBLIC_TRANSIT" && (
           <RouteLegend aria-label="대중교통 경로 색상 범례">
             {ROUTE_SEGMENT_LEGEND.map((item) => (
@@ -1870,7 +1871,7 @@ const MapPage = () => {
         isOpen={
           isPlanMode
             ? Boolean(planDetailPlace)
-            : isDetailOpen && !isRouteOpen
+            : isDetailOpen && (!isRouteOpen || isCourseView)
         }
         onClose={() => {
           if (isPlanMode) {

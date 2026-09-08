@@ -1,3 +1,4 @@
+import PlaceImage from "../../../components/PlaceImage";
 import { FaChevronLeft, FaPhoneAlt } from "react-icons/fa";
 import {
   PanelContainer,
@@ -71,14 +72,7 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
         {!loading && listToRender.map((place, index) => (
           <Top10Card key={place.placeNo} onClick={() => handlePlaceClick(place)}>
             <ImageWrapper>
-              <img 
-                src={place.imageUrl || place.imgUrl || "https://picsum.photos/id/20/500/500"} 
-                alt={place.placeName} 
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "https://picsum.photos/id/20/500/500";
-                }}
-              />
+              <PlaceImage src={place.imageUrl || place.imgUrl} place={place} alt={place.placeName} />
               <div className="rank-badge">{index + 1}</div>
             </ImageWrapper>
 
