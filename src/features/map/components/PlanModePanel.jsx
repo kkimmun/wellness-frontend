@@ -75,13 +75,17 @@ const PlanModePanel = ({
 
   useEffect(() => {
     // 계획 모드: 추천 카드와 상세 패널 어느 쪽에서 추가해도 계획 흐름으로 동일하게 이동한다.
-    if (places.length > previousPlaceCountRef.current) {
+    // 저장 목록으로 진입한 경우에는 늦게 복원된 초안이 저장 목록 화면을 덮지 않게 한다.
+    if (
+      initialView !== VIEW.SAVED &&
+      places.length > previousPlaceCountRef.current
+    ) {
       setRecommendations([]);
       setMessage("");
       setView(VIEW.PLAN);
     }
     previousPlaceCountRef.current = places.length;
-  }, [places.length]);
+  }, [initialView, places.length]);
 
   const openCategories = () => {
     requestControllerRef.current?.abort();

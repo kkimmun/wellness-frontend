@@ -60,7 +60,10 @@ export const readTravelPlans = (ownerKey, storage) =>
       places: normalizePlaces(plan.places),
     }));
 
-export const saveTravelPlan = ({ ownerKey, name, origin, places }, storage) => {
+export const saveTravelPlan = (
+  { id, ownerKey, name, origin, places },
+  storage,
+) => {
   const target = storage ?? window.localStorage;
   const normalizedOrigin = normalizePoint(origin);
   const normalizedPlaces = normalizePlaces(places);
@@ -68,15 +71,29 @@ export const saveTravelPlan = ({ ownerKey, name, origin, places }, storage) => {
     return null;
   }
 
+  const currentPlans = readCollection(target);
+  const existingPlan = id
+    ? currentPlans.find(
+        (plan) => plan?.id === id && plan?.ownerKey === ownerKey,
+      )
+    : null;
+  const savedAt = new Date().toISOString();
   const plan = {
-    id: crypto.randomUUID(),
+    id: existingPlan?.id ?? crypto.randomUUID(),
     ownerKey,
     name: name.trim(),
-    createdAt: new Date().toISOString(),
+    createdAt: existingPlan?.createdAt ?? savedAt,
+    updatedAt: savedAt,
     origin: normalizedOrigin,
     places: normalizedPlaces,
   };
-  const plans = [plan, ...readCollection(target)];
+  const plans = existingPlan
+    ? currentPlans.map((current) =>
+        current?.id === existingPlan.id && current?.ownerKey === ownerKey
+          ? plan
+          : current,
+      )
+    : [plan, ...currentPlans];
   target.setItem(
     TRAVEL_PLAN_STORAGE_KEY,
     JSON.stringify({ version: 1, plans }),

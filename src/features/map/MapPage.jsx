@@ -369,9 +369,11 @@ const MapPage = () => {
     ? courseLocation.userCourseId
     : params.userCourseId;
   const mapMode = new URLSearchParams(location.search).get("mode");
-  const isPlanMode = location.pathname === "/map" && mapMode === "j";
+  const isPlanModeRequested = location.pathname === "/map" && mapMode === "j";
+  const isPlanMode = isPlanModeRequested && status === "authenticated";
   const planOwnerKey =
-    user?.memberId || localStorage.getItem("memberId") || "authenticated-member";
+    user?.memberId ||
+    (user?.memberNo != null ? `member:${user.memberNo}` : null);
   const isFixedCourseView =
     courseLocation.pathname.startsWith("/pilgrim/fixed");
   const isCustomCourseView = courseLocation.pathname === "/pilgrim/create";
@@ -379,6 +381,12 @@ const MapPage = () => {
   const isUserCourseDetail = isFixedCourseView && Boolean(userCourseId);
   const isCourseMapView =
     isCustomCourseView || isFixedCourseDetail || isUserCourseDetail;
+
+  useEffect(() => {
+    if (isPlanModeRequested && status === "unauthenticated") {
+      navigate("/login", { replace: true });
+    }
+  }, [isPlanModeRequested, navigate, status]);
 
   const moveMapToPlanPoint = useCallback((point) => {
     if (!point || !mapRef.current || !window.kakao?.maps) return;
@@ -431,7 +439,7 @@ const MapPage = () => {
   }, [applyGimpoCityHallFallback, moveMapToPlanPoint]);
 
   useEffect(() => {
-    if (!isPlanMode) return undefined;
+    if (!isPlanMode || !planOwnerKey) return undefined;
 
     const initializationTimer = window.setTimeout(() => {
       // 계획 모드 진입 시 이전 길찾기 결과가 계획 직선과 겹치지 않도록 길찾기 화면 상태만 비운다.
@@ -466,7 +474,7 @@ const MapPage = () => {
   ]);
 
   useEffect(() => {
-    if (!isPlanMode || !planOrigin) return;
+    if (!isPlanMode || !planOwnerKey || !planOrigin) return;
     saveTravelPlanDraft({
       ownerKey: planOwnerKey,
       origin: planOrigin,
@@ -509,7 +517,6 @@ const MapPage = () => {
       setPlanRecommendationPins([]);
       setTop10Overlay(null);
       setPlanDetailPlace(null);
-      setActivePlanId(null);
       setIsPlanPanelOpen(true);
       moveMapToPlanPoint(nextPlace);
       return true;
@@ -522,12 +529,12 @@ const MapPage = () => {
     setPlanRecommendationPins([]);
     setTop10Overlay(null);
     setPlanDetailPlace(null);
-    setActivePlanId(null);
   }, []);
 
   const handleSaveTravelPlan = useCallback(
     (name) => {
       const saved = saveTravelPlan({
+        id: activePlanId,
         ownerKey: planOwnerKey,
         name,
         origin: planOrigin,
@@ -542,7 +549,7 @@ const MapPage = () => {
       setActivePlanId(saved.id);
       return saved;
     },
-    [planOrigin, planOwnerKey, planPlaces],
+    [activePlanId, planOrigin, planOwnerKey, planPlaces],
   );
 
   const handleOpenSavedPlan = useCallback(
