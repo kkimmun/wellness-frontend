@@ -12,11 +12,13 @@ import {
   ActionIcons,
   RatingInfo,
   TabMenu,
+  ImageLicenseCard,
 } from "./DetailPanel.styles";
 import ReviewTab from "./ReviewTab";
 import ImageSlider from "./ImageSlider";
 import BasicInfoTab from "./BasicInfoTab";
 
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const DetailPanel = ({
@@ -38,7 +40,17 @@ const DetailPanel = ({
     displayPlace?.placeImages ||
     displayPlace?.images ||
     (displayPlace?.imageUrl ? [displayPlace.imageUrl] : []);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const activeImage = displayImages[activeImageIndex];
+  const activeLicense =
+    activeImage && typeof activeImage !== "string"
+      ? activeImage.license
+      : null;
   const activeTab = location.pathname.endsWith("/review") ? "리뷰" : "기본정보";
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [displayPlace?.placeNo]);
 
   const handleTabClick = (tab) => {
     if (!displayPlace?.placeNo) return;
@@ -89,6 +101,8 @@ const DetailPanel = ({
       <ImageSlider
         key={displayPlace?.placeNo}
         placeImages={displayImages}
+        imgIndex={activeImageIndex}
+        onImageChange={setActiveImageIndex}
       />
 
       <TabMenu>
@@ -110,6 +124,38 @@ const DetailPanel = ({
         <BasicInfoTab place={displayPlace} onFindRoute={onFindRoute} />
       )}
       {activeTab === "리뷰" && <ReviewTab place={displayPlace} />}
+
+      {activeLicense && (
+        <ImageLicenseCard aria-label="현재 사진 출처 및 라이선스">
+          <div className="source-line">
+            <strong>사진 출처</strong>
+            {activeLicense.sourcePageUrl ? (
+              <a
+                href={activeLicense.sourcePageUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                {activeLicense.sourceName}
+              </a>
+            ) : (
+              <span>{activeLicense.sourceName}</span>
+            )}
+            <span aria-hidden="true">·</span>
+            {activeLicense.licenseUrl ? (
+              <a
+                href={activeLicense.licenseUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                {activeLicense.licenseCode}
+              </a>
+            ) : (
+              <span>{activeLicense.licenseCode}</span>
+            )}
+          </div>
+          <small>{activeLicense.attributionText}</small>
+        </ImageLicenseCard>
+      )}
     </PanelContainer>
   );
 };
