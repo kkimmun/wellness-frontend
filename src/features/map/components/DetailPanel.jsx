@@ -29,6 +29,8 @@ const DetailPanel = ({
   onBookmark,
   // 길찾기 기능 연동: 기본정보 탭의 경로찾기 동작을 MapPage까지 전달
   onFindRoute,
+  // 계획 모드에서는 같은 상세 패널의 기본 동작을 "계획에 추가"로 재사용한다.
+  primaryActionLabel = "경로찾기",
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -121,7 +123,11 @@ const DetailPanel = ({
       </TabMenu>
       
       {activeTab === "기본정보" && (
-        <BasicInfoTab place={displayPlace} onFindRoute={onFindRoute} />
+        <BasicInfoTab
+          place={displayPlace}
+          onFindRoute={onFindRoute}
+          actionLabel={primaryActionLabel}
+        />
       )}
       {activeTab === "리뷰" && <ReviewTab place={displayPlace} />}
 

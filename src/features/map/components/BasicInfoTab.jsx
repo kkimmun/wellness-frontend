@@ -5,8 +5,8 @@ import {
 } from "react-icons/fa";
 import { InfoSection, InfoRow, BottomArea } from "./DetailPanel.styles";
 
-// 길찾기 기능 연동: 상세 화면의 장소를 목적지로 전달하기 위해 onFindRoute를 받는다.
-const BasicInfoTab = ({ place, onFindRoute }) => {
+// 계획 모드 연동: 기존 경로찾기 버튼을 그대로 유지하면서 계획 화면에서만 버튼 문구와 동작을 바꾼다.
+const BasicInfoTab = ({ place, onFindRoute, actionLabel = "경로찾기" }) => {
   return (
     <>
       <InfoSection>
@@ -73,9 +73,9 @@ const BasicInfoTab = ({ place, onFindRoute }) => {
         <button
           className="route-btn"
           onClick={() => onFindRoute(place)}
-          disabled={!place}
+          disabled={!place || !onFindRoute}
         >
-          경로찾기
+          {actionLabel}
         </button>
       </BottomArea>
     </>
