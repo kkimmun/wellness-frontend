@@ -25,20 +25,6 @@ import {
   MobileMenu
 } from "./LandingPage.styles";
 
-// 임시 TOP10 데이터 (백엔드 통신 실패 시 대비용)
-const DUMMY_TOP10 = [
-  { placeNo: 1, placeName: "김포아트빌리지&한옥마을", imgUrl: "https://picsum.photos/id/10/500/500" },
-  { placeNo: 4, placeName: "김포국제조각공원", imgUrl: "https://picsum.photos/id/11/500/500" },
-  { placeNo: 5, placeName: "김포 함상 공원", imgUrl: "https://picsum.photos/id/12/500/500" },
-  { placeNo: 7, placeName: "김포장릉", imgUrl: "https://picsum.photos/id/13/500/500" },
-  { placeNo: 8, placeName: "라베니체", imgUrl: "https://picsum.photos/id/14/500/500" },
-  { placeNo: 9, placeName: "김포아라마리나", imgUrl: "https://picsum.photos/id/15/500/500" },
-  { placeNo: 10, placeName: "대명항", imgUrl: "https://picsum.photos/id/16/500/500" },
-  { placeNo: 14, placeName: "현대 프리미엄 아울렛", imgUrl: "https://picsum.photos/id/17/500/500" },
-  { placeNo: 178, placeName: "김포 문수산성", imgUrl: "https://picsum.photos/id/18/500/500" },
-  { placeNo: 1043, placeName: "애기봉", imgUrl: "https://picsum.photos/id/19/500/500" }
-];
-
 const LandingPage = () => {
   const navigate = useNavigate();
   const { status, checkAuth } = useAuth();
@@ -52,12 +38,16 @@ const LandingPage = () => {
         const res = await PlaceAPI.getGimpoTop10();
         if (res && res.code === 200 && res.data && res.data.content) {
           setTop10List(res.data.content);
+        } else if (res && res.data && Array.isArray(res.data)) {
+          setTop10List(res.data);
+        } else if (Array.isArray(res)) {
+          setTop10List(res);
         } else {
-          setTop10List(DUMMY_TOP10);
+          setTop10List([]);
         }
       } catch (err) {
         console.error("Top10 API 호출 실패:", err);
-        setTop10List(DUMMY_TOP10);
+        setTop10List([]);
       }
     };
     fetchTop10();
@@ -74,7 +64,7 @@ const LandingPage = () => {
     }
   };
 
-  const listToRender = top10List.length > 0 ? top10List : DUMMY_TOP10;
+  const listToRender = top10List;
   const marqueeList = [...listToRender, ...listToRender, ...listToRender, ...listToRender];
 
   const handleModeClick = (mode) => {
@@ -213,13 +203,9 @@ const LandingPage = () => {
             // 백엔드에서 빈 문자열("")이나 유효하지 않은 주소를 보낼 경우를 대비해 필터링
             const isValidUrl = (url) => url && typeof url === 'string' && url.length > 5 && url.startsWith('http');
             
-            // 타입(String/Number)이 달라서 매칭이 안되는 경우를 방지하기 위해 String으로 통일해서 비교
-            const fallbackImg = DUMMY_TOP10.find(d => String(d.placeNo) === String(place.placeNo))?.imgUrl;
-            
             let finalImgSrc = "https://picsum.photos/id/20/500/500";
             if (isValidUrl(place.imageUrl)) finalImgSrc = place.imageUrl;
             else if (isValidUrl(place.imgUrl)) finalImgSrc = place.imgUrl;
-            else if (fallbackImg) finalImgSrc = fallbackImg;
 
             return (
               <PlaceCard key={`${place.placeNo}-${index}`}>

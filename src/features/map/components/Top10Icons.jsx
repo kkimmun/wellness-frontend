@@ -7,7 +7,7 @@ const TOP10_SVG_DEFS = (
 );
 
 const TOP10_ICONS = {
-  "1": (
+  "art": (
     <svg viewBox="0 0 160 160" width="100%" height="100%">
       {TOP10_SVG_DEFS}
       <g>
@@ -19,7 +19,7 @@ const TOP10_ICONS = {
       </g>
     </svg>
   ),
-  "4": (
+  "park": (
     <svg viewBox="0 0 160 160" width="100%" height="100%">
       {TOP10_SVG_DEFS}
       <g>
@@ -28,7 +28,7 @@ const TOP10_ICONS = {
       </g>
     </svg>
   ),
-  "5": (
+  "ship": (
     <svg viewBox="0 0 160 160" width="100%" height="100%">
       {TOP10_SVG_DEFS}
       <g>
@@ -42,7 +42,7 @@ const TOP10_ICONS = {
       </g>
     </svg>
   ),
-  "7": (
+  "tomb": (
     <svg viewBox="0 0 160 160" width="100%" height="100%">
       {TOP10_SVG_DEFS}
       <g>
@@ -54,7 +54,7 @@ const TOP10_ICONS = {
       </g>
     </svg>
   ),
-  "8": (
+  "laveniche": (
     <svg viewBox="0 0 160 160" width="100%" height="100%">
       {TOP10_SVG_DEFS}
       <g>
@@ -67,7 +67,7 @@ const TOP10_ICONS = {
       </g>
     </svg>
   ),
-  "9": (
+  "marina": (
     <svg viewBox="0 0 160 160" width="100%" height="100%">
       {TOP10_SVG_DEFS}
       <g>
@@ -82,7 +82,7 @@ const TOP10_ICONS = {
       </g>
     </svg>
   ),
-  "10": (
+  "port": (
     <svg viewBox="0 0 160 160" width="100%" height="100%">
       {TOP10_SVG_DEFS}
       <g>
@@ -97,7 +97,7 @@ const TOP10_ICONS = {
       </g>
     </svg>
   ),
-  "14": (
+  "outlet": (
     <svg viewBox="0 0 160 160" width="100%" height="100%">
       {TOP10_SVG_DEFS}
       <g>
@@ -109,7 +109,7 @@ const TOP10_ICONS = {
       </g>
     </svg>
   ),
-  "178": (
+  "fortress": (
     <svg viewBox="0 0 160 160" width="100%" height="100%">
       {TOP10_SVG_DEFS}
       <g>
@@ -121,7 +121,7 @@ const TOP10_ICONS = {
       </g>
     </svg>
   ),
-  "1043": (
+  "aegibong": (
     <svg viewBox="0 0 160 160" width="100%" height="100%">
       {TOP10_SVG_DEFS}
       <g>
@@ -134,4 +134,21 @@ const TOP10_ICONS = {
     </svg>
   )
 };
+
+export const getTop10IconByName = (name) => {
+  if (!name) return null;
+  const n = name.replace(/\s+/g, "");
+  if (n.includes("아트빌리지")) return TOP10_ICONS["art"];
+  if (n.includes("조각공원")) return TOP10_ICONS["park"];
+  if (n.includes("함상공원")) return TOP10_ICONS["ship"];
+  if (n.includes("장릉")) return TOP10_ICONS["tomb"];
+  if (n.includes("라베니체")) return TOP10_ICONS["laveniche"];
+  if (n.includes("아라마리나")) return TOP10_ICONS["marina"];
+  if (n.includes("대명항")) return TOP10_ICONS["port"];
+  if (n.includes("아울렛")) return TOP10_ICONS["outlet"];
+  if (n.includes("문수산성")) return TOP10_ICONS["fortress"];
+  if (n.includes("애기봉")) return TOP10_ICONS["aegibong"];
+  return null;
+};
+
 export default TOP10_ICONS;
