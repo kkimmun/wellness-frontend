@@ -67,7 +67,7 @@ export default function UserCourseDetail({ course, places = [], onBack, backLabe
           <S.CourseMetrics>{formatMetrics(getCourseRoute(course.routeData))}</S.CourseMetrics>
         </header>
         <S.DestinationHero aria-label="도착지 사진">
-          <S.PlacePhoto><CoursePhoto src={destination.imageUrl} name={destination.placeName} /></S.PlacePhoto>
+          <S.PlacePhoto><CoursePhoto src={destination.imageUrl} place={destination} name={destination.placeName} /></S.PlacePhoto>
           <figcaption><span>도착지</span><strong>{destination.placeName}</strong></figcaption>
         </S.DestinationHero>
         <S.Description>{course.description || "코스 설명이 없습니다."}</S.Description>
@@ -92,7 +92,7 @@ export default function UserCourseDetail({ course, places = [], onBack, backLabe
                   <h3>{stop.placeName}</h3>
                   {stop.addr && <S.StopAddress><FiMapPin aria-hidden="true" />{stop.addr}</S.StopAddress>}
                   {isWaypoint && <>
-                    <S.PlacePhoto><CoursePhoto src={stop.imageUrl} name={stop.placeName} /></S.PlacePhoto>
+                    <S.PlacePhoto><CoursePhoto src={stop.imageUrl} place={stop} name={stop.placeName} /></S.PlacePhoto>
                     <S.Description>{stop.waypointDescription?.trim() || stop.placeDescription || "등록된 설명이 없습니다."}</S.Description>
                   </>}
                 </S.StopContent>

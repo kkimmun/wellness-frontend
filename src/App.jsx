@@ -48,6 +48,7 @@ function App() {
       {/* 401 공통 모달 렌더링 */}
       <Modal
         isOpen={isSessionExpired}
+        priority={100}
         title="세션 만료"
         message="로그인이 만료되었습니다. 다시 로그인해주세요."
         onConfirm={handleModalConfirm}

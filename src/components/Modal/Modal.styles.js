@@ -9,7 +9,7 @@ export const Overlay = styled.div`
   right: 0;
   bottom: 0;
   background-color: ${theme.colors.bgDim};
-  display: flex;
+  display: ${({ $visible }) => $visible ? "flex" : "none"};
   justify-content: center;
   align-items: center;
   z-index: 1000;

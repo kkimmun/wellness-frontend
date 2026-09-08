@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PillButton, PrimaryButton } from "../../../components/Button/Button.styles";
 import { AdminPlaceAPI } from "./api/adminPlaceApi";
+import { Modal } from "../../../components/Modal/Modal";
+import { usePlaceImageDelete } from "./usePlaceImageDelete";
 import { getTypeLabel } from "./placeTypeOptions";
 import {
   DetailHeader,
@@ -27,6 +29,11 @@ const AdminPlaceDetail = () => {
   const [place, setPlace] = useState(null);
   const [screenState, setScreenState] = useState("loading"); // loading | success | error
   const [errorMessage, setErrorMessage] = useState("");
+  const imageDelete = usePlaceImageDelete(placeNo, (imgNo) => {
+    setPlace((current) => ({ ...current,
+      placeImages: current.placeImages.filter((image) => image.imgNo !== imgNo),
+    }));
+  });
 
   useEffect(() => {
     let ignore = false;
@@ -121,11 +128,12 @@ const AdminPlaceDetail = () => {
               ) : (
                 <ImageGrid>
                   {images.map((img) => (
-                    <ThumbImage
-                      key={img.saveName ?? img.imgOrder}
-                      src={buildImageUrl(img)}
-                      alt={img.originalName ?? "명소 이미지"}
-                    />
+                    <div key={img.imgNo ?? img.saveName} style={{ display: "grid", gap: 8 }}>
+                      <ThumbImage src={buildImageUrl(img)} alt={img.originalName ?? "명소 이미지"} />
+                      <PillButton type="button" disabled={imageDelete.pending || img.imgNo == null}
+                        aria-label={`${img.originalName ?? "명소 이미지"} 삭제`}
+                        onClick={() => imageDelete.requestDelete(img)}>삭제</PillButton>
+                    </div>
                   ))}
                 </ImageGrid>
               )}
@@ -133,6 +141,10 @@ const AdminPlaceDetail = () => {
           </InfoRow>
         </InfoCard>
       )}
+      {imageDelete.message && <p role="status">{imageDelete.message}</p>}
+      <Modal {...imageDelete.modalProps}>
+        {imageDelete.error && <p role="alert">{imageDelete.error}</p>}
+      </Modal>
     </div>
   );
 };
