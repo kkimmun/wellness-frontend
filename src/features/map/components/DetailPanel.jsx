@@ -12,11 +12,14 @@ import {
   ActionIcons,
   RatingInfo,
   TabMenu,
+  ImageLicenseCard,
 } from "./DetailPanel.styles";
 import ReviewTab from "./ReviewTab";
 import ImageSlider from "./ImageSlider";
+import { getDefaultPlaceImage, DEFAULT_IMAGE_LICENSE } from "../../../utils/placeImage";
 import BasicInfoTab from "./BasicInfoTab";
 
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const DetailPanel = ({
@@ -36,10 +39,28 @@ const DetailPanel = ({
   // 장소 상세 개선: MapPage가 조회해 합친 상세 데이터를 사용해 동일 API의 중복 요청을 막는다.
   const displayPlace = place;
   // S3 장소 이미지 연동: 상세 API가 없거나 실패해도 지도 핀에 포함된 대표 이미지를 표시한다.
-  const displayImages =
+  const registeredImages =
     displayPlace?.placeImages ||
     displayPlace?.images ||
     (displayPlace?.imageUrl ? [displayPlace.imageUrl] : []);
+  const displayImages = registeredImages.length ? registeredImages : [{
+    imageUrl: getDefaultPlaceImage(displayPlace),
+    license: DEFAULT_IMAGE_LICENSE,
+  }];
+  const [activeImageState, setActiveImageState] = useState({
+    placeNo: null,
+    index: 0,
+  });
+  // 장소가 바뀌면 렌더 단계에서 첫 이미지로 전환해 effect의 연쇄 렌더를 피한다.
+  const activeImageIndex =
+    activeImageState.placeNo === displayPlace?.placeNo
+      ? activeImageState.index
+      : 0;
+  const activeImage = displayImages[activeImageIndex];
+  const activeLicense =
+    activeImage && typeof activeImage !== "string"
+      ? activeImage.license
+      : null;
   const activeTab = location.pathname.endsWith("/review") ? "리뷰" : "기본정보";
 
   const handleTabClick = (tab) => {
@@ -91,6 +112,11 @@ const DetailPanel = ({
       <ImageSlider
         key={displayPlace?.placeNo}
         placeImages={displayImages}
+        place={displayPlace}
+        imgIndex={activeImageIndex}
+        onImageChange={(index) =>
+          setActiveImageState({ placeNo: displayPlace?.placeNo, index })
+        }
       />
 
       <TabMenu>
@@ -116,6 +142,38 @@ const DetailPanel = ({
         />
       )}
       {activeTab === "리뷰" && <ReviewTab place={displayPlace} />}
+
+      {activeLicense && (
+        <ImageLicenseCard aria-label="현재 사진 출처 및 라이선스">
+          <div className="source-line">
+            <strong>사진 출처</strong>
+            {activeLicense.sourcePageUrl ? (
+              <a
+                href={activeLicense.sourcePageUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                {activeLicense.sourceName}
+              </a>
+            ) : (
+              <span>{activeLicense.sourceName}</span>
+            )}
+            <span aria-hidden="true">·</span>
+            {activeLicense.licenseUrl ? (
+              <a
+                href={activeLicense.licenseUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                {activeLicense.licenseCode}
+              </a>
+            ) : (
+              <span>{activeLicense.licenseCode}</span>
+            )}
+          </div>
+          <small>{activeLicense.attributionText}</small>
+        </ImageLicenseCard>
+      )}
     </PanelContainer>
   );
 };

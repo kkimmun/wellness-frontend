@@ -1,9 +1,8 @@
-import { useState } from "react";
-import { FiCheck, FiImage, FiMapPin } from "react-icons/fi";
+import PlaceImage from "../../../components/PlaceImage";
+import { FiCheck, FiMapPin } from "react-icons/fi";
 import { ChoiceRow, PlaceChoiceImage, PlaceChoiceInfo } from "./CustomCoursePanel.styles";
 
 export default function CoursePlaceOption({ place, index, type, name, checked, disabled = false, onChange }) {
-  const [failedImage, setFailedImage] = useState(null);
   const imageUrl = place.imageUrl;
   const description = place.placeDescription || place.description;
   const address = place.addr || place.address;
@@ -21,16 +20,7 @@ export default function CoursePlaceOption({ place, index, type, name, checked, d
       />
       <span className="check" aria-hidden="true"><FiCheck /></span>
       <PlaceChoiceImage>
-        {imageUrl && failedImage !== imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={`${place.placeName} 사진`}
-            loading="lazy"
-            onError={() => setFailedImage(imageUrl)}
-          />
-        ) : (
-          <span className="placeholder"><FiImage aria-hidden="true" /><span>사진 준비 중</span></span>
-        )}
+        <PlaceImage src={imageUrl} place={place} alt={`${place.placeName} 사진`} loading="lazy" />
         <span className="number" aria-hidden="true">{index + 1}</span>
       </PlaceChoiceImage>
       <PlaceChoiceInfo>

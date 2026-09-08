@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PlaceImage from "../../components/PlaceImage";
 import { useNavigate } from "react-router-dom";
 import { FaArrowRight, FaMapMarkedAlt } from "react-icons/fa";
 import { FiAlertCircle, FiLogIn, FiMenu, FiX } from "react-icons/fi";
@@ -198,24 +199,9 @@ const LandingPage = () => {
       <BottomCarousel>
         <div className="carousel-track">
           {marqueeList.map((place, index) => {
-            // 백엔드에서 빈 문자열("")이나 유효하지 않은 주소를 보낼 경우를 대비해 필터링
-            const isValidUrl = (url) => url && typeof url === 'string' && url.length > 5 && url.startsWith('http');
-            
-            let finalImgSrc = "https://picsum.photos/id/20/500/500";
-            if (isValidUrl(place.imageUrl)) finalImgSrc = place.imageUrl;
-            else if (isValidUrl(place.imgUrl)) finalImgSrc = place.imgUrl;
-
             return (
               <PlaceCard key={`${place.placeNo}-${index}`}>
-                <img 
-                  src={finalImgSrc} 
-                  alt={place.placeName} 
-                  onError={(e) => {
-                    // 최후의 수단: 이미지 로딩 자체가 실패(엑박)하면 무조건 기본 이미지로 교체
-                    e.target.onerror = null; 
-                    e.target.src = "https://picsum.photos/id/20/500/500";
-                  }}
-                />
+                <PlaceImage src={place.imageUrl || place.imgUrl} place={place} alt={place.placeName} />
                 <div className="info">#{place.placeName}</div>
               </PlaceCard>
             );

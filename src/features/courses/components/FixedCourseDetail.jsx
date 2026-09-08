@@ -60,6 +60,7 @@ export default function FixedCourseDetail({ courseNo, pins, requestKey, onClose,
     return <UserCourseDetail onRestaurantsChange={onRestaurantsChange} onRestaurantSelect={onRestaurantSelect}
       course={course}
       onBack={onClose}
+      backLabel="순례길 목록으로"
       routeLoading={detail.status === "route-loading"}
       routeError={detail.routeError}
       onRetryRoute={retry}
@@ -68,7 +69,7 @@ export default function FixedCourseDetail({ courseNo, pins, requestKey, onClose,
 
   return (
     <S.CourseCard aria-label="고정 코스 상세정보" aria-busy={detail.status === "loading"}>
-      <S.BackRow><BackButton onClick={onClose} aria-label="지도 화면으로 돌아가기" />지도 화면으로</S.BackRow>
+      <S.BackRow><BackButton onClick={onClose} aria-label="순례길 목록으로 돌아가기" />순례길 목록으로</S.BackRow>
       <h1>고정 코스 상세보기</h1>
       {detail.status === "error" ? (
         <>
