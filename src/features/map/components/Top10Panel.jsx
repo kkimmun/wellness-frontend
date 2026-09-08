@@ -8,109 +8,6 @@ import {
   InfoWrapper,
 } from "./Top10Panel.styles";
 
-const DUMMY_TOP10 = [
-  {
-    placeNo: 1,
-    placeName: "김포아트빌리지&한옥마을",
-    addr: "경기도 김포시 모담공원로 170",
-    addrDetail: "",
-    phone: "031-999-7890",
-    reviewCount: 420,
-    type: "주요관광지",
-    imgUrl: "https://images.unsplash.com/photo-1599307730999-566b6c38ccaa?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
-  },
-  {
-    placeNo: 4,
-    placeName: "김포국제조각공원",
-    addr: "경기도 김포시 월곶면 고막리 435-14",
-    addrDetail: "",
-    phone: "031-980-2481",
-    reviewCount: 204,
-    type: "주요관광지",
-    imgUrl: "https://images.unsplash.com/photo-1518155317743-a8ff43ea6a5f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
-  },
-  {
-    placeNo: 5,
-    placeName: "김포 함상 공원",
-    addr: "경기도 김포시 대곶면 대명항1로 110-36",
-    addrDetail: "",
-    phone: "031-980-5633",
-    reviewCount: 156,
-    type: "주요관광지",
-    imgUrl: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
-  },
-  {
-    placeNo: 7,
-    placeName: "김포장릉",
-    addr: "경기도 김포시 장릉로 79",
-    addrDetail: "",
-    phone: "031-984-2897",
-    reviewCount: 870,
-    type: "주요관광지",
-    imgUrl: "https://images.unsplash.com/photo-1601625902179-8472ec0b70ed?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
-  },
-  {
-    placeNo: 8,
-    placeName: "라베니체",
-    addr: "경기도 김포시 장기동 2018-2 라베니체마치에비뉴",
-    addrDetail: "",
-    phone: "031-980-2715",
-    reviewCount: 645,
-    type: "주요관광지",
-    imgUrl: "https://images.unsplash.com/photo-1544256673-9875bb239634?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
-  },
-  {
-    placeNo: 9,
-    placeName: "김포아라마리나",
-    addr: "경기도 김포시 고촌읍 아라육로270번길 73",
-    addrDetail: "",
-    phone: "031-996-6835",
-    reviewCount: 582,
-    type: "주요관광지",
-    imgUrl: "https://images.unsplash.com/photo-1628198751498-d891b6fb6e04?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
-  },
-  {
-    placeNo: 10,
-    placeName: "대명항",
-    addr: "경기도 김포시 대곶면 산자뫼로 101",
-    addrDetail: "",
-    phone: "031-980-2423",
-    reviewCount: 510,
-    type: "주요관광지",
-    imgUrl: "https://images.unsplash.com/photo-1549463951-2294119d80d1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
-  },
-  {
-    placeNo: 14,
-    placeName: "현대 프리미엄 아울렛",
-    addr: "경기도 김포시 고촌읍 아라육로152번길 100",
-    addrDetail: "",
-    phone: "031-988-9220",
-    reviewCount: 490,
-    type: "주요관광지",
-    imgUrl: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
-  },
-  {
-    placeNo: 178,
-    placeName: "김포 문수산성",
-    addr: "경기도 김포시 월곶면 문수산로 102-38",
-    addrDetail: "",
-    phone: "031-988-6394",
-    reviewCount: 420,
-    type: "주요관광지",
-    imgUrl: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
-  },
-  {
-    placeNo: 1043,
-    placeName: "애기봉",
-    addr: "경기 김포시 하성면 가금리 193-7",
-    addrDetail: "",
-    phone: "031-980-2342",
-    reviewCount: 380,
-    type: "주요관광지",
-    imgUrl: "https://images.unsplash.com/photo-1498855926480-d98e83099315?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
-  }
-];
-
 import { useState, useEffect } from "react";
 import { PlaceAPI } from "../../../api/place";
 
@@ -126,14 +23,17 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
           const res = await PlaceAPI.getGimpoTop10();
           if (res && res.code === 200 && res.data && res.data.content) {
             setTop10List(res.data.content);
+          } else if (res && res.data && Array.isArray(res.data)) {
+            // In case the API directly returns an array
+            setTop10List(res.data);
+          } else if (Array.isArray(res)) {
+            setTop10List(res);
           } else {
-            // 명세가 확정되지 않았거나 데이터가 없을 때 더미 데이터 폴백
-            setTop10List(DUMMY_TOP10);
+            setTop10List([]);
           }
         } catch (err) {
           console.error("Top10 API 호출 실패:", err);
-          // 백엔드 API가 아직 준비되지 않은 경우 더미 데이터 사용
-          setTop10List(DUMMY_TOP10);
+          setTop10List([]);
         } finally {
           setLoading(false);
         }
@@ -154,7 +54,7 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
     }
   };
 
-  const listToRender = top10List.length > 0 ? top10List : DUMMY_TOP10;
+  const listToRender = top10List;
 
   return (
     <PanelContainer $isOpen={isOpen}>
@@ -171,7 +71,14 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
         {!loading && listToRender.map((place, index) => (
           <Top10Card key={place.placeNo} onClick={() => handlePlaceClick(place)}>
             <ImageWrapper>
-              <img src={place.imageUrl || place.imgUrl} alt={place.placeName} />
+              <img 
+                src={place.imageUrl || place.imgUrl || "https://picsum.photos/id/20/500/500"} 
+                alt={place.placeName} 
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://picsum.photos/id/20/500/500";
+                }}
+              />
               <div className="rank-badge">{index + 1}</div>
             </ImageWrapper>
 

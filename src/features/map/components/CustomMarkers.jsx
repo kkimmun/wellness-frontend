@@ -283,7 +283,7 @@ export const RouteMarker = ({ onClick }) => (
 // 기존 Top10, General 마커 (임시 유지용)
 import { FaAward } from "react-icons/fa";
 
-import TOP10_ICONS from "./Top10Icons";
+import TOP10_ICONS, { getTop10IconByName } from "./Top10Icons";
 
 const Top10MarkerBody = styled.div`
   width: 56px;
@@ -296,8 +296,8 @@ const Top10MarkerBody = styled.div`
   filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.25)); /* 아이콘 자체에 그림자 추가 */
 `;
 
-export const Top10Marker = ({ placeNo, onClick }) => {
-  const SvgIcon = TOP10_ICONS[String(placeNo)];
+export const Top10Marker = ({ placeName, onClick }) => {
+  const SvgIcon = getTop10IconByName(placeName);
 
   return (
     <MarkerWrapper onClick={onClick}>
