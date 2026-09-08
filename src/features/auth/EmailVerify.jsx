@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   AuthContainer,
@@ -66,7 +66,7 @@ const EmailVerify = () => {
     try {
       setIsResending(true);
       setCodeError("");
-      await AuthAPI.sendVerificationEmail(requestEmail);
+      await AuthAPI.resendVerificationEmail(requestEmail);
       setTimeLeft(180); // 타이머 리셋
       alert("인증코드가 재전송되었습니다.");
     } catch (err) {

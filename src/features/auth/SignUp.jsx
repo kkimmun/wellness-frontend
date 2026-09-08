@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   SignupContainer,
   Card,
@@ -17,14 +17,19 @@ import { PasswordInput } from "../../components/Input/PasswordInput";
 import { AuthAPI } from "../../api/auth";
 import { useToast } from "../../context/ToastContext";
 
-const pwdRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,20}$/;
+const pwdRegex = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{6,15}$/;
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const signupCompletedRef = useRef(false);
+
+  const verifiedEmail = sessionStorage.getItem("verifiedEmail") || "";
+
   const toast = useToast();
+
   const [payload, setPayload] = useState({
     memberName: "",
-    memberId: "",
+    memberId: verifiedEmail,
     memberPwd: "",
     memberPwdConfirm: "",
   });
@@ -36,14 +41,11 @@ const SignUp = () => {
 
   useEffect(() => {
     // 보안 강화를 위해 sessionStorage 사용
-    const verifiedEmail = sessionStorage.getItem("verifiedEmail");
-    if (!verifiedEmail) {
+    if (!verifiedEmail && !signupCompletedRef.current) {
       toast.error("이메일 인증이 필요합니다.");
       navigate("/request-email", { replace: true });
-    } else {
-      setPayload((prev) => ({ ...prev, memberId: verifiedEmail }));
     }
-  }, [navigate, toast]);
+  }, [navigate, verifiedEmail, toast]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,8 +64,8 @@ const SignUp = () => {
     if (!payload.memberName.trim()) {
       setMemberNameError("닉네임을 입력해주세요.");
       hasAnyError = true;
-    } else if (payload.memberName.trim().length < 2 || payload.memberName.trim().length > 10) {
-      setMemberNameError("닉네임은 2자 이상 10자 이하로 입력해주세요.");
+    } else if (!/^\S{2,12}$/.test(payload.memberName)) {
+      setMemberNameError("닉네임은 공백 없이 2~12자로 입력해주세요.");
       hasAnyError = true;
     }
 
@@ -71,7 +73,7 @@ const SignUp = () => {
       setMemberPwdError("비밀번호를 입력해주세요.");
       hasAnyError = true;
     } else if (!pwdRegex.test(payload.memberPwd)) {
-      setMemberPwdError("비밀번호는 영문, 숫자를 포함하여 8~20자로 입력해주세요.");
+      setMemberPwdError("비밀번호는 공백 없이 영문과 숫자를 포함한 6~15자로 입력해주세요.");
       hasAnyError = true;
     } else if (payload.memberPwd !== payload.memberPwdConfirm) {
       setMemberPwdError("비밀번호가 일치하지 않습니다.");
@@ -88,9 +90,11 @@ const SignUp = () => {
         memberPwd: payload.memberPwd
       });
 
-      toast.success("회원가입이 완료되었습니다!");
+      // 인증 정보 삭제로 재렌더링되어도 인증 화면으로 되돌아가지 않게 완료 상태를 먼저 기록한다.
+      signupCompletedRef.current = true;
       sessionStorage.removeItem("verifiedEmail");
-      navigate("/login");
+      navigate("/login", { replace: true });
+      toast.success("회원가입이 완료되었습니다!");
     } catch (err) {
       setSignupError(err.message || "회원가입 중 오류가 발생했습니다.");
     } finally {
@@ -118,7 +122,7 @@ const SignUp = () => {
                 name="memberName"
                 value={payload.memberName}
                 onChange={handleChange}
-                placeholder="2자~10자 이내 입력"
+                placeholder="공백 없이 2~12자 입력"
                 $hasError={!!memberNameError}
               />
               {memberNameError && <ErrorMessage>{memberNameError}</ErrorMessage>}
@@ -141,7 +145,7 @@ const SignUp = () => {
                 name="memberPwd"
                 value={payload.memberPwd}
                 onChange={handleChange}
-                placeholder="영문, 숫자 포함 8~20자"
+                placeholder="영문, 숫자 포함 6~15자"
                 hasError={!!memberPwdError}
                 required
               />

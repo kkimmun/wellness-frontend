@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { FaUserCircle, FaCamera, FaPen } from "react-icons/fa";
 import {
   ProfilePopoverCard,
@@ -16,14 +15,12 @@ import {
   ActionButton,
   ChangePasswordButton,
 } from "./MyPage.styles";
-import { AuthAPI } from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
 
 const MyPage = ({ onClose }) => {
-  const navigate = useNavigate();
-  const { user, checkAuth } = useAuth();
+  const { user, logout, withdraw } = useAuth();
 
   // 백엔드에서 받은 실제 사용자 데이터를 사용
   const [userInfo, setUserInfo] = useState({
@@ -61,28 +58,34 @@ const MyPage = ({ onClose }) => {
   };
 
   const confirmLogout = async () => {
+    const logoutRequest = logout();
+    setIsLogoutModalOpen(false);
+    if (onClose) onClose();
+    // 로그아웃과 동시에 인증 상태가 바뀌면 이 팝오버가 언마운트된다.
+    // 언마운트된 컴포넌트의 SPA 이동이 누락되지 않도록 랜딩 페이지를 직접 교체한다.
+    window.location.replace("/");
+
     try {
-      await AuthAPI.logout();
-      await checkAuth(); // 전역 상태(unauthenticated)로 갱신
-      setIsLogoutModalOpen(false);
-      if (onClose) onClose();
-      navigate("/login");
+      await logoutRequest;
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleWithdrawal = () => {
+  const handleWithdrawal = async () => {
     if (
       window.confirm(
         "정말 회원탈퇴 하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
       )
     ) {
-      alert("회원탈퇴가 완료되었습니다.");
-      AuthAPI.logout().then(() => {
+      try {
+        await withdraw();
+        alert("회원탈퇴가 완료되었습니다.");
         if (onClose) onClose();
-        navigate("/login");
-      });
+        window.location.replace("/");
+      } catch (err) {
+        alert(err.message || "회원탈퇴에 실패했습니다. 다시 시도해주세요.");
+      }
     }
   };
 

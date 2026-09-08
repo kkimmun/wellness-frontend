@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+
 import {
   AuthContainer,
   Card,
@@ -47,7 +48,9 @@ const EmailRequest = () => {
       await AuthAPI.sendVerificationEmail(requestEmail);
       navigate("/verify-code", { state: { requestEmail } });
     } catch (err) {
-      setRequestEmailError(err.message || "이메일 발송에 실패했습니다. 다시 시도해주세요.");
+      setRequestEmailError(
+        err.message || "이메일 발송에 실패했습니다. 다시 시도해주세요.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -73,14 +76,21 @@ const EmailRequest = () => {
                 onChange={handleChange}
                 $hasError={!!requestEmailError}
               />
-              {requestEmailError && <ErrorMessage>{requestEmailError}</ErrorMessage>}
+              {requestEmailError && (
+                <ErrorMessage>{requestEmailError}</ErrorMessage>
+              )}
             </InputGroup>
 
-            <PrimaryButton $size="lg" $fullWidth type="submit" disabled={isLoading}>
+            <PrimaryButton
+              $size="lg"
+              $fullWidth
+              type="submit"
+              disabled={isLoading}
+            >
               {isLoading ? "발송 중..." : "보내기"}
             </PrimaryButton>
           </Form>
-          
+
           <FooterText>
             이미 계정이 있으신가요? <Link to="/login">로그인</Link>
           </FooterText>
