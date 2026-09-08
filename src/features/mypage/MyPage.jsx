@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaUserCircle, FaCamera, FaPen } from "react-icons/fa";
 import {
   ProfilePopoverCard,
@@ -21,6 +22,7 @@ import { FiAlertCircle } from "react-icons/fi";
 
 const MyPage = ({ onClose }) => {
   const { user, logout, withdraw } = useAuth();
+  const navigate = useNavigate();
 
   // 백엔드에서 받은 실제 사용자 데이터를 사용
   const [userInfo, setUserInfo] = useState({
@@ -89,6 +91,11 @@ const MyPage = ({ onClose }) => {
     }
   };
 
+  const handleOpenTravelPlans = () => {
+    if (onClose) onClose();
+    navigate("/map?mode=j", { state: { planView: "saved" } });
+  };
+
   return (
     <ProfilePopoverCard onClick={(e) => e.stopPropagation()}>
       <Title>내 정보</Title>
@@ -139,6 +146,7 @@ const MyPage = ({ onClose }) => {
         </InfoRow>
       </InfoList>
 
+      <ActionButton onClick={handleOpenTravelPlans}>나의 여행 계획</ActionButton>
       <ActionButton onClick={handleLogout}>로그아웃</ActionButton>
       <ActionButton $danger onClick={handleWithdrawal}>
         회원탈퇴

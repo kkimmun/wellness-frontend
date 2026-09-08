@@ -82,6 +82,15 @@ const Header = () => {
   }, []);
 
   const isPilgrimActive = location.pathname.startsWith("/pilgrim");
+  const isTravelPlanActive =
+    location.pathname === "/map" &&
+    new URLSearchParams(location.search).get("mode") === "j";
+
+  const openSavedTravelPlans = () => {
+    navigate("/map?mode=j", { state: { planView: "saved" } });
+    setMobileOpen(false);
+    setProfileOpen(false);
+  };
 
   return (
     <>
@@ -92,7 +101,10 @@ const Header = () => {
 
         <DesktopNavList>
           <NavItem
-            $active={location.pathname === "/" || location.pathname === "/map"}
+            $active={
+              location.pathname === "/" ||
+              (location.pathname === "/map" && !isTravelPlanActive)
+            }
             onClick={() => handleNavigate("/map")}
           >
             지도
@@ -109,6 +121,11 @@ const Header = () => {
           >
             김포Top10
           </NavItem>
+          {isLoggedIn && (
+            <NavItem $active={isTravelPlanActive} onClick={openSavedTravelPlans}>
+              나의 여행계획
+            </NavItem>
+          )}
         </DesktopNavList>
 
         {/* 데스크톱 마이페이지/로그인 아이콘 + 팝업 메뉴 */}
@@ -168,7 +185,10 @@ const Header = () => {
       <MobileDrawer $isOpen={mobileOpen}>
         <MobileNavList>
           <MobileNavItem
-            $active={location.pathname === "/" || location.pathname === "/map"}
+            $active={
+              location.pathname === "/" ||
+              (location.pathname === "/map" && !isTravelPlanActive)
+            }
             onClick={() => handleNavigate("/map")}
           >
             지도
@@ -185,6 +205,11 @@ const Header = () => {
           >
             김포Top10
           </MobileNavItem>
+          {isLoggedIn && (
+            <MobileNavItem $active={isTravelPlanActive} onClick={openSavedTravelPlans}>
+              나의 여행계획
+            </MobileNavItem>
+          )}
         </MobileNavList>
       </MobileDrawer>
     </>
