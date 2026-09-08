@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { ImageCarousel, CarouselItem } from "./DetailPanel.styles";
+import {
+  ImageCarousel,
+  CarouselItem,
+} from "./DetailPanel.styles";
 
-const ImageSlider = ({ placeImages }) => {
-  const [imgIndex, setImgIndex] = useState(0);
-
+const ImageSlider = ({ placeImages, imgIndex, onImageChange }) => {
   // DB 지도 핀 연동: 이미지가 없을 때 목업 이미지를 만들지 않고 빈 상태를 표시한다.
   // 장소 상세 개선: 상세 API가 IMG_ORDER 순서로 준 이미지 전체를 순환 표시한다.
   const images = placeImages?.length > 0 ? placeImages : [null];
@@ -56,12 +56,12 @@ const ImageSlider = ({ placeImages }) => {
     <ImageCarousel>
       {images.map((item, idx) => (
         <CarouselItem
-          key={idx}
+          key={item?.imgNo ?? item?.imageUrl ?? item ?? idx}
           className={getCarouselClass(idx)}
           style={renderBoxStyle(item)}
           onClick={() => {
             if (getCarouselClass(idx) !== "hidden") {
-              setImgIndex(idx);
+              onImageChange(idx);
             }
           }}
         >

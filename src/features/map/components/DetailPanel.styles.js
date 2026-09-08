@@ -156,6 +156,41 @@ export const CarouselItem = styled.div`
   }
 `;
 
+export const ImageLicenseCard = styled.aside`
+  flex-shrink: 0;
+  margin: 0 24px 20px;
+  padding-top: 12px;
+  border-top: 1px solid #e3e8ee;
+  color: #7b8794;
+  font-size: 11px;
+  line-height: 1.5;
+
+  .source-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+
+    strong {
+      color: #5f6b78;
+    }
+  }
+
+  a {
+    color: #1677c8;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  small {
+    display: block;
+    margin-top: 3px;
+    color: #8a95a1;
+    font-size: 10px;
+    overflow-wrap: anywhere;
+  }
+`;
+
 export const TabMenu = styled.div`
   flex-shrink: 0;
   display: flex;
