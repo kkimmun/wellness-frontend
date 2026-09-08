@@ -21,7 +21,16 @@ export const AuthAPI = {
     }
 
     localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("memberId", credentials.memberId);
+
+    // 사용자 식별값은 서버가 확인해 반환한 값만 저장한다.
+    // 응답에 memberId가 없으면 문자열 "undefined"나 이전 계정 값이 남지 않도록 제거한다.
+    const memberId = loginResult?.memberId;
+    if (typeof memberId === "string" && memberId.trim()) {
+      localStorage.setItem("memberId", memberId);
+    } else {
+      localStorage.removeItem("memberId");
+    }
+
     return loginResult;
   },
 
@@ -59,15 +68,17 @@ export const AuthAPI = {
   },
 
   sendVerificationEmail: async (email) => {
-    return api.post("/mail/auth", {
+    const body = await api.post("/mail/auth", {
       emailAddr: email,
     });
+    return body?.data ?? body;
   },
 
   resendVerificationEmail: async (email) => {
-    return api.post("/mail/auth/resend", {
+    const body = await api.post("/mail/auth/resend", {
       emailAddr: email,
     });
+    return body?.data ?? body;
   },
 
   verifyEmailCode: async (email, authCode) => {
