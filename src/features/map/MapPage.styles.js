@@ -348,6 +348,10 @@ export const OverlayCard = styled.div`
       .btn-end {
         background-color: #FF5722; /* 주황색 도착 버튼 */
       }
+      /* 계획 모드 연동: 장소 요약에서 경로찾기 대신 계획에 바로 추가한다. */
+      .btn-plan {
+        background-color: #46558A;
+      }
     }
   }
   .badge {

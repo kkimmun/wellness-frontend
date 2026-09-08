@@ -4,6 +4,7 @@ import {
   Map,
   MapMarker,
   CustomOverlayMap,
+  Polyline,
   useKakaoLoader,
 } from "react-kakao-maps-sdk";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -21,8 +22,18 @@ import {
 } from "../courses/utils/userCourseStorage";
 import RoutePanel from "./components/RoutePanel";
 import RoutePolylineLayer from "./components/RoutePolylineLayer";
+import PlanModePanel from "./components/PlanModePanel";
 import Top10Panel from "./components/Top10Panel";
-import { Top10Marker, GeneralMarker, MedicalMarker, FoodMarker, TouristMarker, SportsMarker, ReligionMarker, EventMarker } from "./components/CustomMarkers";
+import {
+  Top10Marker,
+  GeneralMarker,
+  MedicalMarker,
+  FoodMarker,
+  TouristMarker,
+  SportsMarker,
+  ReligionMarker,
+  EventMarker,
+} from "./components/CustomMarkers";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
@@ -48,8 +59,26 @@ import {
   ROUTE_SEGMENT_COLORS,
   ROUTE_SEGMENT_LEGEND,
 } from "./routeSegmentStyles";
+import {
+  MAX_TRAVEL_PLAN_PLACES,
+  clearTravelPlanDraft,
+  deleteTravelPlan,
+  readTravelPlanDraft,
+  readTravelPlans,
+  saveTravelPlan,
+  saveTravelPlanDraft,
+} from "./utils/travelPlanStorage";
 
 const EMPTY_RESTAURANTS = [];
+
+// 계획 모드: 위치 권한을 사용할 수 없을 때 출발지로 사용할 김포시청 좌표다.
+const GIMPO_CITY_HALL = {
+  placeName: "김포시청",
+  address: "경기도 김포시 사우중로 1",
+  xAxis: 126.7155,
+  yAxis: 37.6153,
+  locationSource: "fallback",
+};
 
 const getCourseMarkerImage = (index) => {
   const number = index + 1;
@@ -186,7 +215,18 @@ const MapPage = () => {
   const mapRef = useRef(null);
   const filterRequestIdRef = useRef(0);
   const restaurantViewportRef = useRef(null);
-  const [mapLevel, setMapLevel] = useState(5);
+
+  // 계획 모드 상태는 기존 길찾기 상태와 분리해 두 기능의 핀과 경로가 섞이지 않게 한다.
+  const [planOrigin, setPlanOrigin] = useState(null);
+  const [planOriginStatus, setPlanOriginStatus] = useState("idle");
+  const [isPlanOriginPickMode, setIsPlanOriginPickMode] = useState(false);
+  const [isPlanPanelOpen, setIsPlanPanelOpen] = useState(true);
+  const [planRecommendationPins, setPlanRecommendationPins] = useState([]);
+  const [planPlaces, setPlanPlaces] = useState([]);
+  const [savedPlans, setSavedPlans] = useState([]);
+  const [activePlanId, setActivePlanId] = useState(null);
+  const [planDetailPlace, setPlanDetailPlace] = useState(null);
+  const planLocationRequestRef = useRef(0);
 
   const [top10OverlayState, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
   const [top10OverlayDetail, setTop10OverlayDetail] = useState(null);
@@ -220,7 +260,7 @@ const MapPage = () => {
         : null;
     return top10OverlayState ? { ...top10OverlayState, ...detail } : null;
   }, [top10OverlayState, top10OverlayDetail]);
-  const { status } = useAuth();
+  const { status, user } = useAuth();
 
   const toggleBookmark = (e, placeNo) => {
     if (e) e.stopPropagation();
@@ -328,6 +368,12 @@ const MapPage = () => {
   const userCourseId = isCourseRestaurantDetail
     ? courseLocation.userCourseId
     : params.userCourseId;
+  const mapMode = new URLSearchParams(location.search).get("mode");
+  const isPlanModeRequested = location.pathname === "/map" && mapMode === "j";
+  const isPlanMode = isPlanModeRequested && status === "authenticated";
+  const planOwnerKey =
+    user?.memberId ||
+    (user?.memberNo != null ? `member:${user.memberNo}` : null);
   const isFixedCourseView =
     courseLocation.pathname.startsWith("/pilgrim/fixed");
   const isCustomCourseView = courseLocation.pathname === "/pilgrim/create";
@@ -336,6 +382,226 @@ const MapPage = () => {
   const isUserCourseDetail = isFixedCourseView && Boolean(userCourseId);
   const isCourseMapView =
     isCustomCourseView || isFixedCourseDetail || isUserCourseDetail;
+
+  useEffect(() => {
+    if (isPlanModeRequested && status === "unauthenticated") {
+      navigate("/login", { replace: true });
+    }
+  }, [isPlanModeRequested, navigate, status]);
+
+  const moveMapToPlanPoint = useCallback((point) => {
+    if (!point || !mapRef.current || !window.kakao?.maps) return;
+    mapRef.current.panTo(
+      new window.kakao.maps.LatLng(point.yAxis, point.xAxis),
+    );
+  }, []);
+
+  const applyGimpoCityHallFallback = useCallback(() => {
+    setPlanOrigin(GIMPO_CITY_HALL);
+    setPlanOriginStatus("fallback");
+    moveMapToPlanPoint(GIMPO_CITY_HALL);
+  }, [moveMapToPlanPoint]);
+
+  // 계획 모드: 브라우저 위치를 우선 사용하고 실패하면 사용자가 이동 가능한 김포시청 핀을 제공한다.
+  const requestCurrentPlanLocation = useCallback(() => {
+    const requestId = planLocationRequestRef.current + 1;
+    planLocationRequestRef.current = requestId;
+    // 브라우저 위치 확인이 지연되거나 권한 선택을 기다리는 동안에도 시작 핀이 보이도록
+    // 김포시청을 즉시 임시 위치로 표시하고, 성공 응답이 오면 실제 위치로 교체한다.
+    setPlanOrigin(GIMPO_CITY_HALL);
+    setPlanOriginStatus("loading");
+    moveMapToPlanPoint(GIMPO_CITY_HALL);
+
+    if (!navigator.geolocation) {
+      applyGimpoCityHallFallback();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        if (requestId !== planLocationRequestRef.current) return;
+        const currentLocation = {
+          placeName: "현재 위치",
+          address: "브라우저에서 확인한 현재 위치",
+          xAxis: coords.longitude,
+          yAxis: coords.latitude,
+          locationSource: "geolocation",
+        };
+        setPlanOrigin(currentLocation);
+        setPlanOriginStatus("success");
+        moveMapToPlanPoint(currentLocation);
+      },
+      () => {
+        if (requestId !== planLocationRequestRef.current) return;
+        applyGimpoCityHallFallback();
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+    );
+  }, [applyGimpoCityHallFallback, moveMapToPlanPoint]);
+
+  useEffect(() => {
+    if (!isPlanMode || !planOwnerKey) return undefined;
+
+    const initializationTimer = window.setTimeout(() => {
+      // 계획 모드 진입 시 이전 길찾기 결과가 계획 직선과 겹치지 않도록 길찾기 화면 상태만 비운다.
+      setIsRouteOpen(false);
+      setRouteOrigin(null);
+      setRouteDestination(null);
+      setMapPickMode(null);
+      setSelectedRoute(null);
+      setIsPlanPanelOpen(true);
+      setSavedPlans(readTravelPlans(planOwnerKey));
+      const draft = readTravelPlanDraft(planOwnerKey);
+      if (draft) {
+        setPlanOrigin(draft.origin);
+        setPlanPlaces(draft.places);
+        setPlanOriginStatus("restored");
+        moveMapToPlanPoint(draft.places.at(-1) || draft.origin);
+      } else {
+        setPlanPlaces([]);
+        requestCurrentPlanLocation();
+      }
+    }, 0);
+
+    return () => {
+      window.clearTimeout(initializationTimer);
+      planLocationRequestRef.current += 1;
+    };
+  }, [
+    isPlanMode,
+    moveMapToPlanPoint,
+    planOwnerKey,
+    requestCurrentPlanLocation,
+  ]);
+
+  useEffect(() => {
+    if (!isPlanMode || !planOwnerKey || !planOrigin) return;
+    saveTravelPlanDraft({
+      ownerKey: planOwnerKey,
+      origin: planOrigin,
+      places: planPlaces,
+    });
+  }, [isPlanMode, planOrigin, planOwnerKey, planPlaces]);
+
+  const handlePlanRecommendationsChange = useCallback((places) => {
+    setPlanRecommendationPins(toValidPins(places));
+    setTop10Overlay(null);
+    setPlanDetailPlace(null);
+  }, []);
+
+  const handlePlanPlacePreview = useCallback((place) => {
+    setTop10Overlay({ ...place, isExternal: false });
+    setPlanDetailPlace(null);
+    moveMapToPlanPoint(place);
+  }, [moveMapToPlanPoint]);
+
+  const handlePlanAddPlace = useCallback(
+    (place) => {
+      if (!place?.placeNo) return false;
+      if (planPlaces.some((item) => String(item.placeNo) === String(place.placeNo))) {
+        setAlertMessage("이미 계획에 추가한 장소입니다.");
+        setIsAlertModalOpen(true);
+        return false;
+      }
+      if (planPlaces.length >= MAX_TRAVEL_PLAN_PLACES) {
+        setAlertMessage("계획에는 장소를 최대 10개까지 추가할 수 있습니다.");
+        setIsAlertModalOpen(true);
+        return false;
+      }
+
+      const nextPlace = {
+        ...place,
+        xAxis: Number(place.xAxis ?? place.X_AXIS),
+        yAxis: Number(place.yAxis ?? place.Y_AXIS),
+      };
+      setPlanPlaces((current) => [...current, nextPlace]);
+      setPlanRecommendationPins([]);
+      setTop10Overlay(null);
+      setPlanDetailPlace(null);
+      setIsPlanPanelOpen(true);
+      moveMapToPlanPoint(nextPlace);
+      return true;
+    },
+    [moveMapToPlanPoint, planPlaces],
+  );
+
+  const handlePlanRemovePlace = useCallback((index) => {
+    setPlanPlaces((current) => current.slice(0, index));
+    setPlanRecommendationPins([]);
+    setTop10Overlay(null);
+    setPlanDetailPlace(null);
+  }, []);
+
+  const handleSaveTravelPlan = useCallback(
+    (name) => {
+      const saved = saveTravelPlan({
+        id: activePlanId,
+        ownerKey: planOwnerKey,
+        name,
+        origin: planOrigin,
+        places: planPlaces,
+      });
+      if (!saved) {
+        setAlertMessage("계획 이름과 한 개 이상의 장소를 확인해주세요.");
+        setIsAlertModalOpen(true);
+        return null;
+      }
+      setSavedPlans(readTravelPlans(planOwnerKey));
+      setActivePlanId(saved.id);
+      return saved;
+    },
+    [activePlanId, planOrigin, planOwnerKey, planPlaces],
+  );
+
+  const handleOpenSavedPlan = useCallback(
+    (plan) => {
+      setPlanOrigin(plan.origin);
+      setPlanPlaces(plan.places);
+      setPlanOriginStatus("restored");
+      setPlanRecommendationPins([]);
+      setTop10Overlay(null);
+      setPlanDetailPlace(null);
+      setActivePlanId(plan.id);
+      setIsPlanPanelOpen(true);
+      moveMapToPlanPoint(plan.origin);
+    },
+    [moveMapToPlanPoint],
+  );
+
+  const handleDeleteSavedPlan = useCallback(
+    (planId) => {
+      deleteTravelPlan(planOwnerKey, planId);
+      setSavedPlans(readTravelPlans(planOwnerKey));
+      if (activePlanId === planId) setActivePlanId(null);
+    },
+    [activePlanId, planOwnerKey],
+  );
+
+  const handleStartNewPlan = useCallback(() => {
+    clearTravelPlanDraft(planOwnerKey);
+    setPlanPlaces([]);
+    setPlanRecommendationPins([]);
+    setTop10Overlay(null);
+    setPlanDetailPlace(null);
+    setActivePlanId(null);
+    requestCurrentPlanLocation();
+  }, [planOwnerKey, requestCurrentPlanLocation]);
+
+  const openPlanPlaceDetail = useCallback(async (place) => {
+    if (!place?.placeNo) return;
+    setPlanDetailPlace(place);
+    try {
+      const response = await PlaceAPI.getPlaceDetail(place.placeNo);
+      const detail = response?.data ?? response;
+      setPlanDetailPlace((current) =>
+        String(current?.placeNo) === String(place.placeNo)
+          ? { ...place, ...detail }
+          : current,
+      );
+    } catch (detailError) {
+      console.error("계획 장소 상세 정보를 불러오지 못했습니다.", detailError);
+    }
+  }, []);
   const restaurantPins =
     isCourseMapView && restaurantMap?.key === courseLocation.key
       ? restaurantMap.places
@@ -507,12 +773,12 @@ const MapPage = () => {
     setIsTagsOpen((prev) => !prev);
   };
 
-  // DB 장소 데이터 연동: 타입과 태그 선택이 함께 되면 PK 조건과 AND로 조회한다.
+  // DB 장소 필터 연동: 타입과 태그 선택을 함께 유지하고 PK 조건을 AND로 조회한다.
   const handlePlaceFilter = async (kind, value) => {
-    // 💡 다른 필터를 누르면 열려있던 말풍선을 강제로 닫고 기본 지도로 복귀함
+    // 필터가 바뀌면 기존 장소 요약 오버레이를 닫고 일반 지도 주소로 복귀한다.
     setTop10Overlay(null);
     if (placeNo) {
-      navigate("/map");
+      navigate(isPlanMode ? "/map?mode=j" : "/map");
     }
 
     const requestId = filterRequestIdRef.current + 1;
@@ -618,6 +884,26 @@ const MapPage = () => {
 
   const handleMapClick = (_map, mouseEvent) => {
     setTop10Overlay(null);
+
+    // 계획 모드: 기존 출발지 선택 방식처럼 다음 지도 클릭 좌표로 시작 핀만 이동한다.
+    if (isPlanMode) {
+      if (isPlanOriginPickMode && mouseEvent?.latLng) {
+        const pickedOrigin = {
+          placeName: "지도에서 선택한 시작 위치",
+          address: "지도에서 선택한 위치",
+          xAxis: mouseEvent.latLng.getLng(),
+          yAxis: mouseEvent.latLng.getLat(),
+          locationSource: "map",
+        };
+        setPlanOrigin(pickedOrigin);
+        setPlanOriginStatus("picked");
+        setPlanRecommendationPins([]);
+        setPlanDetailPlace(null);
+        setIsPlanOriginPickMode(false);
+        setIsPlanPanelOpen(true);
+      }
+      return;
+    }
 
     if (!isCourseView && mapPickMode && mouseEvent?.latLng) {
       const isOrigin = mapPickMode === "origin";
@@ -787,8 +1073,22 @@ const MapPage = () => {
       .filter((segment) => segment.path.length > 1);
   }, [selectedRoute]);
   const isWalkingRoute = selectedRoute?.transportType === "WALK";
+  const planMapPoints = useMemo(
+    () => [planOrigin, ...planPlaces].filter(Boolean),
+    [planOrigin, planPlaces],
+  );
+  const planMapPath = useMemo(
+    () =>
+      planMapPoints.map((point) => ({
+        lat: Number(point.yAxis ?? point.Y_AXIS),
+        lng: Number(point.xAxis ?? point.X_AXIS),
+      })),
+    [planMapPoints],
+  );
   // 길찾기 지도 정리: 결과가 있으면 관계없는 전체 DB 핀을 숨기고 경로 포함 지점만 표시한다.
-  const visibleMapPins = isCourseMapView
+  const visibleMapPins = isPlanMode
+    ? planRecommendationPins
+    : isCourseMapView
     ? coursePins
     : selectedRoute
       ? (selectedRoute.routePoints || []).slice(1, -1)
@@ -827,6 +1127,44 @@ const MapPage = () => {
     [hasPlaceFilter, isAllPinsVisible, pins],
   );
 
+  // 계획 모드: 계획 또는 추천 목록이 바뀌면 관련 장소가 지도 화면 안에 들어오도록 조정한다.
+  useEffect(() => {
+    if (!isPlanMode || !mapRef.current || !window.kakao?.maps) return;
+    const points =
+      planRecommendationPins.length > 0
+        ? [planPlaces.at(-1) || planOrigin, ...planRecommendationPins]
+        : planMapPoints;
+    const validPoints = points.filter(
+      (point) =>
+        Number.isFinite(Number(point?.xAxis ?? point?.X_AXIS)) &&
+        Number.isFinite(Number(point?.yAxis ?? point?.Y_AXIS)),
+    );
+    if (validPoints.length === 0) return;
+    if (validPoints.length === 1) {
+      moveMapToPlanPoint(validPoints[0]);
+      return;
+    }
+
+    const bounds = new window.kakao.maps.LatLngBounds();
+    validPoints.forEach((point) => {
+      bounds.extend(
+        new window.kakao.maps.LatLng(
+          Number(point.yAxis ?? point.Y_AXIS),
+          Number(point.xAxis ?? point.X_AXIS),
+        ),
+      );
+    });
+    mapRef.current.setBounds(bounds, 80, isPlanPanelOpen ? 440 : 80, 80, 80);
+  }, [
+    isPlanMode,
+    isPlanPanelOpen,
+    moveMapToPlanPoint,
+    planMapPoints,
+    planOrigin,
+    planPlaces,
+    planRecommendationPins,
+  ]);
+
   // DB 장소 필터 연동: 필터 결과의 위치가 현재 화면 밖에 있지 않도록 결과 범위로 지도를 이동한다.
   useEffect(() => {
     if (
@@ -861,11 +1199,45 @@ const MapPage = () => {
         onPlaceSelect={handlePlaceSelect}
         bookmarks={bookmarks}
         toggleBookmark={toggleBookmark}
-        isVisible={!isDetailOpen && !hasRouteSession && !isCourseView}
+        isVisible={
+          !isPlanMode && !isDetailOpen && !hasRouteSession && !isCourseView
+        }
         onSearchResults={handleSearchResults}
         onSetOrigin={openRouteWithOrigin}
         onSetDestination={openRouteWithDestination}
       />
+
+      {/* 계획 모드: 기존 지도 기능은 유지하고 추천·계획 상태만 독립 패널에서 관리한다. */}
+      {isPlanMode && (
+        <PlanModePanel
+          key={`plan-mode-${location.key}`}
+          isOpen={isPlanPanelOpen && !planDetailPlace}
+          initialView={location.state?.planView === "saved" ? "saved" : "category"}
+          origin={planOrigin}
+          originStatus={planOriginStatus}
+          typeOptions={typeOptions}
+          places={planPlaces}
+          savedPlans={savedPlans}
+          activePlanId={activePlanId}
+          onClose={() => setIsPlanPanelOpen(false)}
+          onOpen={() => setIsPlanPanelOpen(true)}
+          onRequestCurrentLocation={requestCurrentPlanLocation}
+          onRequestOriginPick={() => {
+            setIsPlanOriginPickMode(true);
+            setTop10Overlay(null);
+            setPlanDetailPlace(null);
+            setIsPlanPanelOpen(false);
+          }}
+          onRecommendationsChange={handlePlanRecommendationsChange}
+          onPreviewPlace={handlePlanPlacePreview}
+          onAddPlace={handlePlanAddPlace}
+          onRemovePlace={handlePlanRemovePlace}
+          onSavePlan={handleSaveTravelPlan}
+          onOpenSavedPlan={handleOpenSavedPlan}
+          onDeleteSavedPlan={handleDeleteSavedPlan}
+          onStartNewPlan={handleStartNewPlan}
+        />
+      )}
 
       {isFixedCourseView && !isFixedCourseDetail && !isUserCourseDetail && (
         <FixedCoursePanel
@@ -932,7 +1304,7 @@ const MapPage = () => {
       {/* 길찾기 기능 연동: 지도 위 독립 패널에서 입력·검색·결과 선택을 처리한다. */}
       <RoutePanel
         key={`route-input-${routeInputRevision}`}
-        isOpen={isRouteOpen && !isCourseView}
+        isOpen={isRouteOpen && !isCourseView && !isPlanMode}
         initialOrigin={routeOrigin}
         initialDestination={routeDestination}
         onClose={endRoute}
@@ -943,7 +1315,7 @@ const MapPage = () => {
       />
 
       {/* 길찾기 패널 표시 전환: 경로 상태는 유지하고 패널만 접거나 다시 연다. */}
-      {!isCourseView && hasRouteSession && (
+      {!isPlanMode && !isCourseView && hasRouteSession && (
         <RouteReopenButton
           type="button"
           $isOpen={isRouteOpen}
@@ -957,7 +1329,7 @@ const MapPage = () => {
         </RouteReopenButton>
       )}
 
-      {!isFixedCourseView && !isCustomCourseView && (
+      {!isPlanMode && !isFixedCourseView && !isCustomCourseView && (
         <FloatingTags>
           <TagList $isOpen={isTagsOpen}>
             {/* DB 장소 필터 연동: 존재하지 않는 임시 태그 버튼을 실제 타입·태그 선택으로 교체한다. */}
@@ -1030,7 +1402,7 @@ const MapPage = () => {
       )}
 
       {/* 지도 좌표 길찾기: DB 장소를 먼저 고르지 않아도 지도에서 출발·도착 핀을 바로 생성한다. */}
-      {!isCourseView && !loading && !error && (
+      {!isPlanMode && !isCourseView && !loading && !error && (
         <MapPinToolbar aria-label="지도 길찾기 핀 생성">
           <MapPinCreateButton
             type="button"
@@ -1072,11 +1444,17 @@ const MapPage = () => {
         </MapStatus>
       ) : (
         <>
-          {!isCourseView && mapPickMode && (
+          {(!isCourseView && (isPlanMode ? isPlanOriginPickMode : mapPickMode)) && (
             <MapPickNotice role="status">
-              지도에서 {mapPickMode === "origin" ? "출발지" : "도착지"}로 사용할
-              위치를 클릭하세요.
-              <button type="button" onClick={() => setMapPickMode(null)}>
+              지도에서 {isPlanOriginPickMode ? "계획 시작 위치" : mapPickMode === "origin" ? "출발지" : "도착지"}로 사용할 위치를 클릭하세요.
+              <button
+                type="button"
+                onClick={() => {
+                  setMapPickMode(null);
+                  setIsPlanOriginPickMode(false);
+                  if (isPlanMode) setIsPlanPanelOpen(true);
+                }}
+              >
                 취소
               </button>
             </MapPickNotice>
@@ -1092,6 +1470,14 @@ const MapPage = () => {
               // 길찾기 표시 안정화: 장거리 경로도 한 화면에 담을 수 있도록 최대 축소 레벨을 허용한다.
               map.setMaxLevel(14);
               map.setMinLevel(2); // 과도한 확대 방지
+              if (isPlanMode && planOrigin) {
+                map.panTo(
+                  new window.kakao.maps.LatLng(
+                    planOrigin.yAxis,
+                    planOrigin.xAxis,
+                  ),
+                );
+              }
             }}
             onClick={handleMapClick}
           >
@@ -1113,13 +1499,10 @@ const MapPage = () => {
                 String(pin.typeDetailNo) === "18" ||
                 TOP10_PLACE_NOS.includes(String(pin.placeNo));
 
-              // DB 장소 데이터 연동: X_AXIS는 경도(lng), Y_AXIS는 위도(lat)를 사용한다.
               const lat = Number(pin.Y_AXIS ?? pin.yAxis);
               const lng = Number(pin.X_AXIS ?? pin.xAxis);
-              let MarkerComponent = GeneralMarker;
 
               if (isCourseMapView) {
-                // 코스 뷰에서는 여전히 MapMarker를 사용하거나 별도 처리 가능하지만, 일반 뷰는 CustomMarker 사용
                 return (
                   <MapMarker
                     key={pin.routeMarkerKey || pin.placeNo || index}
@@ -1132,32 +1515,83 @@ const MapPage = () => {
                 );
               }
 
-              if (isTop10) MarkerComponent = () => <Top10Marker placeName={pin.placeName} onClick={() => { if (!selectedRoute) handleMarkerClick(pin); }} />;
-              else if (pin.type === "의료기관") MarkerComponent = MedicalMarker;
-              else if (pin.type === "음식점" || pin.type === "카페") MarkerComponent = FoodMarker;
-              else if (pin.type === "주요관광지" || pin.type === "관광명소" || pin.type === "관광지") MarkerComponent = TouristMarker;
-              else if (pin.type === "생활체육시설") MarkerComponent = SportsMarker;
-              else if (pin.type === "종교시설") MarkerComponent = ReligionMarker;
-              else if (pin.type === "이벤트" || pin.type === "축제") MarkerComponent = EventMarker;
+              let MarkerComponent = GeneralMarker;
+              if (pin.type === "의료기관") MarkerComponent = MedicalMarker;
+              else if (pin.type === "음식점" || pin.type === "카페")
+                MarkerComponent = FoodMarker;
+              else if (
+                pin.type === "주요관광지" ||
+                pin.type === "관광명소" ||
+                pin.type === "관광지"
+              )
+                MarkerComponent = TouristMarker;
+              else if (pin.type === "생활체육시설")
+                MarkerComponent = SportsMarker;
+              else if (pin.type === "종교시설")
+                MarkerComponent = ReligionMarker;
+              else if (pin.type === "이벤트" || pin.type === "축제")
+                MarkerComponent = EventMarker;
+
+              const handleVisiblePinClick = () => {
+                if (selectedRoute) return;
+                if (isPlanMode) handlePlanPlacePreview(pin);
+                else handleMarkerClick(pin);
+              };
 
               return (
                 <CustomOverlayMap
                   key={pin.routeMarkerKey || pin.placeNo || index}
                   position={{ lat, lng }}
-                  yAnchor={1} // 마커 하단이 좌표를 가리키도록 설정
+                  yAnchor={1}
                   zIndex={isTop10 ? 10 : 1}
                   clickable={!selectedRoute}
                 >
                   {isTop10 ? (
-                    <MarkerComponent />
+                    <Top10Marker
+                      placeName={pin.placeName}
+                      onClick={handleVisiblePinClick}
+                    />
                   ) : (
-                    <MarkerComponent onClick={() => { if (!selectedRoute) handleMarkerClick(pin); }} />
+                    <MarkerComponent onClick={handleVisiblePinClick} />
                   )}
                 </CustomOverlayMap>
               );
             })}
 
-            {!isCourseView &&
+            {isPlanMode && planOrigin && (
+              <MapMarker
+                position={{ lat: planOrigin.yAxis, lng: planOrigin.xAxis }}
+                title={planOrigin.placeName}
+                image={getRoutePointMarkerImage("출", "#FF7043")}
+                zIndex={50}
+                clickable={false}
+              />
+            )}
+
+            {isPlanMode &&
+              planPlaces.map((place, index) => (
+                <MapMarker
+                  key={`plan-place-${place.placeNo}`}
+                  position={{ lat: place.yAxis, lng: place.xAxis }}
+                  title={`${index + 1}. ${place.placeName}`}
+                  image={getCourseMarkerImage(index)}
+                  zIndex={45}
+                  onClick={() => handlePlanPlacePreview(place)}
+                />
+              ))}
+
+            {/* 계획 모드에서는 이동수단을 정하지 않았으므로 실제 길찾기 대신 선택 순서만 직선으로 표시한다. */}
+            {isPlanMode && planMapPath.length > 1 && (
+              <Polyline
+                path={planMapPath}
+                strokeWeight={4}
+                strokeColor="#E34D4D"
+                strokeOpacity={0.85}
+                strokeStyle="solid"
+              />
+            )}
+
+            {!isPlanMode && !isCourseView &&
               routeSelectionPins.map((pin) => (
                 <MapMarker
                   key={`route-selection-${pin.markerLabel}`}
@@ -1204,7 +1638,7 @@ const MapPage = () => {
             {isCourseMapView && selectedMapPath.length > 1 && (
               <CourseRouteLine path={selectedMapPath} />
             )}
-            {!isCourseView && (
+            {!isPlanMode && !isCourseView && (
               <RoutePolylineLayer
                 key={`route-layer-${routeRenderRevision}`}
                 revision={routeRenderRevision}
@@ -1235,26 +1669,40 @@ const MapPage = () => {
                     <div className="header-row">
                       <OverlayTitle>{selectedPlace.placeName}</OverlayTitle>
                       <div className="action-buttons">
-                        <button
-                          className="btn-start"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // 길찾기 기능 연동: 기존 임시 alert를 출발지 설정으로 교체한다.
-                            openRouteWithOrigin(selectedPlace);
-                          }}
-                        >
-                          출발
-                        </button>
-                        <button
-                          className="btn-end"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // 길찾기 기능 연동: 기존 임시 alert를 도착지 설정으로 교체한다.
-                            openRouteWithDestination(selectedPlace);
-                          }}
-                        >
-                          도착
-                        </button>
+                        {isPlanMode ? (
+                          <button
+                            className="btn-plan"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handlePlanAddPlace(selectedPlace);
+                            }}
+                          >
+                            계획에 추가
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              className="btn-start"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // 길찾기 기능 연동: 기존 임시 alert를 출발지 설정으로 교체한다.
+                                openRouteWithOrigin(selectedPlace);
+                              }}
+                            >
+                              출발
+                            </button>
+                            <button
+                              className="btn-end"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // 길찾기 기능 연동: 기존 임시 alert를 도착지 설정으로 교체한다.
+                                openRouteWithDestination(selectedPlace);
+                              }}
+                            >
+                              도착
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -1276,7 +1724,8 @@ const MapPage = () => {
                         className="detail-link"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/place/${selectedPlace.placeNo}`);
+                          if (isPlanMode) openPlanPlaceDetail(selectedPlace);
+                          else navigate(`/place/${selectedPlace.placeNo}`);
                         }}
                       >
                         상세보기
@@ -1315,24 +1764,38 @@ const MapPage = () => {
                     <div className="header-row">
                       <OverlayTitle>{top10Overlay.placeName}</OverlayTitle>
                       <div className="action-buttons">
-                        <button
-                          className="btn-start"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openRouteWithOrigin(top10Overlay);
-                          }}
-                        >
-                          출발
-                        </button>
-                        <button
-                          className="btn-end"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openRouteWithDestination(top10Overlay);
-                          }}
-                        >
-                          도착
-                        </button>
+                        {isPlanMode ? (
+                          <button
+                            className="btn-plan"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handlePlanAddPlace(top10Overlay);
+                            }}
+                          >
+                            계획에 추가
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              className="btn-start"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openRouteWithOrigin(top10Overlay);
+                              }}
+                            >
+                              출발
+                            </button>
+                            <button
+                              className="btn-end"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openRouteWithDestination(top10Overlay);
+                              }}
+                            >
+                              도착
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -1354,9 +1817,12 @@ const MapPage = () => {
                         className="detail-link"
                         onClick={(e) => {
                           e.stopPropagation();
-                          // 더미 데이터의 placeNo가 카카오나 DB와 어떻게 연결될지에 따라 다름
-                          // 일단 DB 핀인 경우에만 정상 동작하도록 placeNo 사용
-                          navigate(`/place/${top10Overlay.placeNo}`);
+                          if (isPlanMode) openPlanPlaceDetail(top10Overlay);
+                          else {
+                            // 더미 데이터의 placeNo가 카카오나 DB와 어떻게 연결될지에 따라 다름
+                            // 일단 DB 핀인 경우에만 정상 동작하도록 placeNo 사용
+                            navigate(`/place/${top10Overlay.placeNo}`);
+                          }
                         }}
                       >
                         상세보기
@@ -1386,7 +1852,7 @@ const MapPage = () => {
       )}
 
       {/* 대중교통 경로 색상: 지도 선의 의미를 사용자가 바로 확인할 수 있는 범례다. */}
-      {!isCourseView &&
+      {!isPlanMode && !isCourseView &&
         selectedRoute?.transportType === "PUBLIC_TRANSIT" && (
           <RouteLegend aria-label="대중교통 경로 색상 범례">
             {ROUTE_SEGMENT_LEGEND.map((item) => (
@@ -1400,18 +1866,35 @@ const MapPage = () => {
 
       {/* 길찾기 기능 연동: 상세 패널의 경로찾기는 현재 장소를 도착지로 설정한다. */}
       <DetailPanel
-        key={selectedPlace?.placeNo ?? "closed"}
-        place={selectedPlace}
-        isOpen={isDetailOpen && (!isRouteOpen || isCourseView)}
+        key={(isPlanMode ? planDetailPlace : selectedPlace)?.placeNo ?? "closed"}
+        place={isPlanMode ? planDetailPlace : selectedPlace}
+        isOpen={
+          isPlanMode
+            ? Boolean(planDetailPlace)
+            : isDetailOpen && (!isRouteOpen || isCourseView)
+        }
         onClose={() => {
-          if (isCourseRestaurantDetail) navigate(-1);
+          if (isPlanMode) {
+            setPlanDetailPlace(null);
+            setIsPlanPanelOpen(true);
+          } else if (isCourseRestaurantDetail) navigate(-1);
           else navigate(location.state?.courseReturnTo || "/map");
         }}
-        isBookmarked={selectedPlace ? bookmarks[selectedPlace.placeNo] : false}
-        onBookmark={(e) =>
-          selectedPlace && toggleBookmark(e, selectedPlace.placeNo)
+        isBookmarked={
+          (isPlanMode ? planDetailPlace : selectedPlace)
+            ? bookmarks[(isPlanMode ? planDetailPlace : selectedPlace).placeNo]
+            : false
         }
-        onFindRoute={openRouteWithDestination}
+        onBookmark={(e) =>
+          (isPlanMode ? planDetailPlace : selectedPlace) &&
+          toggleBookmark(e, (isPlanMode ? planDetailPlace : selectedPlace).placeNo)
+        }
+        onFindRoute={
+          isPlanMode
+            ? (place) => handlePlanAddPlace(place)
+            : openRouteWithDestination
+        }
+        primaryActionLabel={isPlanMode ? "계획에 추가" : "경로찾기"}
       />
 
       <Top10Panel
