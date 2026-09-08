@@ -19,7 +19,7 @@ import ImageSlider from "./ImageSlider";
 import { getDefaultPlaceImage, DEFAULT_IMAGE_LICENSE } from "../../../utils/placeImage";
 import BasicInfoTab from "./BasicInfoTab";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const DetailPanel = ({
@@ -47,17 +47,21 @@ const DetailPanel = ({
     imageUrl: getDefaultPlaceImage(displayPlace),
     license: DEFAULT_IMAGE_LICENSE,
   }];
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeImageState, setActiveImageState] = useState({
+    placeNo: null,
+    index: 0,
+  });
+  // 장소가 바뀌면 렌더 단계에서 첫 이미지로 전환해 effect의 연쇄 렌더를 피한다.
+  const activeImageIndex =
+    activeImageState.placeNo === displayPlace?.placeNo
+      ? activeImageState.index
+      : 0;
   const activeImage = displayImages[activeImageIndex];
   const activeLicense =
     activeImage && typeof activeImage !== "string"
       ? activeImage.license
       : null;
   const activeTab = location.pathname.endsWith("/review") ? "리뷰" : "기본정보";
-
-  useEffect(() => {
-    setActiveImageIndex(0);
-  }, [displayPlace?.placeNo]);
 
   const handleTabClick = (tab) => {
     if (!displayPlace?.placeNo) return;
@@ -110,7 +114,9 @@ const DetailPanel = ({
         placeImages={displayImages}
         place={displayPlace}
         imgIndex={activeImageIndex}
-        onImageChange={setActiveImageIndex}
+        onImageChange={(index) =>
+          setActiveImageState({ placeNo: displayPlace?.placeNo, index })
+        }
       />
 
       <TabMenu>
