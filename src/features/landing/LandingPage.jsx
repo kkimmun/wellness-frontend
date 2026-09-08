@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaArrowRight, FaMapMarkedAlt } from "react-icons/fa";
 import { FiAlertCircle, FiLogIn, FiMenu, FiX } from "react-icons/fi";
 import { PlaceAPI } from "../../api/place";
-import { AuthAPI } from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
 import { Modal } from "../../components/Modal/Modal";
 import jPattern from "../../assets/j_mode_pattern.svg";
@@ -41,7 +40,7 @@ const DUMMY_TOP10 = [
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { status, checkAuth } = useAuth();
+  const { status, logout } = useAuth();
   const [top10List, setTop10List] = useState([]);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -65,12 +64,11 @@ const LandingPage = () => {
 
   const handleLogout = async () => {
     try {
-      await AuthAPI.logout();
-      await checkAuth(); // 로그아웃 후 전역 상태 갱신
-      navigate("/"); // 메인 화면으로 리다이렉트
+      await logout();
     } catch (err) {
       console.error("로그아웃 실패:", err);
-      alert("로그아웃에 실패했습니다.");
+    } finally {
+      navigate("/", { replace: true });
     }
   };
 

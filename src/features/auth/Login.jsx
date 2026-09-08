@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   LoginContainer,
@@ -35,7 +35,7 @@ const Login = () => {
 
   const [memberIdError, setMemberIdError] = useState("");
   const [memberPwdError, setMemberPwdError] = useState("");
-  const [loginError, setLoginError] = useState(""); 
+  const [loginError, setLoginError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -117,7 +117,12 @@ const Login = () => {
               {memberPwdError && <ErrorMessage>{memberPwdError}</ErrorMessage>}
             </InputGroup>
 
-            <PrimaryButton $size="lg" $fullWidth type="submit" disabled={isLoading}>
+            <PrimaryButton
+              $size="lg"
+              $fullWidth
+              type="submit"
+              disabled={isLoading}
+            >
               {isLoading ? "로그인 중..." : "로그인"}
             </PrimaryButton>
           </Form>
@@ -135,7 +140,7 @@ const Login = () => {
             Sign in with Google
           </GoogleLoginButton>
         </CardBottom>
-        
+
         <FooterText>
           아직 회원이 아니신가요? <Link to="/request-email">회원가입</Link>
         </FooterText>

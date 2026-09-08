@@ -57,6 +57,10 @@ const Header = () => {
     window.addEventListener("profileUpdated", handleProfileUpdate);
 
     const handleClickOutside = (event) => {
+      // MyPage의 확인 모달은 Portal로 body 아래에 렌더링된다.
+      // 모달 클릭을 외부 클릭으로 처리하면 click 이벤트 전에 MyPage가 언마운트된다.
+      if (event.target.closest?.('[role="dialog"]')) return;
+
       const isOutsideDesktop =
         desktopDropdownRef.current &&
         !desktopDropdownRef.current.contains(event.target);

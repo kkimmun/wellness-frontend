@@ -1,21 +1,37 @@
 import api from "./axios";
 
+const clearLocalAuth = () => {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("memberId");
+};
+
 export const AuthAPI = {
   signup: async (memberData) => {
-    const response = await api.post("/members", memberData);
-    return response.data;
+    const body = await api.post("/members", memberData);
+    return body?.data ?? body;
   },
 
   login: async (credentials) => {
-    const response = await api.post("/auth/login", credentials);
-    // 관리자 API(Bearer 인증)용으로 응답 body의 accessToken, memberId를 localStorage에 저장
-    // 응답이 { data: { accessToken } } 또는 평탄한 { accessToken } 두 형태 모두 대응
-    const payload = response?.data ?? response ?? {};
-    const accessToken = payload.accessToken ?? response?.accessToken;
-    const memberId = payload.memberId ?? response?.memberId;
-    if (accessToken) localStorage.setItem("accessToken", accessToken);
-    if (memberId != null) localStorage.setItem("memberId", String(memberId));
-    return response.data;
+    const body = await api.post("/auth/login", credentials);
+    const loginResult = body?.data ?? body;
+    const accessToken = loginResult?.accessToken;
+
+    if (!accessToken) {
+      throw new Error("로그인 응답에서 인증 토큰을 확인할 수 없습니다.");
+    }
+
+    localStorage.setItem("accessToken", accessToken);
+
+    // 사용자 식별값은 서버가 확인해 반환한 값만 저장한다.
+    // 응답에 memberId가 없으면 문자열 "undefined"나 이전 계정 값이 남지 않도록 제거한다.
+    const memberId = loginResult?.memberId;
+    if (typeof memberId === "string" && memberId.trim()) {
+      localStorage.setItem("memberId", memberId);
+    } else {
+      localStorage.removeItem("memberId");
+    }
+
+    return loginResult;
   },
 
   loginWithGoogle: () => {
@@ -23,29 +39,53 @@ export const AuthAPI = {
   },
 
   getMe: async () => {
-    const response = await api.get("/members/detail");
-    return response.data;
+    const body = await api.get("/members/detail");
+    return body?.data ?? body;
   },
 
   logout: async () => {
-    const response = await api.post("/auth/logout");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("memberId");
-    return response?.data || { code: 200, message: "로그아웃 성공" };
+    try {
+      return await api.post("/auth/logout");
+    } finally {
+      // 서버 토큰 삭제가 실패하더라도 브라우저의 로그인 상태는 반드시 종료한다.
+      clearLocalAuth();
+    }
+  },
+
+  withdraw: async () => {
+    const result = await api.delete("/members");
+
+    try {
+      // 회원 삭제 후 서버의 refresh token과 쿠키도 함께 정리한다.
+      await api.post("/auth/logout");
+    } catch {
+      // 회원 삭제는 이미 완료됐으므로 로그아웃 정리 실패로 탈퇴 성공을 뒤집지 않는다.
+    } finally {
+      clearLocalAuth();
+    }
+
+    return result?.data ?? result;
   },
 
   sendVerificationEmail: async (email) => {
-    const response = await api.post("/email/verifications", {
-      requestEmail: email,
+    const body = await api.post("/mail/auth", {
+      emailAddr: email,
     });
-    return response.data;
+    return body?.data ?? body;
+  },
+
+  resendVerificationEmail: async (email) => {
+    const body = await api.post("/mail/auth/resend", {
+      emailAddr: email,
+    });
+    return body?.data ?? body;
   },
 
   verifyEmailCode: async (email, authCode) => {
-    const response = await api.post("/email/verifications/confirm", {
-      requestEmail: email,
-      authCode: authCode,
+    const body = await api.post("/mail/auth/verification", {
+      emailAddr: email,
+      authCode: Number(authCode),
     });
-    return response.data;
+    return body?.data ?? body;
   },
 };
