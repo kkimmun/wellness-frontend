@@ -5,6 +5,7 @@ import {
   FaMapMarkerAlt,
   FaRedo,
   FaRoute,
+  FaSave,
 } from "react-icons/fa";
 import { FiX } from "react-icons/fi";
 import { CourseRecommendationAPI } from "../../../api/courseRecommendation";
@@ -28,12 +29,14 @@ const RecommendationModePanel = ({
   onRequestOriginPick,
   onCourseChange,
   onPreviewPlace,
+  onSaveCourse,
   onSwitchToPlanMode,
 }) => {
   const [placeCount, setPlaceCount] = useState(5);
   const [preferredPlaceNos, setPreferredPlaceNos] = useState(["", ""]);
   const [selectedTagNos, setSelectedTagNos] = useState([]);
   const [requestState, setRequestState] = useState("idle");
+  const [saveState, setSaveState] = useState("idle");
   const [message, setMessage] = useState("");
   const requestControllerRef = useRef(null);
 
@@ -69,6 +72,7 @@ const RecommendationModePanel = ({
     requestControllerRef.current = null;
     controller?.abort();
     setRequestState("idle");
+    setSaveState("idle");
     setMessage("");
     onCourseChange(null);
   };
@@ -126,6 +130,7 @@ const RecommendationModePanel = ({
     };
     const conditionKey = buildRecommendationConditionKey(condition);
     setRequestState("loading");
+    setSaveState("idle");
     setMessage("");
 
     try {
@@ -168,6 +173,21 @@ const RecommendationModePanel = ({
         requestControllerRef.current = null;
       }
     }
+  };
+
+  const saveCourse = async () => {
+    if (!course?.places?.length || saveState === "loading") return;
+
+    setSaveState("loading");
+    const saved = await onSaveCourse(course.places);
+    if (!saved) {
+      setSaveState("error");
+      setMessage("추천 코스를 저장하지 못했습니다.");
+      return;
+    }
+
+    setSaveState("success");
+    setMessage("추천 코스를 계획 세션에 저장했습니다.");
   };
 
   return (
@@ -312,6 +332,13 @@ const RecommendationModePanel = ({
                   </li>
                 ))}
               </ol>
+              <S.SavePlanButton
+                type="button"
+                disabled={saveState === "loading"}
+                onClick={() => void saveCourse()}
+              >
+                <FaSave /> {saveState === "loading" ? "저장 중" : "추천 코스 저장"}
+              </S.SavePlanButton>
               <S.PlanSwitchButton type="button" onClick={onSwitchToPlanMode}>
                 이 코스로 계획 모드 전환
               </S.PlanSwitchButton>

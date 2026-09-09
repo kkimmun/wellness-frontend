@@ -285,6 +285,17 @@ export const PlanSwitchButton = styled.button`
   cursor: pointer;
 `;
 
+export const SavePlanButton = styled(PlanSwitchButton)`
+  border-color: #9a5c50;
+  background: #9a5c50;
+  color: white;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+`;
+
 export const ReopenButton = styled.button`
   position: absolute;
   top: 110px;
