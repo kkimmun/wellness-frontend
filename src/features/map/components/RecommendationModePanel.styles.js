@@ -272,7 +272,7 @@ export const CourseSummary = styled.div`
   }
 `;
 
-export const PlanSwitchButton = styled.button`
+const FullWidthActionButton = styled.button`
   width: 100%;
   min-height: 42px;
   margin-top: 12px;
@@ -285,7 +285,152 @@ export const PlanSwitchButton = styled.button`
   cursor: pointer;
 `;
 
-export const SavePlanButton = styled(PlanSwitchButton)`
+export const PanelNav = styled.nav`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 0 16px 14px;
+  border-bottom: 1px solid ${theme.colors.borderDivider};
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 4px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: ${theme.colors.textSecondary};
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  button.active {
+    border-bottom-color: #9a5c50;
+    color: #9a5c50;
+  }
+`;
+
+export const OptionStatus = styled.p`
+  margin: 8px 2px 0;
+  color: ${({ $error }) => ($error ? "#d64545" : theme.colors.textSecondary)};
+  font-size: 11px;
+  line-height: 1.45;
+`;
+
+export const SavedCourseCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid ${({ $active }) => ($active ? "#168b91" : "#d9e5e6")};
+  border-radius: 10px;
+  background: ${({ $active }) => ($active ? "#eefafa" : "#f8fbfb")};
+
+  .saved-info {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: ${theme.colors.textPrimary};
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .saved-info strong {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .saved-info span,
+  .saved-info small {
+    color: ${theme.colors.textSecondary};
+    font-size: 10px;
+  }
+
+  .delete {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    padding: 0;
+    border: 1px solid #f0cccc;
+    border-radius: 8px;
+    background: white;
+    color: #d9534f;
+    cursor: pointer;
+  }
+`;
+
+export const SavedCourseSection = styled.section`
+  margin-top: 10px;
+
+  ${SavedCourseCard} {
+    margin-top: 8px;
+  }
+`;
+
+export const SavedViewHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  span {
+    color: ${theme.colors.textSecondary};
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  button {
+    flex: 0 0 auto;
+    padding: 8px 11px;
+    border: 1px solid #d8b8ad;
+    border-radius: 8px;
+    background: #fff7f3;
+    color: #9a5c50;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+`;
+
+export const SavedCourseHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  strong {
+    font-size: 13px;
+  }
+
+  span {
+    color: ${theme.colors.textSecondary};
+    font-size: 11px;
+  }
+`;
+
+export const SavedCourseEmpty = styled.p`
+  margin: 8px 0 0;
+  padding: 14px 10px;
+  border-radius: 10px;
+  background: #f7f9f9;
+  color: ${theme.colors.textSecondary};
+  font-size: 11px;
+  text-align: center;
+`;
+
+export const SavePlanButton = styled(FullWidthActionButton)`
   border-color: #9a5c50;
   background: #9a5c50;
   color: white;

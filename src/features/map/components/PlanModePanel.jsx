@@ -47,8 +47,8 @@ const PlanModePanel = ({
   const [recommendations, setRecommendations] = useState([]);
   const [selectedType, setSelectedType] = useState(null);
   const [requestState, setRequestState] = useState("idle");
-  const [saveState, setSaveState] = useState("idle");
   const [message, setMessage] = useState("");
+  const [planName, setPlanName] = useState("");
   const requestControllerRef = useRef(null);
   const previousPlaceCountRef = useRef(places.length);
 
@@ -142,15 +142,11 @@ const PlanModePanel = ({
     }
   };
 
-  const savePlan = async () => {
-    setSaveState("loading");
-    const saved = await onSavePlan();
-    if (!saved) {
-      setSaveState("error");
-      return;
-    }
-    setSaveState("success");
-    setMessage("계획을 DB에 저장했습니다.");
+  const savePlan = () => {
+    const saved = onSavePlan(planName);
+    if (!saved) return;
+    setPlanName("");
+    setMessage("계획을 브라우저에 저장했습니다.");
     setView(VIEW.SAVED);
   };
 
@@ -375,15 +371,23 @@ const PlanModePanel = ({
               <S.SaveForm
                 onSubmit={(event) => {
                   event.preventDefault();
-                  void savePlan();
+                  savePlan();
                 }}
               >
+                <label htmlFor="travel-plan-name">계획 이름</label>
                 <div>
+                  <input
+                    id="travel-plan-name"
+                    value={planName}
+                    onChange={(event) => setPlanName(event.target.value)}
+                    maxLength={30}
+                    placeholder="예: 김포 가족 나들이"
+                  />
                   <button
                     type="submit"
-                    disabled={places.length === 0 || saveState === "loading"}
+                    disabled={!planName.trim() || places.length === 0}
                   >
-                    <FaSave /> {saveState === "loading" ? "저장 중" : "계획 저장"}
+                    <FaSave /> 저장
                   </button>
                 </div>
               </S.SaveForm>
@@ -394,7 +398,7 @@ const PlanModePanel = ({
           {view === VIEW.SAVED && (
             <>
               <S.SavedHeader>
-                <span>회원 계정의 계획 세션에 저장됩니다.</span>
+                <span>브라우저를 닫아도 저장된 계획은 유지됩니다.</span>
                 <button type="button" onClick={startNewPlan}>
                   새 계획
                 </button>
@@ -409,6 +413,9 @@ const PlanModePanel = ({
                     >
                       <strong>{plan.name}</strong>
                       <span>{plan.places.length}개 장소</span>
+                      <small>
+                        {new Date(plan.createdAt).toLocaleDateString("ko-KR")}
+                      </small>
                     </button>
                     <button
                       type="button"

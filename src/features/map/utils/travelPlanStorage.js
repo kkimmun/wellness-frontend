@@ -1,6 +1,22 @@
 export const TRAVEL_PLAN_STORAGE_KEY = "wellness.travel-plans.v1";
 export const TRAVEL_PLAN_DRAFT_KEY = "wellness.travel-plan-drafts.v1";
 export const MAX_TRAVEL_PLAN_PLACES = 10;
+export const TRAVEL_PLAN_KIND = Object.freeze({
+  PLAN: "plan",
+  RECOMMENDATION: "recommendation",
+});
+
+const resolvePlanKind = (plan) => {
+  if (plan?.kind === TRAVEL_PLAN_KIND.RECOMMENDATION) {
+    return TRAVEL_PLAN_KIND.RECOMMENDATION;
+  }
+  if (plan?.kind === TRAVEL_PLAN_KIND.PLAN) return TRAVEL_PLAN_KIND.PLAN;
+
+  // 구버전 추천 저장 데이터에는 종류가 없으므로 기존 자동 생성 이름으로 한 번 분류한다.
+  return plan?.name?.startsWith("추천 코스 ")
+    ? TRAVEL_PLAN_KIND.RECOMMENDATION
+    : TRAVEL_PLAN_KIND.PLAN;
+};
 
 const isCoordinate = (value, limit) =>
   Number.isFinite(Number(value)) && Math.abs(Number(value)) <= limit;
@@ -43,7 +59,7 @@ const readCollection = (storage) => {
   }
 };
 
-export const readTravelPlans = (ownerKey, storage) =>
+export const readTravelPlans = (ownerKey, storage, kind) =>
   readCollection(storage)
     .filter(
       (plan) =>
@@ -54,14 +70,23 @@ export const readTravelPlans = (ownerKey, storage) =>
         normalizePoint(plan.origin) &&
         normalizePlaces(plan.places).length > 0,
     )
+    .filter((plan) => !kind || resolvePlanKind(plan) === kind)
     .map((plan) => ({
       ...plan,
+      kind: resolvePlanKind(plan),
       origin: normalizePoint(plan.origin),
       places: normalizePlaces(plan.places),
     }));
 
 export const saveTravelPlan = (
-  { id, ownerKey, name, origin, places },
+  {
+    id,
+    ownerKey,
+    name,
+    origin,
+    places,
+    kind = TRAVEL_PLAN_KIND.PLAN,
+  },
   storage,
 ) => {
   const target = storage ?? window.localStorage;
@@ -72,15 +97,23 @@ export const saveTravelPlan = (
   }
 
   const currentPlans = readCollection(target);
+  const normalizedKind =
+    kind === TRAVEL_PLAN_KIND.RECOMMENDATION
+      ? TRAVEL_PLAN_KIND.RECOMMENDATION
+      : TRAVEL_PLAN_KIND.PLAN;
   const existingPlan = id
     ? currentPlans.find(
-        (plan) => plan?.id === id && plan?.ownerKey === ownerKey,
+        (plan) =>
+          plan?.id === id &&
+          plan?.ownerKey === ownerKey &&
+          resolvePlanKind(plan) === normalizedKind,
       )
     : null;
   const savedAt = new Date().toISOString();
   const plan = {
     id: existingPlan?.id ?? crypto.randomUUID(),
     ownerKey,
+    kind: normalizedKind,
     name: name.trim(),
     createdAt: existingPlan?.createdAt ?? savedAt,
     updatedAt: savedAt,
