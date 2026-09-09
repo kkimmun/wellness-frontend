@@ -438,3 +438,69 @@ export const OverlayTitle = styled.div`
   text-overflow: ellipsis;
   max-width: 150px;
 `;
+
+export const OverlapMarkerContainer = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+`;
+
+export const OverlapCountBadge = styled.span`
+  position: absolute;
+  top: -9px;
+  right: -13px;
+  z-index: 20;
+  display: grid;
+  min-width: 23px;
+  height: 23px;
+  padding: 0 6px;
+  place-items: center;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+`;
+
+export const OverlapNavigation = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid #eef1f4;
+
+  button {
+    display: grid;
+    width: 28px;
+    height: 24px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid #dbe2e8;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #344054;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+      border-color: #62c4e8;
+      background: #eefaff;
+      color: #1689b5;
+    }
+  }
+
+  span {
+    min-width: 42px;
+    color: #667085;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+  }
+`;
