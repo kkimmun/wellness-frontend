@@ -4,7 +4,6 @@ import {
   Map,
   MapMarker,
   CustomOverlayMap,
-  Polyline,
   useKakaoLoader,
 } from "react-kakao-maps-sdk";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -35,6 +34,7 @@ import {
   ReligionMarker,
   EventMarker,
 } from "./components/CustomMarkers";
+import { getTop10IconByName } from "./components/Top10Icons";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
@@ -72,6 +72,45 @@ import {
 
 const EMPTY_RESTAURANTS = [];
 
+const TOP10_TYPE_DETAIL_NOS = new Set(["18", "46"]);
+const TOP10_PLACE_NOS = new Set([
+  "1",
+  "4",
+  "5",
+  "7",
+  "8",
+  "9",
+  "10",
+  "14",
+  "178",
+  "1043",
+]);
+
+const normalizeCategoryName = (value) =>
+  String(value ?? "")
+    .replace(/\s+/g, "")
+    .toUpperCase();
+
+// 핀·계획·추천 API마다 소분류 필드 구성이 달라도 Top10 전용 마커를 유지한다.
+const isTop10Place = (place) => {
+  const typeDetailName =
+    place?.typeDetail ??
+    place?.typeDetailContent ??
+    place?.TYPE_DETAIL ??
+    place?.TYPE_DETAIL_CONTENT;
+  const typeDetailNo = place?.typeDetailNo ?? place?.TYPE_DETAIL_NO;
+  const placeNo = place?.placeNo ?? place?.PLACE_NO;
+  const typeName = normalizeCategoryName(place?.type ?? place?.TYPE);
+  const isTouristType = ["주요관광지", "관광명소", "관광지"].includes(typeName);
+
+  return (
+    normalizeCategoryName(typeDetailName) === "김포TOP10" ||
+    TOP10_TYPE_DETAIL_NOS.has(String(typeDetailNo ?? "")) ||
+    TOP10_PLACE_NOS.has(String(placeNo ?? "")) ||
+    (isTouristType && Boolean(getTop10IconByName(place?.placeName)))
+  );
+};
+
 // 계획 모드: 위치 권한을 사용할 수 없을 때 출발지로 사용할 김포시청 좌표다.
 const GIMPO_CITY_HALL = {
   placeName: "김포시청",
@@ -94,6 +133,34 @@ const getCourseMarkerImage = (index) => {
     size: { width: 36, height: 36 },
     options: { offset: { x: 18, y: 18 } },
   };
+};
+
+const PlaceCategoryMarker = ({ place, onClick }) => {
+  if (isTop10Place(place)) {
+    return <Top10Marker placeName={place?.placeName} onClick={onClick} />;
+  }
+
+  if (place?.type === "의료기관") return <MedicalMarker onClick={onClick} />;
+  if (place?.type === "음식점" || place?.type === "카페") {
+    return <FoodMarker onClick={onClick} />;
+  }
+  if (
+    place?.type === "주요관광지" ||
+    place?.type === "관광명소" ||
+    place?.type === "관광지"
+  ) {
+    return <TouristMarker onClick={onClick} />;
+  }
+  if (place?.type === "생활체육시설" || place?.type === "체육시설") {
+    return <SportsMarker onClick={onClick} />;
+  }
+  if (place?.type === "종교시설") {
+    return <ReligionMarker onClick={onClick} />;
+  }
+  if (place?.type === "이벤트" || place?.type === "축제") {
+    return <EventMarker onClick={onClick} />;
+  }
+  return <GeneralMarker onClick={onClick} />;
 };
 
 const MARKER_SVG = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
@@ -332,18 +399,31 @@ const MapPage = () => {
   const groupedTypeOptions = useMemo(() => {
     const groups = new window.Map();
     typeOptions.forEach((option) => {
-      if (!groups.has(option.typeNo)) {
-        groups.set(option.typeNo, {
+      const typeKey = String(option.type || "").trim();
+      if (!typeKey) return;
+
+      if (!groups.has(typeKey)) {
+        groups.set(typeKey, {
           typeNo: option.typeNo,
           type: option.type,
           details: [],
+          detailNames: new Set(),
         });
       }
-      if (option.typeDetailNo != null) {
-        groups.get(option.typeNo).details.push(option);
+
+      const group = groups.get(typeKey);
+      const detailKey = String(option.typeDetailContent || "").trim();
+      if (option.typeDetailNo != null && !group.detailNames.has(detailKey)) {
+        group.detailNames.add(detailKey);
+        group.details.push(option);
       }
     });
-    return [...groups.values()];
+    // 중복 적재된 타입 마스터가 있어도 동일한 대·소분류는 한 번만 표시한다.
+    return [...groups.values()].map((group) => ({
+      typeNo: group.typeNo,
+      type: group.type,
+      details: group.details,
+    }));
   }, [typeOptions]);
 
   const selectedTypeValue = placeFilters.typeDetailNo
@@ -1620,22 +1700,7 @@ const MapPage = () => {
             onClick={handleMapClick}
           >
             {visibleMapPins.map((pin, index) => {
-              // DB typeDetailNo를 확인하거나, 명세된 placeNo 목록을 기반으로 판별
-              const TOP10_PLACE_NOS = [
-                "1",
-                "4",
-                "5",
-                "7",
-                "8",
-                "9",
-                "10",
-                "14",
-                "178",
-                "1043",
-              ];
-              const isTop10 =
-                String(pin.typeDetailNo) === "18" ||
-                TOP10_PLACE_NOS.includes(String(pin.placeNo));
+              const isTop10 = isTop10Place(pin);
 
               const lat = Number(pin.Y_AXIS ?? pin.yAxis);
               const lng = Number(pin.X_AXIS ?? pin.xAxis);
@@ -1717,49 +1782,45 @@ const MapPage = () => {
             )}
 
             {isPlanMode &&
-              planPlaces.map((place, index) => (
-                <MapMarker
+              planPlaces.map((place) => (
+                <CustomOverlayMap
                   key={`plan-place-${place.placeNo}`}
                   position={{ lat: place.yAxis, lng: place.xAxis }}
-                  title={`${index + 1}. ${place.placeName}`}
-                  image={getCourseMarkerImage(index)}
+                  yAnchor={1}
                   zIndex={45}
-                  onClick={() => handlePlanPlacePreview(place)}
-                />
+                  clickable
+                >
+                  <PlaceCategoryMarker
+                    place={place}
+                    onClick={() => handlePlanPlacePreview(place)}
+                  />
+                </CustomOverlayMap>
               ))}
 
-            {/* 계획 모드에서는 이동수단을 정하지 않았으므로 실제 길찾기 대신 선택 순서만 직선으로 표시한다. */}
+            {/* 숫자 대신 타입 마커를 사용하므로 순례자길과 같은 화살표로 방문 방향을 표시한다. */}
             {isPlanMode && planMapPath.length > 1 && (
-              <Polyline
-                path={planMapPath}
-                strokeWeight={4}
-                strokeColor="#E34D4D"
-                strokeOpacity={0.85}
-                strokeStyle="solid"
-              />
+              <CourseRouteLine path={planMapPath} />
             )}
 
             {isRecommendationMode &&
-              recommendationPlaces.map((place, index) => (
-                <MapMarker
+              recommendationPlaces.map((place) => (
+                <CustomOverlayMap
                   key={`recommendation-place-${place.placeNo}`}
                   position={{ lat: place.yAxis, lng: place.xAxis }}
-                  title={`${index + 1}. ${place.placeName}`}
-                  image={getCourseMarkerImage(index)}
+                  yAnchor={1}
                   zIndex={45}
-                  onClick={() => handleRecommendationPlacePreview(place)}
-                />
+                  clickable
+                >
+                  <PlaceCategoryMarker
+                    place={place}
+                    onClick={() => handleRecommendationPlacePreview(place)}
+                  />
+                </CustomOverlayMap>
               ))}
 
-            {/* 추천 모드는 이동수단을 정하지 않으므로 추천 순서만 직선으로 표시한다. */}
+            {/* 추천 순서는 순례자길과 같은 화살표 경로로 구분한다. */}
             {isRecommendationMode && recommendationMapPath.length > 1 && (
-              <Polyline
-                path={recommendationMapPath}
-                strokeWeight={4}
-                strokeColor="#9A5C50"
-                strokeOpacity={0.85}
-                strokeStyle="solid"
-              />
+              <CourseRouteLine path={recommendationMapPath} />
             )}
 
             {!isTravelMode && !isCourseView &&
