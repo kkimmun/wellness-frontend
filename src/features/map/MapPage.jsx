@@ -1898,72 +1898,18 @@ const MapPage = () => {
                   const lat = Number(pin.Y_AXIS ?? pin.yAxis);
                   const lng = Number(pin.X_AXIS ?? pin.xAxis);
 
-<<<<<<< HEAD
-              const lat = Number(pin.Y_AXIS ?? pin.yAxis);
-              const lng = Number(pin.X_AXIS ?? pin.xAxis);
-
-              if (isCourseMapView) {
-                return (
-                  <MapMarker
-                    key={pin.routeMarkerKey || pin.placeNo || index}
-                    position={{ lat, lng }}
-                    title={`${pin.placeName || "코스 장소"}${pin === courseRouteData.origin ? " · 출발" : pin === courseRouteData.destination ? " · 도착" : " · 경유"}`}
-                    image={pin === courseRouteData.origin
-                      ? getRoutePointMarkerImage("출", "#FF7043")
-                      : pin === courseRouteData.destination
-                        ? getRoutePointMarkerImage("도", "#475569")
-                        : getCourseMarkerImage(index)}
-                    zIndex={12}
-                    clickable={false}
-                  />
-                );
-              }
-
-              let MarkerComponent = GeneralMarker;
-              if (pin.type === "의료기관") MarkerComponent = MedicalMarker;
-              else if (pin.type === "음식점" || pin.type === "카페")
-                MarkerComponent = FoodMarker;
-              else if (
-                pin.type === "주요관광지" ||
-                pin.type === "관광명소" ||
-                pin.type === "관광지"
-              )
-                MarkerComponent = TouristMarker;
-              else if (pin.type === "생활체육시설")
-                MarkerComponent = SportsMarker;
-              else if (pin.type === "종교시설")
-                MarkerComponent = ReligionMarker;
-              else if (pin.type === "이벤트" || pin.type === "축제")
-                MarkerComponent = EventMarker;
-
-              const handleVisiblePinClick = () => {
-                if (selectedRoute) return;
-                if (isPlanMode) handlePlanPlacePreview(pin);
-                else handleMarkerClick(pin);
-              };
-
-              return (
-                <CustomOverlayMap
-                  key={pin.routeMarkerKey || pin.placeNo || index}
-                  position={{ lat, lng }}
-                  yAnchor={1}
-                  zIndex={isTop10 ? 10 : 1}
-                  clickable={!selectedRoute}
-                >
-                  {isTop10 ? (
-                    <Top10Marker
-                      placeName={pin.placeName}
-                      onClick={handleVisiblePinClick}
-=======
                   return (
                     <MapMarker
                       key={pin.routeMarkerKey || pin.placeNo || index}
                       position={{ lat, lng }}
-                      title={`${index + 1}. ${pin.placeName || "코스 장소"}${index === 0 ? " · 출발" : index === coursePins.length - 1 ? " · 도착" : ""}`}
-                      image={getCourseMarkerImage(index)}
+                      title={`${pin.placeName || "코스 장소"}${pin === courseRouteData.origin ? " · 출발" : pin === courseRouteData.destination ? " · 도착" : " · 경유"}`}
+                      image={pin === courseRouteData.origin
+                        ? getRoutePointMarkerImage("출", "#FF7043")
+                        : pin === courseRouteData.destination
+                          ? getRoutePointMarkerImage("도", "#475569")
+                          : getCourseMarkerImage(index)}
                       zIndex={12}
                       clickable={false}
->>>>>>> main
                     />
                   );
                 })
