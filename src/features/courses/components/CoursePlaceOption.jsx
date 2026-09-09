@@ -29,11 +29,6 @@ export default function CoursePlaceOption({ place, index, type, name, checked, d
         <span className="description" title={description || undefined}>
           {description || "등록된 설명이 없습니다."}
         </span>
-        {Number.isFinite(place.distance) && (
-          <span className="distance">
-            {place.distance >= 1000 ? `${(place.distance / 1000).toFixed(1)}km` : `${Math.round(place.distance)}m`}
-          </span>
-        )}
       </PlaceChoiceInfo>
     </ChoiceRow>
   );
