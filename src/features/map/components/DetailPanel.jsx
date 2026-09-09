@@ -18,8 +18,9 @@ import ReviewTab from "./ReviewTab";
 import ImageSlider from "./ImageSlider";
 import { getDefaultPlaceImage, DEFAULT_IMAGE_LICENSE } from "../../../utils/placeImage";
 import BasicInfoTab from "./BasicInfoTab";
+import { PlaceAPI } from "../../../api/place";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const DetailPanel = ({
@@ -43,10 +44,51 @@ const DetailPanel = ({
     displayPlace?.placeImages ||
     displayPlace?.images ||
     (displayPlace?.imageUrl ? [displayPlace.imageUrl] : []);
-  const displayImages = registeredImages.length ? registeredImages : [{
-    imageUrl: getDefaultPlaceImage(displayPlace),
-    license: DEFAULT_IMAGE_LICENSE,
-  }];
+  const hasRegisteredImages = registeredImages.length > 0;
+
+  // 장소 이미지(place_img)가 없으면 리뷰 이미지(review_img)를 조회해 대표 이미지로 사용한다.
+  // 등록된 장소 이미지가 있으면 리뷰 이미지는 조회하지 않는다.
+  const [reviewImages, setReviewImages] = useState([]);
+  useEffect(() => {
+    const targetPlaceNo = displayPlace?.placeNo;
+    // 다른 장소로 바뀌면 이전 장소의 리뷰 이미지가 잠깐 남지 않도록 초기화한다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setReviewImages([]);
+    if (!targetPlaceNo || hasRegisteredImages) return undefined;
+
+    let ignore = false;
+    PlaceAPI.getReviews(targetPlaceNo, 1)
+      .then((data) => {
+        if (ignore) return;
+        // 리뷰 목록에서 이미지가 첨부된 첫 리뷰의 이미지를 대표 이미지로 쓴다.
+        const urls = (data?.content || [])
+          .flatMap((review) =>
+            Array.isArray(review?.images) ? review.images : [],
+          )
+          .filter(Boolean);
+        setReviewImages(urls.slice(0, 1));
+      })
+      .catch((err) => {
+        if (ignore) return;
+        console.error("리뷰 대표 이미지를 불러오지 못했습니다.", err);
+        setReviewImages([]);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [displayPlace?.placeNo, hasRegisteredImages]);
+
+  const displayImages = hasRegisteredImages
+    ? registeredImages
+    : reviewImages.length
+      ? reviewImages.map((imageUrl) => ({ imageUrl }))
+      : [
+          {
+            imageUrl: getDefaultPlaceImage(displayPlace),
+            license: DEFAULT_IMAGE_LICENSE,
+          },
+        ];
   const [activeImageState, setActiveImageState] = useState({
     placeNo: null,
     index: 0,

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { FaStar, FaThumbsUp, FaArrowDown } from "react-icons/fa";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { FaStar, FaArrowDown, FaUserCircle } from "react-icons/fa";
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useAuth } from "../../../context/AuthContext";
 import { Modal } from "../../../components/Modal/Modal";
@@ -13,13 +13,49 @@ import {
   ReviewItem,
   LoadingMore,
 } from "./ReviewTab.styles";
-import { reviewRatingData, getMockImage, mockReviews } from "../mockData";
 
-// 임시 데이터는 mockData.js 로 분리되었습니다.
+// 프로필 이미지가 없거나(기본값) 로드에 실패하면 아이콘으로 대체한다.
+const ReviewerAvatar = ({ src, alt }) => {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return <FaUserCircle size={40} color="#CCC" aria-label={alt} />;
+  }
+  return <img src={src} alt={alt} onError={() => setFailed(true)} />;
+};
+
+// 서버가 내려주는 createDate 문자열을 화면 표기용으로 정규화한다.
+const formatDate = (raw) => {
+  if (!raw) return "";
+  const parsed = new Date(String(raw).replace(" ", "T"));
+  if (Number.isNaN(parsed.getTime())) return String(raw).slice(0, 10);
+  return parsed.toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+};
+
+// ReviewItemDto -> 화면에서 쓰는 형태로 변환
+const toReview = (dto) => ({
+  id: dto.reviewNo,
+  memberNo: dto.memberNo,
+  userName: dto.nickname || "익명",
+  userProfile: dto.profileImgPath || null,
+  rating: dto.rating ?? 0,
+  date: formatDate(dto.createDate),
+  content: dto.reviewContent || "",
+  image: Array.isArray(dto.images) && dto.images.length ? dto.images[0] : null,
+});
 
 const ReviewTab = ({ place }) => {
-  const { status } = useAuth();
-  const [reviews, setReviews] = useState(mockReviews);
+  const { status, user } = useAuth();
+  const placeNo = place?.placeNo;
+
+  const [reviews, setReviews] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [expandedIds, setExpandedIds] = useState(new Set());
 
   const [writeText, setWriteText] = useState("");
@@ -27,53 +63,105 @@ const ReviewTab = ({ place }) => {
   const [previewImg, setPreviewImg] = useState(null);
   const [isImageDeleted, setIsImageDeleted] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [mockLoadCount, setMockLoadCount] = useState(0); // 가짜 데이터 추가 횟수 제한용
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedReviewId, setSelectedReviewId] = useState(null);
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
-  useEffect(() => {
-    setReviews(mockReviews);
-    setExpandedIds(new Set());
-    setHasMore(true);
-    setMockLoadCount(0);
-    setIsLoading(false);
+  const loaderRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const writeBoxRef = useRef(null);
+  // 장소가 빠르게 바뀔 때 뒤늦게 도착한 응답이 목록을 덮어쓰지 않도록 한다.
+  const requestIdRef = useRef(0);
 
+  const currentMemberNo = user?.memberNo ?? null;
+
+  const resetWriteForm = useCallback(() => {
     setWriteText("");
     setWriteRating(0);
     setPreviewImg(null);
     setEditingReviewId(null);
     setIsImageDeleted(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
-  }, [place?.placeNo]);
+  }, []);
 
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedReviewId, setSelectedReviewId] = useState(null);
+  const showAlert = useCallback((message) => {
+    setAlertMessage(message);
+    setIsAlertModalOpen(true);
+  }, []);
 
-  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
-  const [alertMessage, setAlertMessage] = useState("");
+  const loadPage = useCallback(
+    async (targetPage, { append } = {}) => {
+      if (!placeNo) return;
+      const requestId = ++requestIdRef.current;
+      setIsLoading(true);
+      try {
+        const data = await PlaceAPI.getReviews(placeNo, targetPage);
+        if (requestId !== requestIdRef.current) return;
 
-  const loaderRef = useRef(null);
-  const fileInputRef = useRef(null);
+        const items = (data?.content || []).map(toReview);
+        setReviews((prev) => (append ? [...prev, ...items] : items));
+        setSummary(data?.summary || null);
+        setPage(data?.currentPage || targetPage);
+        setHasNext(Boolean(data?.hasNext));
+      } catch (err) {
+        if (requestId !== requestIdRef.current) return;
+        console.error("리뷰 목록을 불러오지 못했습니다.", err);
+        if (!append) {
+          setReviews([]);
+          setSummary(null);
+          setHasNext(false);
+        }
+      } finally {
+        if (requestId === requestIdRef.current) setIsLoading(false);
+      }
+    },
+    [placeNo],
+  );
+
+  // DetailPanel이 placeNo마다 새로 마운트되므로, 첫 페이지만 불러오면 된다.
+  useEffect(() => {
+    if (!placeNo) return;
+    // 데이터 페칭용 effect. loadPage 내부의 로딩 상태 갱신은 의도된 동작이다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadPage(1);
+  }, [placeNo, loadPage]);
+
+  // 무한 스크롤: 로더가 보이면 다음 페이지를 이어서 불러온다.
+  useEffect(() => {
+    if (!hasNext || isLoading) return undefined;
+    const target = loaderRef.current;
+    if (!target) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadPage(page + 1, { append: true });
+        }
+      },
+      { threshold: 1.0 },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasNext, isLoading, page, loadPage]);
 
   const toggleExpand = (id) => {
     setExpandedIds((prev) => {
-      const newSet = new Set(prev);
-      newSet.has(id) ? newSet.delete(id) : newSet.add(id);
-      return newSet;
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
     });
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewImg(url);
+      setPreviewImg(URL.createObjectURL(file));
       setIsImageDeleted(false);
     }
   };
-
-  const writeBoxRef = useRef(null);
 
   const handleEditClick = (review) => {
     setEditingReviewId(review.id);
@@ -82,84 +170,78 @@ const ReviewTab = ({ place }) => {
     setPreviewImg(review.image || null);
     setIsImageDeleted(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
-
-    if (writeBoxRef.current) {
-      writeBoxRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
+    writeBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   const handleDeleteReview = async () => {
     try {
-      const reviewToDelete = reviews.find((r) => r.id === selectedReviewId);
-      if (!reviewToDelete?.isMock) {
-        await PlaceAPI.deleteReview(place.placeNo, selectedReviewId);
-      }
-      setReviews((prev) => prev.filter((r) => r.id !== selectedReviewId));
+      await PlaceAPI.deleteReview(placeNo, selectedReviewId);
       setIsDeleteModalOpen(false);
       setSelectedReviewId(null);
+      if (editingReviewId === selectedReviewId) resetWriteForm();
+      await loadPage(1);
     } catch (err) {
-      setAlertMessage("리뷰 삭제에 실패했습니다.");
-      setIsAlertModalOpen(true);
+      console.error("리뷰 삭제 실패", err);
       setIsDeleteModalOpen(false);
+      showAlert("리뷰 삭제에 실패했습니다.");
     }
   };
 
-  useEffect(() => {
-    if (!hasMore) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isLoading && hasMore) {
-          setIsLoading(true);
-
-          setTimeout(() => {
-            setReviews((prev) => {
-              const newItems = [
-                {
-                  id: prev.length + 1,
-                  userName: `User ${prev.length + 1}`,
-                  userProfile:
-                    "https://via.placeholder.com/40/CCCCCC/FFFFFF?text=U",
-                  rating: 4.0,
-                  date: "2026. 08. 31",
-                  content:
-                    "무한 스크롤 테스트용으로 추가된 리뷰입니다. 100자가 넘어가도록 글을 길게 작성해봅니다. 내용이 너무 길어지면 숨김 처리가 되고 더보기 버튼을 누르면 전체 내용이 보이게 됩니다.",
-                  image:
-                    prev.length % 2 === 0 ? getMockImage(prev.length) : null,
-                  likes: 0,
-                  isMine: false,
-                  isMock: true,
-                },
-              ];
-              return [...prev, ...newItems];
-            });
-
-            setIsLoading(false);
-            setMockLoadCount((prev) => {
-              const nextCount = prev + 1;
-              if (nextCount >= 3) {
-                setHasMore(false);
-              }
-              return nextCount;
-            });
-          }, 1000);
-        }
-      },
-      { threshold: 1.0 },
-    );
-
-    const currentLoader = loaderRef.current;
-    if (currentLoader) {
-      observer.observe(currentLoader);
+  const handleSubmit = async () => {
+    if (status !== "authenticated") {
+      showAlert("로그인 후 이용해주세요.");
+      return;
     }
+    if (!writeRating) {
+      showAlert("평점을 선택해주세요.");
+      return;
+    }
+    if (!placeNo || isSubmitting) return;
 
-    return () => {
-      if (currentLoader) observer.unobserve(currentLoader);
-    };
-  }, [isLoading, hasMore, mockLoadCount]);
+    const formData = new FormData();
+    formData.append("rating", writeRating);
+    formData.append("reviewContent", writeText.trim());
+
+    const selectedFile = fileInputRef.current?.files?.[0];
+    if (selectedFile) {
+      // 새 이미지 첨부: 기존 이미지를 이 파일로 교체한다.
+      formData.append("image", selectedFile);
+    } else if (editingReviewId && isImageDeleted) {
+      // 빈 파트를 보내면 서버가 기존 리뷰 이미지를 삭제한다.
+      formData.append("image", new Blob([]), "");
+    }
+    // 수정 중 이미지에 손대지 않았으면 image 파트를 아예 보내지 않아 기존 이미지를 유지한다.
+
+    setIsSubmitting(true);
+    try {
+      if (editingReviewId) {
+        await PlaceAPI.updateReview(placeNo, editingReviewId, formData);
+        showAlert("리뷰가 수정되었습니다.");
+      } else {
+        await PlaceAPI.createReview(placeNo, formData);
+        showAlert("리뷰가 작성되었습니다.");
+      }
+      resetWriteForm();
+      await loadPage(1);
+    } catch (err) {
+      console.error("리뷰 처리 실패", err);
+      showAlert(err?.message || "리뷰 처리에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const avgRating = summary?.avgRating ?? place?.avgRating ?? 0;
+  const totalReviewCount =
+    summary?.totalReviewCount ?? summary?.totalElements ?? reviews.length;
+
+  const ratingChartData = useMemo(() => {
+    const dist = summary?.ratingDistribution || {};
+    return [1, 2, 3, 4, 5].map((score) => ({
+      name: String(score),
+      count: Number(dist[score] ?? dist[String(score)] ?? 0),
+    }));
+  }, [summary]);
 
   return (
     <ReviewContainer>
@@ -167,12 +249,12 @@ const ReviewTab = ({ place }) => {
       <RatingSummaryBox>
         <div className="avg-rating">
           <FaStar className="star" />
-          <span className="score">{place?.avgRating?.toFixed(1) || "4.8"}</span>
+          <span className="score">{Number(avgRating).toFixed(1)}</span>
         </div>
         <div className="rating-graph">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={reviewRatingData}
+              data={ratingChartData}
               margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
             >
               <XAxis
@@ -202,7 +284,7 @@ const ReviewTab = ({ place }) => {
         </div>
       </RatingSummaryBox>
 
-      {/* 리뷰 작성 */}
+      {/* 리뷰 작성 / 수정 */}
       <ReviewWriteBox ref={writeBoxRef}>
         <div className="header">
           <h3>{editingReviewId ? "리뷰 수정하기" : "리뷰 남기기"}</h3>
@@ -253,128 +335,13 @@ const ReviewTab = ({ place }) => {
             )}
           </div>
           <div className="btn-group">
-            <button
-              className="btn-cancel"
-              onClick={() => {
-                setWriteText("");
-                setWriteRating(0);
-                setPreviewImg(null);
-                setEditingReviewId(null);
-                setIsImageDeleted(false);
-                if (fileInputRef.current) fileInputRef.current.value = "";
-              }}
-            >
+            <button className="btn-cancel" onClick={resetWriteForm}>
               취소
             </button>
             <button
               className="btn-submit"
-              onClick={async () => {
-                if (status === "unauthenticated") {
-                  setAlertMessage("로그인 후 이용해주세요.");
-                  setIsAlertModalOpen(true);
-                  return;
-                }
-                if (!writeText.trim()) {
-                  setAlertMessage("리뷰 내용을 입력해주세요.");
-                  setIsAlertModalOpen(true);
-                  return;
-                }
-
-                const formData = new FormData();
-                formData.append("rating", writeRating);
-                formData.append("reviewContent", writeText);
-
-                if (fileInputRef.current && fileInputRef.current.files[0]) {
-                  formData.append("images", fileInputRef.current.files[0]);
-                } else if (editingReviewId && isImageDeleted) {
-                  formData.append("isImageDeleted", true);
-                }
-
-                try {
-                  if (editingReviewId) {
-                    const reviewToEdit = reviews.find(
-                      (r) => r.id === editingReviewId,
-                    );
-                    let response = null;
-
-                    if (!reviewToEdit?.isMock) {
-                      response = await PlaceAPI.updateReview(
-                        place.placeNo,
-                        editingReviewId,
-                        formData,
-                      );
-                    }
-
-                    const finalImageUrl = response?.imageUrl || previewImg;
-
-                    setReviews((prev) =>
-                      prev.map((r) => {
-                        if (r.id === editingReviewId) {
-                          let newImage = r.image;
-                          if (isImageDeleted) {
-                            newImage = null;
-                          } else if (response?.imageUrl) {
-                            newImage = response.imageUrl;
-                          } else if (fileInputRef.current?.files[0]) {
-                            newImage = previewImg;
-                          }
-
-                          return {
-                            ...r,
-                            content: writeText,
-                            rating: writeRating,
-                            image: newImage,
-                          };
-                        }
-                        return r;
-                      }),
-                    );
-
-                    setAlertMessage("리뷰 수정 성공");
-                  } else {
-                    let response = null;
-                    if (place?.placeNo) {
-                      response = await PlaceAPI.createReview(
-                        place.placeNo,
-                        formData,
-                      );
-                    }
-
-                    const newReview = {
-                      id: response?.reviewNo || Date.now(), // 실제 API 응답 ID 혹은 임시 ID
-                      userName: "나(새로 작성)",
-                      userProfile:
-                        "https://via.placeholder.com/40/CCCCCC/FFFFFF?text=ME",
-                      rating: writeRating,
-                      date: new Date().toLocaleDateString("ko-KR", {
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                      }),
-                      content: writeText,
-                      image: response?.imageUrl || previewImg, // 서버 이미지 혹은 로컬 미리보기
-                      likes: 0,
-                      isMine: true,
-                      isMock: false,
-                    };
-
-                    setReviews((prev) => [newReview, ...prev]);
-                    setAlertMessage("리뷰가 작성되었습니다.");
-                  }
-
-                  setIsAlertModalOpen(true);
-
-                  setEditingReviewId(null);
-                  setWriteText("");
-                  setWriteRating(0);
-                  setPreviewImg(null);
-                  setIsImageDeleted(false);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                } catch (err) {
-                  setAlertMessage("리뷰 처리에 실패했습니다.");
-                  setIsAlertModalOpen(true);
-                }
-              }}
+              disabled={isSubmitting}
+              onClick={handleSubmit}
             >
               {editingReviewId ? "수정" : "작성"}
             </button>
@@ -391,27 +358,29 @@ const ReviewTab = ({ place }) => {
             isLong && !isExpanded
               ? review.content.slice(0, 80) + "..."
               : review.content;
+          const isMine =
+            status === "authenticated" &&
+            currentMemberNo != null &&
+            String(review.memberNo) === String(currentMemberNo);
 
           return (
             <ReviewItem key={review.id}>
               <div className="header">
                 <div className="user-info">
-                  <img src={review.userProfile} alt="profile" />
+                  <ReviewerAvatar src={review.userProfile} alt="profile" />
                   <div className="meta">
                     <div className="name-rating">
                       {review.userName}
                       <span className="rating">
-                        <FaStar /> {review.rating.toFixed(1)}
+                        <FaStar /> {Number(review.rating).toFixed(1)}
                       </span>
                     </div>
                     <span className="date">{review.date}</span>
                   </div>
                 </div>
-                {status === "authenticated" && review.isMine && (
+                {isMine && (
                   <div className="edit-actions">
-                    <button onClick={() => handleEditClick(review)}>
-                      수정
-                    </button>
+                    <button onClick={() => handleEditClick(review)}>수정</button>
                     <button
                       className="delete-btn"
                       onClick={() => {
@@ -424,17 +393,19 @@ const ReviewTab = ({ place }) => {
                   </div>
                 )}
               </div>
-              <div className="content">
-                {displayContent}
-                {isLong && !isExpanded && (
-                  <span
-                    className="more-btn"
-                    onClick={() => toggleExpand(review.id)}
-                  >
-                    더 보기
-                  </span>
-                )}
-              </div>
+              {review.content && (
+                <div className="content">
+                  {displayContent}
+                  {isLong && !isExpanded && (
+                    <span
+                      className="more-btn"
+                      onClick={() => toggleExpand(review.id)}
+                    >
+                      더 보기
+                    </span>
+                  )}
+                </div>
+              )}
               {review.image && (
                 <img
                   src={review.image}
@@ -442,33 +413,27 @@ const ReviewTab = ({ place }) => {
                   className="attached-image"
                 />
               )}
-              <div className="footer">
-                <button
-                  className="like-btn"
-                  onClick={() => {
-                    if (status === "unauthenticated") {
-                      setAlertMessage("로그인 후 이용해주세요.");
-                      setIsAlertModalOpen(true);
-                      return;
-                    }
-                    // 임시 좋아요 로직
-                    setReviews((prev) =>
-                      prev.map((r) =>
-                        r.id === review.id ? { ...r, likes: r.likes + 1 } : r,
-                      ),
-                    );
-                  }}
-                >
-                  <FaThumbsUp /> {review.likes}
-                </button>
-              </div>
             </ReviewItem>
           );
         })}
       </ReviewList>
 
-      {/* 무한 스크롤 로더 */}
-      {hasMore && (
+      {/* 상태 표시 */}
+      {isLoading && reviews.length === 0 && (
+        <LoadingMore>
+          <div style={{ color: "#999", fontSize: "13px" }}>
+            리뷰를 불러오는 중...
+          </div>
+        </LoadingMore>
+      )}
+      {!isLoading && reviews.length === 0 && (
+        <LoadingMore>
+          <div style={{ color: "#999", fontSize: "13px" }}>
+            아직 등록된 리뷰가 없습니다.
+          </div>
+        </LoadingMore>
+      )}
+      {hasNext && (
         <LoadingMore ref={loaderRef}>
           <button className="more-btn" disabled={isLoading}>
             {isLoading ? (
@@ -481,10 +446,10 @@ const ReviewTab = ({ place }) => {
           </button>
         </LoadingMore>
       )}
-      {!hasMore && reviews.length > 0 && (
+      {!hasNext && !isLoading && reviews.length > 0 && (
         <LoadingMore>
           <div style={{ color: "#999", fontSize: "13px" }}>
-            마지막 리뷰입니다.
+            마지막 리뷰입니다. (총 {totalReviewCount}개)
           </div>
         </LoadingMore>
       )}
