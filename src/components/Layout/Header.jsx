@@ -132,7 +132,10 @@ const Header = () => {
             순례자의 길
           </NavItem>
           {isLoggedIn && (
-            <NavItem $active={isTravelPlanActive} onClick={openSavedTravelPlans}>
+            <NavItem
+              $active={isTravelPlanActive}
+              onClick={openSavedTravelPlans}
+            >
               나의 여행계획
             </NavItem>
           )}
@@ -224,7 +227,10 @@ const Header = () => {
             순례자의 길
           </MobileNavItem>
           {isLoggedIn && (
-            <MobileNavItem $active={isTravelPlanActive} onClick={openSavedTravelPlans}>
+            <MobileNavItem
+              $active={isTravelPlanActive}
+              onClick={openSavedTravelPlans}
+            >
               나의 여행계획
             </MobileNavItem>
           )}

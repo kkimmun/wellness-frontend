@@ -4,6 +4,7 @@ import { FaLocationArrow, FaSearch } from "react-icons/fa";
 import { CourseAPI } from "../../../api/course";
 import { PlaceAPI } from "../../../api/place";
 import { createUserCourse } from "../utils/userCourseStorage";
+import { startCoursePreview } from "../utils/coursePreview";
 import { RouteAPI } from "../../../api/route";
 import CoursePlaceOption from "./CoursePlaceOption";
 import {
@@ -77,6 +78,8 @@ const toWaypoint = (candidate) => {
       candidate?.addr || place?.addr || candidate?.address || place?.address,
     tags: candidate?.tags || place?.tags || [],
     distance: candidate?.distance,
+    xAxis: place?.X_AXIS ?? place?.xAxis,
+    yAxis: place?.Y_AXIS ?? place?.yAxis,
   };
 };
 
@@ -101,6 +104,23 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
   const searchControllerRef = useRef(null);
   const recommendationControllerRef = useRef(null);
   const creationControllerRef = useRef(null);
+  const previewControllerRef = useRef(null);
+  const [previewMessage, setPreviewMessage] = useState("");
+  const destination = destinations.find((place) => String(place.placeNo) === destinationNo);
+
+  useEffect(() => {
+    const preview = startCoursePreview({
+      origin,
+      destination,
+      waypointPlaceNos: selectedWaypoints,
+      places: recommendations || [],
+      findRoute: CourseAPI.getRecommendedRoute,
+      onRoute: onCourseBuilt,
+      onMessage: setPreviewMessage,
+    });
+    previewControllerRef.current = preview;
+    return () => preview.abort();
+  }, [origin, destination, selectedWaypoints, recommendations, onCourseBuilt]);
 
   useEffect(
     () => () => {
@@ -387,6 +407,8 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
     }
 
     const coordinates = originCoordinates();
+    previewControllerRef.current?.abort();
+    setPreviewMessage("");
     const controller = new AbortController();
     creationControllerRef.current?.abort();
     creationControllerRef.current = controller;
@@ -593,6 +615,12 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
             </CheckList>
           )}
         </Section>
+
+        {previewMessage && (
+          <FieldMessage role="status" aria-live="polite">
+            {previewMessage}
+          </FieldMessage>
+        )}
 
         <Section>
           <SectionHeading>

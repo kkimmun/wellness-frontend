@@ -12,7 +12,7 @@ const FOOTER_MENUS = [
   { id: "map", label: "지도", path: "/map" },
   {
     id: "pilgrim",
-    label: "순례자의 길",
+    label: "순례길 목록",
     path: "/pilgrim/fixed",
     subMenus: [
       { id: "pilgrim-fixed", label: "순례길 목록", path: "/pilgrim/fixed" },
