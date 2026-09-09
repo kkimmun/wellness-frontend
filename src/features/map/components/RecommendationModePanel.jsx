@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FaChevronLeft,
+  FaList,
   FaLocationArrow,
   FaMapMarkerAlt,
   FaRedo,
   FaRoute,
   FaSave,
+  FaTrash,
 } from "react-icons/fa";
 import { FiX } from "react-icons/fi";
 import { CourseRecommendationAPI } from "../../../api/courseRecommendation";
@@ -16,13 +18,21 @@ import {
 } from "../utils/recommendationSessionStorage";
 import * as S from "./RecommendationModePanel.styles";
 
+const VIEW = {
+  RECOMMEND: "recommend",
+  SAVED: "saved",
+};
+
 const RecommendationModePanel = ({
   isOpen,
   origin,
   originStatus,
   placeOptions,
+  placeOptionsStatus,
   tagOptions,
   course,
+  savedCourses = [],
+  activePlanId,
   onClose,
   onOpen,
   onRequestCurrentLocation,
@@ -30,8 +40,10 @@ const RecommendationModePanel = ({
   onCourseChange,
   onPreviewPlace,
   onSaveCourse,
-  onSwitchToPlanMode,
+  onOpenSavedCourse,
+  onDeleteSavedCourse,
 }) => {
+  const [view, setView] = useState(VIEW.RECOMMEND);
   const [placeCount, setPlaceCount] = useState(5);
   const [preferredPlaceNos, setPreferredPlaceNos] = useState(["", ""]);
   const [selectedTagNos, setSelectedTagNos] = useState([]);
@@ -53,10 +65,14 @@ const RecommendationModePanel = ({
     [placeOptions],
   );
 
-  const normalizedPreferredPlaceNos = useMemo(
-    () => preferredPlaceNos.filter(Boolean).map(Number),
-    [preferredPlaceNos],
-  );
+  const normalizedPreferredPlaceNos = useMemo(() => {
+    const selectablePlaceNos = new Set(
+      selectablePlaces.map((place) => String(place.placeNo)),
+    );
+    return preferredPlaceNos
+      .filter((placeNo) => placeNo && selectablePlaceNos.has(String(placeNo)))
+      .map(Number);
+  }, [preferredPlaceNos, selectablePlaces]);
 
   useEffect(
     () => () => {
@@ -79,12 +95,29 @@ const RecommendationModePanel = ({
 
   const requestCurrentLocation = () => {
     resetResult();
+    setPreferredPlaceNos(["", ""]);
     onRequestCurrentLocation();
   };
 
   const requestOriginPick = () => {
     resetResult();
+    setPreferredPlaceNos(["", ""]);
     onRequestOriginPick();
+  };
+
+  const openSavedCourse = (savedCourse) => {
+    requestControllerRef.current?.abort();
+    requestControllerRef.current = null;
+    setRequestState("idle");
+    setSaveState("idle");
+    setMessage("브라우저에 저장된 코스를 불러왔습니다.");
+    setView(VIEW.RECOMMEND);
+    onOpenSavedCourse(savedCourse);
+  };
+
+  const deleteSavedCourse = (savedCourse) => {
+    onDeleteSavedCourse(savedCourse.id);
+    setMessage(`"${savedCourse.name}" 계획을 삭제했습니다.`);
   };
 
   const changePreferredPlace = (index, value) => {
@@ -187,7 +220,7 @@ const RecommendationModePanel = ({
     }
 
     setSaveState("success");
-    setMessage("추천 코스를 계획 세션에 저장했습니다.");
+    setMessage("추천 코스와 시작 위치를 브라우저에 저장했습니다.");
   };
 
   return (
@@ -196,14 +229,33 @@ const RecommendationModePanel = ({
         <S.Header>
           <div>
             <small>추천 모드</small>
-            <h2>맞춤 코스 추천</h2>
+            <h2>{view === VIEW.SAVED ? "저장된 계획" : "맞춤 코스 추천"}</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="추천 패널 숨기기">
             <FiX />
           </button>
         </S.Header>
 
+        <S.PanelNav aria-label="추천 모드 메뉴">
+          <button
+            type="button"
+            className={view === VIEW.RECOMMEND ? "active" : ""}
+            onClick={() => setView(VIEW.RECOMMEND)}
+          >
+            <FaRoute /> 코스 추천
+          </button>
+          <button
+            type="button"
+            className={view === VIEW.SAVED ? "active" : ""}
+            onClick={() => setView(VIEW.SAVED)}
+          >
+            <FaList /> 저장 목록 {savedCourses.length}
+          </button>
+        </S.PanelNav>
+
         <S.Body>
+          {view === VIEW.RECOMMEND && (
+            <>
           <S.OriginCard>
             <FaMapMarkerAlt />
             <div>
@@ -230,22 +282,37 @@ const RecommendationModePanel = ({
           <S.Section>
             <S.SectionTitle>
               <strong>가고 싶은 장소</strong>
-              <span>선택 사항 · 최대 2곳</span>
+              <span>타입별 추천 거리 내 · 최대 2곳</span>
             </S.SectionTitle>
             {[0, 1].map((index) => (
               <select
                 key={index}
                 value={preferredPlaceNos[index]}
+                disabled={placeOptionsStatus === "loading" || selectablePlaces.length === 0}
                 onChange={(event) => changePreferredPlace(index, event.target.value)}
               >
                 <option value="">{index + 1}번째 장소 선택 안 함</option>
                 {selectablePlaces.map((place) => (
                   <option key={place.placeNo} value={place.placeNo}>
                     {place.placeName}
+                    {Number.isFinite(place.distanceMeters)
+                      ? ` · ${(place.distanceMeters / 1000).toFixed(1)}km`
+                      : ""}
                   </option>
                 ))}
               </select>
             ))}
+            {placeOptionsStatus === "loading" && (
+              <S.OptionStatus>시작 위치에서 갈 수 있는 장소를 불러오는 중입니다.</S.OptionStatus>
+            )}
+            {placeOptionsStatus === "error" && (
+              <S.OptionStatus $error>
+                주변 장소를 불러오지 못했습니다. 시작 위치를 다시 선택해주세요.
+              </S.OptionStatus>
+            )}
+            {placeOptionsStatus === "success" && selectablePlaces.length === 0 && (
+              <S.OptionStatus>거리 조건에 해당하는 장소가 없습니다.</S.OptionStatus>
+            )}
           </S.Section>
 
           <S.Section>
@@ -313,9 +380,11 @@ const RecommendationModePanel = ({
           {course?.places?.length > 0 && (
             <S.CourseSection>
               <S.CourseSummary>
-                <strong>추천 코스</strong>
+                <strong>{course.isSaved ? "저장된 코스" : "추천 코스"}</strong>
                 <span>
-                  약 {Number(course.totalDistanceMeters || 0).toLocaleString()}m · {course.placeCount}곳
+                  {course.totalDistanceMeters == null
+                    ? `${course.placeCount}곳`
+                    : `약 ${Number(course.totalDistanceMeters).toLocaleString()}m · ${course.placeCount}곳`}
                 </span>
               </S.CourseSummary>
               <ol>
@@ -325,9 +394,11 @@ const RecommendationModePanel = ({
                     <button type="button" onClick={() => onPreviewPlace(place)}>
                       <small>{place.typeDetail || place.type || "장소"}</small>
                       <strong>{place.placeName}</strong>
-                      <em>
-                        이전 위치에서 {Number(place.distanceFromPreviousMeters || 0).toLocaleString()}m
-                      </em>
+                      {place.distanceFromPreviousMeters != null && (
+                        <em>
+                          이전 위치에서 {Number(place.distanceFromPreviousMeters).toLocaleString()}m
+                        </em>
+                      )}
                     </button>
                   </li>
                 ))}
@@ -339,10 +410,54 @@ const RecommendationModePanel = ({
               >
                 <FaSave /> {saveState === "loading" ? "저장 중" : "추천 코스 저장"}
               </S.SavePlanButton>
-              <S.PlanSwitchButton type="button" onClick={onSwitchToPlanMode}>
-                이 코스로 계획 모드 전환
-              </S.PlanSwitchButton>
             </S.CourseSection>
+          )}
+            </>
+          )}
+
+          {view === VIEW.SAVED && (
+            <>
+              <S.SavedViewHeader>
+                <span>브라우저를 닫아도 저장된 계획은 유지됩니다.</span>
+                <button type="button" onClick={() => setView(VIEW.RECOMMEND)}>
+                  새 추천
+                </button>
+              </S.SavedViewHeader>
+              <S.SavedCourseSection>
+                {savedCourses.length === 0 ? (
+                  <S.SavedCourseEmpty>저장된 계획이 없습니다.</S.SavedCourseEmpty>
+                ) : (
+                  savedCourses.map((savedCourse) => (
+                    <S.SavedCourseCard
+                      key={savedCourse.id}
+                      $active={activePlanId === savedCourse.id}
+                    >
+                      <button
+                        className="saved-info"
+                        type="button"
+                        onClick={() => openSavedCourse(savedCourse)}
+                      >
+                        <strong>{savedCourse.name}</strong>
+                        <span>{savedCourse.places.length}개 장소</span>
+                        <small>
+                          {new Date(
+                            savedCourse.updatedAt ?? savedCourse.createdAt,
+                          ).toLocaleDateString("ko-KR")}
+                        </small>
+                      </button>
+                      <button
+                        className="delete"
+                        type="button"
+                        aria-label={`${savedCourse.name} 계획 삭제`}
+                        onClick={() => deleteSavedCourse(savedCourse)}
+                      >
+                        <FaTrash />
+                      </button>
+                    </S.SavedCourseCard>
+                  ))
+                )}
+              </S.SavedCourseSection>
+            </>
           )}
         </S.Body>
       </S.Panel>

@@ -67,8 +67,12 @@ import {
 } from "./routeSegmentStyles";
 import {
   MAX_TRAVEL_PLAN_PLACES,
+  TRAVEL_PLAN_KIND,
   clearTravelPlanDraft,
+  deleteTravelPlan,
   readTravelPlanDraft,
+  readTravelPlans,
+  saveTravelPlan,
   saveTravelPlanDraft,
 } from "./utils/travelPlanStorage";
 import {
@@ -77,13 +81,6 @@ import {
 } from "./utils/overlappingPins";
 
 const EMPTY_RESTAURANTS = [];
-const DB_PLAN_ID = "plan-session";
-
-const toDbSavedPlan = (places) => ({
-  id: DB_PLAN_ID,
-  name: "저장된 여행 계획",
-  places: toValidPins(places),
-});
 
 const TOP10_TYPE_DETAIL_NOS = new Set(["18", "46"]);
 const TOP10_PLACE_NOS = new Set([
@@ -373,12 +370,15 @@ const MapPage = () => {
   const [planRecommendationPins, setPlanRecommendationPins] = useState([]);
   const [planPlaces, setPlanPlaces] = useState([]);
   const [savedPlans, setSavedPlans] = useState([]);
+  const [savedRecommendationPlans, setSavedRecommendationPlans] = useState([]);
   const [activePlanId, setActivePlanId] = useState(null);
   const [planDetailPlace, setPlanDetailPlace] = useState(null);
   const planLocationRequestRef = useRef(0);
   // 추천 모드는 계획 저장 상태와 분리하고, 현재 세션에서 생성한 코스만 지도에 표시한다.
   const [isRecommendationPanelOpen, setIsRecommendationPanelOpen] = useState(true);
   const [recommendationCourse, setRecommendationCourse] = useState(null);
+  const [recommendationNearbyPlaces, setRecommendationNearbyPlaces] = useState([]);
+  const [recommendationNearbyState, setRecommendationNearbyState] = useState("idle");
 
   const [top10OverlayState, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
   const [top10OverlayDetail, setTop10OverlayDetail] = useState(null);
@@ -672,27 +672,22 @@ const MapPage = () => {
   ]);
 
   useEffect(() => {
-    if (!isPlanMode) return undefined;
+    if (!isTravelMode || !planOwnerKey) return undefined;
 
-    let ignore = false;
-    PlanAPI.getSavedPlan()
-      .then((places) => {
-        if (ignore) return;
-        const savedPlan = toDbSavedPlan(places);
-        setSavedPlans(savedPlan.places.length > 0 ? [savedPlan] : []);
-      })
-      .catch((planError) => {
-        if (ignore) return;
-        console.error("저장된 계획을 불러오지 못했습니다.", planError);
-        setSavedPlans([]);
-        setAlertMessage("저장된 계획을 불러오지 못했습니다.");
-        setIsAlertModalOpen(true);
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, [isPlanMode]);
+    const restoreTimer = window.setTimeout(() => {
+      setSavedPlans(
+        readTravelPlans(planOwnerKey, undefined, TRAVEL_PLAN_KIND.PLAN),
+      );
+      setSavedRecommendationPlans(
+        readTravelPlans(
+          planOwnerKey,
+          undefined,
+          TRAVEL_PLAN_KIND.RECOMMENDATION,
+        ),
+      );
+    }, 0);
+    return () => window.clearTimeout(restoreTimer);
+  }, [isTravelMode, planOwnerKey]);
 
   useEffect(() => {
     if (!isRecommendationMode) return undefined;
@@ -714,6 +709,38 @@ const MapPage = () => {
       planLocationRequestRef.current += 1;
     };
   }, [isRecommendationMode, requestCurrentPlanLocation]);
+
+  useEffect(() => {
+    if (!isRecommendationMode || !planOrigin) return undefined;
+
+    const controller = new AbortController();
+    const requestTimer = window.setTimeout(() => {
+      setRecommendationNearbyPlaces([]);
+      setRecommendationNearbyState("loading");
+
+      PlanAPI.getNearbyPlaces(planOrigin.xAxis, planOrigin.yAxis, controller.signal)
+        .then((places) => {
+          if (controller.signal.aborted) return;
+          setRecommendationNearbyPlaces(
+          toValidPins(places).filter(
+            (place) => ![2, 10].includes(Number(place.typeNo)),
+          ),
+          );
+          setRecommendationNearbyState("success");
+        })
+        .catch((nearbyError) => {
+          if (nearbyError?.name === "CanceledError" || controller.signal.aborted) return;
+          console.error("추천 시작 위치 주변의 장소를 불러오지 못했습니다.", nearbyError);
+          setRecommendationNearbyPlaces([]);
+          setRecommendationNearbyState("error");
+        });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(requestTimer);
+      controller.abort();
+    };
+  }, [isRecommendationMode, planOrigin]);
 
   const handleRecommendationCourseChange = useCallback((course) => {
     setRecommendationCourse(course);
@@ -779,67 +806,125 @@ const MapPage = () => {
     setPlanDetailPlace(null);
   }, []);
 
-  const handleSaveTravelPlan = useCallback(async () => {
-      if (planPlaces.length === 0) {
-        setAlertMessage("한 개 이상의 장소를 계획에 추가해주세요.");
+  const handleSaveTravelPlan = useCallback(
+    (name) => {
+      const saved = saveTravelPlan({
+        id: activePlanId,
+        ownerKey: planOwnerKey,
+        kind: TRAVEL_PLAN_KIND.PLAN,
+        name,
+        origin: planOrigin,
+        places: planPlaces,
+      });
+      if (!saved) {
+        setAlertMessage("계획 이름과 한 개 이상의 장소를 확인해주세요.");
         setIsAlertModalOpen(true);
         return null;
       }
-
-      try {
-        await PlanAPI.savePlan(planPlaces);
-        clearTravelPlanDraft(planOwnerKey);
-        const saved = toDbSavedPlan(planPlaces);
-        setSavedPlans([saved]);
-        setActivePlanId(DB_PLAN_ID);
-        return saved;
-      } catch (planError) {
-        console.error("계획을 DB에 저장하지 못했습니다.", planError);
-        setAlertMessage(planError?.message || "계획을 저장하지 못했습니다.");
-        setIsAlertModalOpen(true);
-        return null;
-      }
-  }, [planOwnerKey, planPlaces]);
+      clearTravelPlanDraft(planOwnerKey);
+      setSavedPlans(
+        readTravelPlans(planOwnerKey, undefined, TRAVEL_PLAN_KIND.PLAN),
+      );
+      setActivePlanId(saved.id);
+      return saved;
+    },
+    [activePlanId, planOrigin, planOwnerKey, planPlaces],
+  );
 
   const handleOpenSavedPlan = useCallback(
     (plan) => {
+      setPlanOrigin(plan.origin);
       setPlanPlaces(plan.places);
+      setPlanOriginStatus("restored");
       setPlanRecommendationPins([]);
       setTop10Overlay(null);
       setPlanDetailPlace(null);
       setActivePlanId(plan.id);
       setIsPlanPanelOpen(true);
-      moveMapToPlanPoint(plan.places[0] || planOrigin);
+      moveMapToPlanPoint(plan.origin);
     },
-    [moveMapToPlanPoint, planOrigin],
+    [moveMapToPlanPoint],
   );
 
-  const handleDeleteSavedPlan = useCallback(async () => {
-    try {
-      await PlanAPI.deletePlan();
-      setSavedPlans([]);
-      setActivePlanId(null);
-    } catch (planError) {
-      console.error("저장된 계획을 삭제하지 못했습니다.", planError);
-      setAlertMessage(planError?.message || "저장된 계획을 삭제하지 못했습니다.");
-      setIsAlertModalOpen(true);
-    }
-  }, []);
+  const handleDeleteSavedPlan = useCallback(
+    (planId) => {
+      deleteTravelPlan(planOwnerKey, planId);
+      setSavedPlans(
+        readTravelPlans(planOwnerKey, undefined, TRAVEL_PLAN_KIND.PLAN),
+      );
+      if (activePlanId === planId) setActivePlanId(null);
+    },
+    [activePlanId, planOwnerKey],
+  );
 
-  const handleSaveRecommendationPlan = useCallback(async () => {
+  const handleSaveRecommendationPlan = useCallback(() => {
     const places = toValidPins(recommendationCourse?.places || []);
     if (places.length === 0) return false;
 
-    try {
-      await PlanAPI.savePlan(places);
-      setSavedPlans([toDbSavedPlan(places)]);
-      setActivePlanId(DB_PLAN_ID);
-      return true;
-    } catch (planError) {
-      console.error("추천 코스를 DB에 저장하지 못했습니다.", planError);
-      return false;
-    }
-  }, [recommendationCourse]);
+    const savedAt = new Date();
+    const saved = saveTravelPlan({
+      ownerKey: planOwnerKey,
+      kind: TRAVEL_PLAN_KIND.RECOMMENDATION,
+      name: `추천 코스 ${savedAt.toLocaleDateString("ko-KR")} ${savedAt.toLocaleTimeString("ko-KR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`,
+      origin: planOrigin,
+      places,
+    });
+    if (!saved) return false;
+
+    setSavedRecommendationPlans(
+      readTravelPlans(
+        planOwnerKey,
+        undefined,
+        TRAVEL_PLAN_KIND.RECOMMENDATION,
+      ),
+    );
+    setActivePlanId(saved.id);
+    return true;
+  }, [planOrigin, planOwnerKey, recommendationCourse]);
+
+  const handleDeleteSavedRecommendationPlan = useCallback(
+    (planId) => {
+      deleteTravelPlan(planOwnerKey, planId);
+      setSavedRecommendationPlans(
+        readTravelPlans(
+          planOwnerKey,
+          undefined,
+          TRAVEL_PLAN_KIND.RECOMMENDATION,
+        ),
+      );
+      if (activePlanId === planId) setActivePlanId(null);
+    },
+    [activePlanId, planOwnerKey],
+  );
+
+  const handleOpenSavedRecommendation = useCallback(
+    (plan) => {
+      const places = toValidPins(plan?.places || []);
+      if (!plan?.origin || places.length === 0) return;
+
+      setPlanOrigin(plan.origin);
+      setPlanOriginStatus("restored");
+      setActivePlanId(plan.id);
+      setRecommendationCourse({
+        courseSignature: `saved-${places.map((place) => place.placeNo).join("-")}`,
+        placeCount: places.length,
+        totalDistanceMeters: null,
+        places: places.map((place) => ({
+          ...place,
+          distanceFromPreviousMeters: null,
+        })),
+        isSaved: true,
+      });
+      setTop10Overlay(null);
+      setPlanDetailPlace(null);
+      setIsRecommendationPanelOpen(true);
+      moveMapToPlanPoint(plan.origin);
+    },
+    [moveMapToPlanPoint],
+  );
 
   const handleStartNewPlan = useCallback(() => {
     clearTravelPlanDraft(planOwnerKey);
@@ -1408,6 +1493,16 @@ const MapPage = () => {
       selectedRoute,
     ],
   );
+  const recommendationPlaceOptions = useMemo(() => {
+    const pinsByPlaceNo = new globalThis.Map(
+      pins.map((place) => [String(place.placeNo), place]),
+    );
+    return recommendationNearbyPlaces.map((place) => ({
+      ...pinsByPlaceNo.get(String(place.placeNo)),
+      ...place,
+      distanceMeters: Number(place.distanceMeters ?? place.distance),
+    }));
+  }, [pins, recommendationNearbyPlaces]);
   const visiblePinGroups = useMemo(
     () => groupOverlappingPins(visibleMapPins),
     [visibleMapPins],
@@ -1631,9 +1726,12 @@ const MapPage = () => {
           isOpen={isRecommendationPanelOpen && !planDetailPlace}
           origin={planOrigin}
           originStatus={planOriginStatus}
-          placeOptions={pins}
+          placeOptions={recommendationPlaceOptions}
+          placeOptionsStatus={recommendationNearbyState}
           tagOptions={tagOptions}
           course={recommendationCourse}
+          savedCourses={savedRecommendationPlans}
+          activePlanId={activePlanId}
           onClose={() => setIsRecommendationPanelOpen(false)}
           onOpen={() => setIsRecommendationPanelOpen(true)}
           onRequestCurrentLocation={() => {
@@ -1650,17 +1748,8 @@ const MapPage = () => {
           onCourseChange={handleRecommendationCourseChange}
           onPreviewPlace={handleRecommendationPlacePreview}
           onSaveCourse={handleSaveRecommendationPlan}
-          onSwitchToPlanMode={() => {
-            if (!planOwnerKey || !planOrigin || recommendationPlaces.length === 0) {
-              return;
-            }
-            saveTravelPlanDraft({
-              ownerKey: planOwnerKey,
-              origin: planOrigin,
-              places: recommendationPlaces,
-            });
-            navigate("/map?mode=j");
-          }}
+          onOpenSavedCourse={handleOpenSavedRecommendation}
+          onDeleteSavedCourse={handleDeleteSavedRecommendationPlan}
         />
       )}
 

@@ -471,10 +471,7 @@ export const SaveForm = styled.form`
 
   button {
     display: flex;
-    width: 100%;
-    min-height: 40px;
     align-items: center;
-    justify-content: center;
     gap: 5px;
     padding: 0 13px;
     border: 0;

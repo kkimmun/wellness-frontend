@@ -119,25 +119,17 @@ const Header = () => {
           >
             지도
           </NavItem>
-          {isLoggedIn && (
-            <NavItem
-              $active={isRecommendationModeActive}
-              onClick={openRecommendationMode}
-            >
-              추천모드
-            </NavItem>
-          )}
-          <NavItem
-            $active={isPilgrimActive}
-            onClick={() => handleNavigate("/pilgrim/fixed")}
-          >
-            순례길 목록
-          </NavItem>
           <NavItem
             $active={location.pathname === "/gimpoTop10"}
             onClick={() => handleNavigate("/gimpoTop10")}
           >
             김포Top10
+          </NavItem>
+          <NavItem
+            $active={isPilgrimActive}
+            onClick={() => handleNavigate("/pilgrim/fixed")}
+          >
+            순례자의 길
           </NavItem>
           {isLoggedIn && (
             <NavItem
@@ -145,6 +137,14 @@ const Header = () => {
               onClick={openSavedTravelPlans}
             >
               나의 여행계획
+            </NavItem>
+          )}
+          {isLoggedIn && (
+            <NavItem
+              $active={isRecommendationModeActive}
+              onClick={openRecommendationMode}
+            >
+              추천모드
             </NavItem>
           )}
         </DesktopNavList>
@@ -214,25 +214,17 @@ const Header = () => {
           >
             지도
           </MobileNavItem>
-          {isLoggedIn && (
-            <MobileNavItem
-              $active={isRecommendationModeActive}
-              onClick={openRecommendationMode}
-            >
-              추천모드
-            </MobileNavItem>
-          )}
-          <MobileNavItem
-            $active={isPilgrimActive}
-            onClick={() => handleNavigate("/pilgrim/fixed")}
-          >
-            순례자의 길
-          </MobileNavItem>
           <MobileNavItem
             $active={location.pathname === "/gimpoTop10"}
             onClick={() => handleNavigate("/gimpoTop10")}
           >
             김포Top10
+          </MobileNavItem>
+          <MobileNavItem
+            $active={isPilgrimActive}
+            onClick={() => handleNavigate("/pilgrim/fixed")}
+          >
+            순례자의 길
           </MobileNavItem>
           {isLoggedIn && (
             <MobileNavItem
@@ -240,6 +232,14 @@ const Header = () => {
               onClick={openSavedTravelPlans}
             >
               나의 여행계획
+            </MobileNavItem>
+          )}
+          {isLoggedIn && (
+            <MobileNavItem
+              $active={isRecommendationModeActive}
+              onClick={openRecommendationMode}
+            >
+              추천모드
             </MobileNavItem>
           )}
         </MobileNavList>
