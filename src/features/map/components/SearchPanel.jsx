@@ -20,6 +20,9 @@ import {
   ActionButtons,
   LoadingSpinner,
 } from "./SearchPanel.styles";
+import { filterDbPlaces } from "../utils/placeSearch";
+
+const SEARCH_PAGE_SIZE = 15;
 
 const SearchPanel = ({
   pins,
@@ -62,62 +65,21 @@ const SearchPanel = ({
       setHasSearched(true);
       setLastSearchedKeyword(searchKeyword);
 
-      // 검색 시 문자열 처리 (공백 제거 및 대소문자 무시)
-      const searchStr = searchKeyword.replace(/\s+/g, "").toLowerCase();
+      // 지도 검색은 외부 카카오 결과를 섞지 않고 현재 DB에서 받은 장소만 사용한다.
+      const filteredLocal = filterDbPlaces(pins, searchKeyword);
+      const startIndex = (currentPage - 1) * SEARCH_PAGE_SIZE;
+      const pageResults = filteredLocal.slice(
+        startIndex,
+        startIndex + SEARCH_PAGE_SIZE,
+      );
 
-      // 1. 로컬(DB) 데이터 검색
-      const filteredLocal = pins.filter((p) => {
-        const placeName = (p.placeName || "").replace(/\s+/g, "").toLowerCase();
-        const addr = (p.addr || "").replace(/\s+/g, "").toLowerCase();
-        return placeName.includes(searchStr) || addr.includes(searchStr);
-      });
-
-      // 2. 카카오 장소 검색 API 호출
-      if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
-        const ps = new window.kakao.maps.services.Places();
-        ps.keywordSearch(searchKeyword, (data, status, pagination) => {
-          let externalPlaces = [];
-          if (status === window.kakao.maps.services.Status.OK) {
-            externalPlaces = data.map((p) => ({
-              placeNo: `kakao_${p.id}`,
-              placeName: p.place_name,
-              addr: p.road_address_name || p.address_name,
-              addrDetail: p.road_address_name ? p.address_name : "",
-              phone: p.phone,
-              xAxis: parseFloat(p.x), // 경도(x)
-              yAxis: parseFloat(p.y), // 위도(y)
-              reviewCount: 0,
-              avgRating: 0.0,
-              isExternal: true, // 외부 장소 식별 플래그
-            }));
-          }
-
-          setDisplayedResults((prev) => {
-            const newResults = currentPage === 1
-              ? [...filteredLocal, ...externalPlaces]
-              : [...prev, ...externalPlaces];
-
-            if (onSearchResults) {
-              onSearchResults(newResults);
-            }
-            return newResults;
-          });
-
-          setHasMore(pagination && pagination.hasNextPage);
-          setIsSearching(false);
-        }, { page: currentPage, size: 15 });
-      } else {
-        // 카카오 API 로드 실패 시 로컬만 처리
-        setDisplayedResults((prev) => {
-          const newResults = currentPage === 1 ? filteredLocal : [...prev, ...filteredLocal];
-          if (onSearchResults) {
-            onSearchResults(newResults);
-          }
-          return newResults;
-        });
-        setHasMore(false);
-        setIsSearching(false);
-      }
+      setDisplayedResults((prev) =>
+        currentPage === 1 ? pageResults : [...prev, ...pageResults],
+      );
+      // 목록은 나누어 보여주되 지도에는 검색 조건에 맞는 DB 핀 전체를 표시한다.
+      if (onSearchResults) onSearchResults(filteredLocal);
+      setHasMore(startIndex + SEARCH_PAGE_SIZE < filteredLocal.length);
+      setIsSearching(false);
     },
     [pins, onSearchResults],
   );
