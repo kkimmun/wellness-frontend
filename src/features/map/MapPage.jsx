@@ -719,14 +719,14 @@ const MapPage = () => {
       ? { ...route, transportType: courseRouteData.transportType }
       : null;
   }, [isCourseMapView, isCourseView, generalRoute, courseRouteData]);
-  const coursePins =
+  const coursePins = useMemo(() =>
     isCourseMapView && courseRouteData
       ? [
           courseRouteData.origin,
           ...(courseRouteData.waypoints || []),
           courseRouteData.destination,
         ].filter(isCoursePoint)
-      : [];
+      : [], [isCourseMapView, courseRouteData]);
 
   const baseSelectedPlace = useMemo(
     () =>
@@ -1054,7 +1054,7 @@ const MapPage = () => {
       return undefined;
     }
     if (
-      (!selectedRoute && restaurantPins.length === 0) ||
+      (!selectedRoute && restaurantPins.length === 0 && coursePins.length === 0) ||
       !mapRef.current ||
       !window.kakao?.maps
     )
@@ -1069,7 +1069,7 @@ const MapPage = () => {
       const mapPoints =
         restaurantPins.length > 0
           ? toMapPath(restaurantPins)
-          : getRouteMapPoints(selectedRoute);
+          : selectedRoute ? getRouteMapPoints(selectedRoute) : toMapPath(coursePins);
       if (!map || mapPoints.length === 0) return;
 
       map.relayout();
@@ -1107,6 +1107,7 @@ const MapPage = () => {
   }, [
     isRouteOpen,
     selectedRoute,
+    coursePins,
     isCourseMapView,
     loading,
     restaurantPins,
@@ -1645,8 +1646,12 @@ const MapPage = () => {
                   <MapMarker
                     key={pin.routeMarkerKey || pin.placeNo || index}
                     position={{ lat, lng }}
-                    title={`${index + 1}. ${pin.placeName || "코스 장소"}${index === 0 ? " · 출발" : index === coursePins.length - 1 ? " · 도착" : ""}`}
-                    image={getCourseMarkerImage(index)}
+                    title={`${pin.placeName || "코스 장소"}${pin === courseRouteData.origin ? " · 출발" : pin === courseRouteData.destination ? " · 도착" : " · 경유"}`}
+                    image={pin === courseRouteData.origin
+                      ? getRoutePointMarkerImage("출", "#FF7043")
+                      : pin === courseRouteData.destination
+                        ? getRoutePointMarkerImage("도", "#475569")
+                        : getCourseMarkerImage(index)}
                     zIndex={12}
                     clickable={false}
                   />
