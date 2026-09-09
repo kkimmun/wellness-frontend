@@ -82,14 +82,24 @@ const Header = () => {
   }, []);
 
   const isPilgrimActive = location.pathname.startsWith("/pilgrim");
+  const currentMapMode = new URLSearchParams(location.search).get("mode");
   const isTravelPlanActive =
+    location.pathname === "/map" && currentMapMode === "j";
+  const isRecommendationModeActive =
+    location.pathname === "/map" && currentMapMode === "p";
+  const isRegularMapActive =
     location.pathname === "/map" &&
-    new URLSearchParams(location.search).get("mode") === "j";
+    !isTravelPlanActive &&
+    !isRecommendationModeActive;
 
   const openSavedTravelPlans = () => {
     navigate("/map?mode=j", { state: { planView: "saved" } });
     setMobileOpen(false);
     setProfileOpen(false);
+  };
+
+  const openRecommendationMode = () => {
+    handleNavigate("/map?mode=p");
   };
 
   return (
@@ -103,12 +113,20 @@ const Header = () => {
           <NavItem
             $active={
               location.pathname === "/" ||
-              (location.pathname === "/map" && !isTravelPlanActive)
+              isRegularMapActive
             }
             onClick={() => handleNavigate("/map")}
           >
             지도
           </NavItem>
+          {isLoggedIn && (
+            <NavItem
+              $active={isRecommendationModeActive}
+              onClick={openRecommendationMode}
+            >
+              추천모드
+            </NavItem>
+          )}
           <NavItem
             $active={isPilgrimActive}
             onClick={() => handleNavigate("/pilgrim/fixed")}
@@ -187,12 +205,20 @@ const Header = () => {
           <MobileNavItem
             $active={
               location.pathname === "/" ||
-              (location.pathname === "/map" && !isTravelPlanActive)
+              isRegularMapActive
             }
             onClick={() => handleNavigate("/map")}
           >
             지도
           </MobileNavItem>
+          {isLoggedIn && (
+            <MobileNavItem
+              $active={isRecommendationModeActive}
+              onClick={openRecommendationMode}
+            >
+              추천모드
+            </MobileNavItem>
+          )}
           <MobileNavItem
             $active={isPilgrimActive}
             onClick={() => handleNavigate("/pilgrim/fixed")}
