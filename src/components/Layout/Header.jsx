@@ -113,7 +113,7 @@ const Header = () => {
             $active={isPilgrimActive}
             onClick={() => handleNavigate("/pilgrim/fixed")}
           >
-            순례자의 길
+            순례길 목록
           </NavItem>
           <NavItem
             $active={location.pathname === "/gimpoTop10"}
@@ -122,7 +122,10 @@ const Header = () => {
             김포Top10
           </NavItem>
           {isLoggedIn && (
-            <NavItem $active={isTravelPlanActive} onClick={openSavedTravelPlans}>
+            <NavItem
+              $active={isTravelPlanActive}
+              onClick={openSavedTravelPlans}
+            >
               나의 여행계획
             </NavItem>
           )}
@@ -206,7 +209,10 @@ const Header = () => {
             김포Top10
           </MobileNavItem>
           {isLoggedIn && (
-            <MobileNavItem $active={isTravelPlanActive} onClick={openSavedTravelPlans}>
+            <MobileNavItem
+              $active={isTravelPlanActive}
+              onClick={openSavedTravelPlans}
+            >
               나의 여행계획
             </MobileNavItem>
           )}
