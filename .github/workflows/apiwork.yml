@@ -4,12 +4,9 @@ on:
   push:
     branches: [main]
 
-  pull_request:
-    branches: [main]
-
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout
@@ -27,38 +24,15 @@ jobs:
       - name: Build React App
         run: npm run build
 
-      - name: Prepare Frontend Directory
-        if: github.event_name == 'push'
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            rm -rf /home/ubuntu/app/dist/*
-            mkdir -p /home/ubuntu/app/dist
-
       - name: Deploy Frontend to EC2
-        if: github.event_name == 'push'
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          source: "dist/*"
-          target: "/home/ubuntu/app/dist"
-          strip_components: 1
+        run: |
+          rm -rf /home/ubuntu/app/dist/*
+          cp -r dist/. /home/ubuntu/app/dist/
 
       - name: Restart Nginx
-        if: github.event_name == 'push'
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            cd /home/ubuntu/app
-            docker compose restart web
+        run: |
+          cd /home/ubuntu/app
+          docker compose restart web
 
       - name: Send Slack Notification
         if: always()
