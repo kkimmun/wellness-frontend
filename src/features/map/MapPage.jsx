@@ -391,6 +391,7 @@ const MapPage = () => {
   const isUserCourseDetail = isFixedCourseView && Boolean(userCourseId);
   const isCourseMapView =
     isCustomCourseView || isFixedCourseDetail || isUserCourseDetail;
+  const isTop10Screen = /^\/gimpoTop10(?:\/|$)/.test(location.pathname);
 
   useEffect(() => {
     if (
@@ -1309,7 +1310,7 @@ const MapPage = () => {
   return (
     <MapContainer>
       {/* 길찾기 기능 연동: 검색 목록의 출발/도착 버튼을 실제 패널과 연결한다. */}
-      <SearchPanel
+      {!isTop10Screen && <SearchPanel
         pins={searchablePins}
         onPlaceSelect={handlePlaceSelect}
         bookmarks={bookmarks}
@@ -1320,7 +1321,7 @@ const MapPage = () => {
         onSearchResults={handleSearchResults}
         onSetOrigin={openRouteWithOrigin}
         onSetDestination={openRouteWithDestination}
-      />
+      />}
 
       {/* 계획 모드: 기존 지도 기능은 유지하고 추천·계획 상태만 독립 패널에서 관리한다. */}
       {isPlanMode && (
@@ -1481,7 +1482,7 @@ const MapPage = () => {
         </RouteReopenButton>
       )}
 
-      {!isTravelMode && !isFixedCourseView && !isCustomCourseView && (
+      {!isTop10Screen && !isTravelMode && !isFixedCourseView && !isCustomCourseView && (
         <FloatingTags>
           <TagList $isOpen={isTagsOpen}>
             {/* DB 장소 필터 연동: 존재하지 않는 임시 태그 버튼을 실제 타입·태그 선택으로 교체한다. */}
@@ -1554,7 +1555,7 @@ const MapPage = () => {
       )}
 
       {/* 지도 좌표 길찾기: DB 장소를 먼저 고르지 않아도 지도에서 출발·도착 핀을 바로 생성한다. */}
-      {!isTravelMode && !isCourseView && !loading && !error && (
+      {!isTop10Screen && !isTravelMode && !isCourseView && !loading && !error && (
         <MapPinToolbar aria-label="지도 길찾기 핀 생성">
           <MapPinCreateButton
             type="button"
