@@ -10,13 +10,18 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22.23.1
           cache: npm
+
+      - name: Create .env
+        run: |
+          echo "VITE_API_URL=/api" > .env
+          echo "VITE_KAKAO_MAP_KEY=${{ secrets.VITE_KAKAO_MAP_KEY }}" >> .env
 
       - name: Install dependencies
         run: npm ci
