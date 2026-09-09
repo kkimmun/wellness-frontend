@@ -9,6 +9,7 @@ import {
 } from "react-kakao-maps-sdk";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { PlaceAPI } from "../../api/place";
+import { BookmarkAPI } from "../../api/bookmark";
 import SearchPanel from "./components/SearchPanel";
 import CourseRouteLine from "./CourseRouteLine";
 import DetailPanel from "./components/DetailPanel";
@@ -266,17 +267,31 @@ const MapPage = () => {
   }, [top10OverlayState, top10OverlayDetail]);
   const { status, user } = useAuth();
 
-  const toggleBookmark = (e, placeNo) => {
+  const toggleBookmark = async (e, placeNo) => {
     if (e) e.stopPropagation();
+    if (placeNo == null) return;
     if (status === "unauthenticated") {
       setAlertMessage("로그인 후 이용해주세요.");
       setIsAlertModalOpen(true);
       return;
     }
-    setBookmarks((prev) => ({
-      ...prev,
-      [placeNo]: !prev[placeNo],
-    }));
+
+    // 서버 응답을 기다리는 동안 아이콘이 즉시 반응하도록 낙관적으로 먼저 토글한다.
+    const previous = Boolean(bookmarks[placeNo]);
+    setBookmarks((prev) => ({ ...prev, [placeNo]: !previous }));
+
+    try {
+      const result = await BookmarkAPI.toggle(placeNo);
+      setBookmarks((prev) => ({
+        ...prev,
+        [placeNo]: result?.bookmarked ?? !previous,
+      }));
+    } catch (err) {
+      console.error("북마크 처리에 실패했습니다.", err);
+      setBookmarks((prev) => ({ ...prev, [placeNo]: previous }));
+      setAlertMessage("북마크 처리에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      setIsAlertModalOpen(true);
+    }
   };
 
   const [loading, error] = useKakaoLoader({
@@ -2054,7 +2069,8 @@ const MapPage = () => {
         }}
         isBookmarked={
           mapDetailPlace
-            ? bookmarks[mapDetailPlace.placeNo]
+            ? (bookmarks[mapDetailPlace.placeNo] ??
+              Boolean(mapDetailPlace.bookmarked))
             : false
         }
         onBookmark={(e) =>
