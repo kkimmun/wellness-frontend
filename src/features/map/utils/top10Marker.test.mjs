@@ -4,7 +4,7 @@ import { getInitialTop10PinIndex, getTop10IconKeyByName, isTop10Place } from "./
 
 test("일반 관광지가 먼저 와도 겹친 그룹의 초기 대표는 TOP 10이다", () => {
   const general = { placeName: "일반 관광지", typeNo: 1 };
-  const top10 = { placeName: "김포국제조각공원", typeNo: 1 };
+  const top10 = { placeName: "김포국제조각공원", typeNo: 1, typeDetail: "김포 TOP 10" };
   const pins = Object.freeze([general, top10]);
   assert.equal(getInitialTop10PinIndex(pins), 1);
   assert.equal(pins[0], general);
@@ -14,8 +14,8 @@ test("일반 관광지가 먼저 와도 겹친 그룹의 초기 대표는 TOP 10
 test("TOP 10이 여러 개면 첫 TOP 10, 없으면 첫 일반 장소를 표시한다", () => {
   assert.equal(getInitialTop10PinIndex([
     { placeName: "일반 관광지", typeNo: 1 },
-    { placeName: "대명항", typeNo: 1 },
-    { placeName: "김포함상공원", typeNo: 1 },
+    { placeName: "대명항", typeNo: 1, typeDetailNo: 18 },
+    { placeName: "김포함상공원", typeNo: 1, typeDetailNo: 18 },
   ]), 1);
   assert.equal(getInitialTop10PinIndex([{ placeName: "일반 관광지", typeNo: 1 }]), 0);
   assert.equal(getInitialTop10PinIndex([{ PLACE_NAME: "김포 아트빌리지", TYPE_NO: 1 }]), 0);
@@ -30,7 +30,7 @@ test("TOP 10 열 곳 모두 각 전용 아이콘으로 연결한다", () => {
   ];
   for (const [placeName, icon] of places) {
     assert.equal(getTop10IconKeyByName(placeName), icon);
-    assert.equal(isTop10Place({ placeName, typeNo: 1 }), true);
+    assert.equal(isTop10Place({ placeName, typeNo: 1, typeDetail: "김포 TOP 10" }), true);
     assert.equal(isTop10Place({ placeName }), true);
   }
 });
@@ -52,4 +52,45 @@ test("근처 음식점 이름만 TOP 10 장소를 포함해도 전용 마커로 
   assert.equal(isTop10Place({ placeName: "대명항 맛집", type: "음식점", typeNo: 6 }), false);
   assert.equal(isTop10Place(null), false);
   assert.equal(getTop10IconKeyByName(null), null);
+});
+
+test("관광지 대분류만으로 TOP 10을 판정하지 않는다", () => {
+  for (const metadata of [{ typeNo: 1 }, { type: "주요관광지" }, { type: "관광명소" }, { type: "관광지" }, { TYPE_NO: 1 }, { TYPE: "관광지" }]) {
+    assert.equal(isTop10Place({ placeName: "대명항 카페", ...metadata }), false);
+    assert.equal(isTop10Place({ placeName: "대명항", ...metadata }), false);
+  }
+});
+
+test("TOP 10 키워드가 있어도 다른 소분류를 이름이나 대분류로 덮어쓰지 않는다", () => {
+  for (const metadata of [
+    { type: "관광지", typeDetail: "카페" },
+    { typeNo: 1, typeDetailNo: 14 },
+    { typeDetail: "카페" },
+    { typeDetailNo: 14 },
+    { TYPE_DETAIL: "카페" },
+    { TYPE_DETAIL_NO: 14 },
+    { typeDetailContent: "자연명소" },
+    { TYPE_DETAIL_CONTENT: "공원" },
+    { typeDetail: "카페", typeDetailNo: 18 },
+  ]) {
+    assert.equal(isTop10Place({ placeName: "대명항 카페", ...metadata }), false);
+  }
+});
+
+test("소분류가 없는 경우 이름 기반 복원은 대분류도 없는 저장 데이터에만 허용한다", () => {
+  assert.equal(isTop10Place({ placeName: "김포 아트빌리지", type: null, typeNo: null, typeDetail: null, typeDetailNo: null }), true);
+  assert.equal(isTop10Place({ PLACE_NAME: "김포 아트빌리지" }), true);
+  assert.equal(isTop10Place({ placeName: "김포 아트빌리지", type: "", typeNo: 1 }), false);
+  assert.equal(isTop10Place({ placeName: "김포 아트빌리지", type: "관광지", typeNo: null }), false);
+});
+
+test("소분류 번호로도 TOP 10을 인식하고 일반 부가시설보다 대표로 우선 표시한다", () => {
+  for (const typeDetailNo of [18, 46, "18", "46"]) {
+    assert.equal(isTop10Place({ placeName: "대명항", typeNo: 1, typeDetailNo }), true);
+  }
+  const pins = [
+    { placeName: "대명항 카페", type: "관광지", typeDetail: "카페" },
+    { placeName: "대명항", type: "주요관광지", typeDetail: "김포 TOP 10" },
+  ];
+  assert.equal(getInitialTop10PinIndex(pins), 1);
 });

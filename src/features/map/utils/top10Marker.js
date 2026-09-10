@@ -23,12 +23,15 @@ export const getTop10IconKeyByName = (name) => {
 export const isTop10Place = (place) => {
   if (!getTop10IconKeyByName(place?.placeName ?? place?.PLACE_NAME)) return false;
   const detail = normalize(place?.typeDetail ?? place?.typeDetailContent ?? place?.TYPE_DETAIL ?? place?.TYPE_DETAIL_CONTENT);
-  const detailNo = String(place?.typeDetailNo ?? place?.TYPE_DETAIL_NO ?? "");
+  const detailNo = String(place?.typeDetailNo ?? place?.TYPE_DETAIL_NO ?? "").trim();
   const type = normalize(place?.type ?? place?.TYPE);
   const typeNo = place?.typeNo ?? place?.TYPE_NO;
-  return detail === "김포TOP10" || ["18", "46"].includes(detailNo)
-    || Number(typeNo) === 1 || ["주요관광지", "관광명소", "관광지"].includes(type)
-    || (!type && typeNo == null);
+  // 소분류가 있으면 반드시 해당 분류를 따른다. 대분류나 장소명으로 덮어쓰지 않는다.
+  if (detail) return detail === "김포TOP10";
+  if (detailNo) return ["18", "46"].includes(detailNo);
+
+  // 분류 정보가 전혀 없는 구버전 저장 코스만 이름 기반 복원을 허용한다.
+  return !type && typeNo == null;
 };
 // 아직 선택하지 않은 겹친 그룹은 TOP 10 전용 아이콘을 대표로 표시한다.
 // 배열 순서를 바꾸지 않아 기존 이전·다음 장소 전환 인덱스를 유지한다.
