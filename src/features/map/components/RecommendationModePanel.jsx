@@ -25,6 +25,7 @@ const VIEW = {
 
 const RecommendationModePanel = ({
   isOpen,
+  initialView = VIEW.RECOMMEND,
   origin,
   originStatus,
   placeOptions,
@@ -43,7 +44,7 @@ const RecommendationModePanel = ({
   onOpenSavedCourse,
   onDeleteSavedCourse,
 }) => {
-  const [view, setView] = useState(VIEW.RECOMMEND);
+  const [view, setView] = useState(initialView);
   const [placeCount, setPlaceCount] = useState(5);
   const [preferredPlaceNos, setPreferredPlaceNos] = useState(["", ""]);
   const [selectedTagNos, setSelectedTagNos] = useState([]);

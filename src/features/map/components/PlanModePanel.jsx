@@ -24,6 +24,7 @@ const VIEW = {
 const PlanModePanel = ({
   isOpen,
   initialView = VIEW.CATEGORY,
+  initialPlanName = "",
   origin,
   originStatus,
   typeOptions,
@@ -48,7 +49,7 @@ const PlanModePanel = ({
   const [selectedType, setSelectedType] = useState(null);
   const [requestState, setRequestState] = useState("idle");
   const [message, setMessage] = useState("");
-  const [planName, setPlanName] = useState("");
+  const [planName, setPlanName] = useState(initialPlanName);
   const requestControllerRef = useRef(null);
   const previousPlaceCountRef = useRef(places.length);
 

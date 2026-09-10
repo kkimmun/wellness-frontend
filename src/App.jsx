@@ -3,7 +3,8 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 import MainLayout from "./components/Layout/MainLayout";
 import AuthLayout from "./components/Layout/AuthLayout";
 import AdminLayout from "./components/Layout/AdminLayout";
-import { PublicRoute, AdminRoute } from "./components/Layout/AuthGuard";
+import { PublicRoute, PrivateRoute, AdminRoute } from "./components/Layout/AuthGuard";
+import MyPageDashboard from "./features/mypage/MyPageDashboard";
 import SignUp from "./features/auth/SignUp";
 import EmailRequest from "./features/auth/EmailRequest";
 import EmailVerify from "./features/auth/EmailVerify";
@@ -70,6 +71,9 @@ function App() {
 
         {/* 메인 서비스 화면 */}
         <Route element={<MainLayout />}>
+          <Route element={<PrivateRoute />}>
+            <Route path="/mypage" element={<MyPageDashboard />} />
+          </Route>
           <Route path="/map" element={<MapPage />} />
           <Route path="/pilgrim/create" element={<MapPage />} />
           <Route path="/pilgrim/fixed" element={<MapPage />} />

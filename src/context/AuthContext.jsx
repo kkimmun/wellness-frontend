@@ -70,6 +70,16 @@ export const AuthProvider = ({ children }) => {
     return logoutRequest;
   }, [clearAuth]);
 
+  const applyProfile = useCallback((profile) => {
+    // 늦게 도착한 저장 응답이 로그아웃 또는 다른 계정의 정보를 덮지 않게 한다.
+    if (profile?.memberNo == null) return;
+    authRequestIdRef.current += 1;
+    setAuthState((current) => {
+      if (current.status !== "authenticated" || String(current.user?.memberNo) !== String(profile.memberNo)) return current;
+      return { ...current, user: { ...current.user, ...profile, profileImage: null } };
+    });
+  }, []);
+
   const withdraw = useCallback(async () => {
     await AuthAPI.withdraw();
     clearAuth();
@@ -90,7 +100,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ ...authState, checkAuth, clearAuth, logout, withdraw }}
+      value={{ ...authState, checkAuth, clearAuth, logout, withdraw, applyProfile }}
     >
       {children}
     </AuthContext.Provider>

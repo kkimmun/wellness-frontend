@@ -19,6 +19,7 @@ import {
   MobileNavItem,
 } from "./Header.styles";
 import MyPage from "../../features/mypage/MyPage";
+import { getProfileImage } from "../../features/mypage/myPageModel";
 
 import { useAuth } from "../../context/AuthContext";
 
@@ -26,9 +27,7 @@ const Header = () => {
   const { status, user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileImg, setProfileImg] = useState(
-    user?.profileImage || localStorage.getItem("profileImage"), // 백엔드에서 profileImage를 주면 user 객체에서 사용 가능
-  );
+  const profileImg = status === "authenticated" ? getProfileImage(user) : null;
   const desktopDropdownRef = useRef(null);
   const mobileDropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -51,11 +50,6 @@ const Header = () => {
   };
 
   useEffect(() => {
-    const handleProfileUpdate = () => {
-      setProfileImg(localStorage.getItem("profileImage"));
-    };
-    window.addEventListener("profileUpdated", handleProfileUpdate);
-
     const handleClickOutside = (event) => {
       // MyPage의 확인 모달은 Portal로 body 아래에 렌더링된다.
       // 모달 클릭을 외부 클릭으로 처리하면 click 이벤트 전에 MyPage가 언마운트된다.
@@ -76,7 +70,6 @@ const Header = () => {
     document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      window.removeEventListener("profileUpdated", handleProfileUpdate);
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
@@ -150,8 +143,8 @@ const Header = () => {
         </DesktopNavList>
 
         {/* 데스크톱 마이페이지/로그인 아이콘 + 팝업 메뉴 */}
-        <UserIconWrapper ref={desktopDropdownRef}>
-          <DesktopUserIconArea onClick={handleUserIconClick}>
+        <UserIconWrapper $desktop ref={desktopDropdownRef}>
+          <DesktopUserIconArea as="button" type="button" aria-label={isLoggedIn ? "내 정보 메뉴" : "로그인"} aria-expanded={isLoggedIn && profileOpen} style={{ border: 0, background: "none" }} onClick={handleUserIconClick}>
             {profileImg ? (
               <HeaderProfileImg src={profileImg} alt="내 프로필" />
             ) : (
@@ -169,7 +162,7 @@ const Header = () => {
         <MobileRightGroup>
           {/* 모바일 마이페이지/로그인 아이콘 + 팝업 메뉴 */}
           <UserIconWrapper ref={mobileDropdownRef}>
-            <UserIconArea onClick={handleUserIconClick}>
+            <UserIconArea as="button" type="button" aria-label={isLoggedIn ? "내 정보 메뉴" : "로그인"} aria-expanded={isLoggedIn && profileOpen} style={{ border: 0, background: "none" }} onClick={handleUserIconClick}>
               {profileImg ? (
                 <HeaderProfileImg src={profileImg} alt="내 프로필" />
               ) : (
