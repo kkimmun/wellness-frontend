@@ -101,6 +101,12 @@ const normalizeCategoryName = (value) =>
     .replace(/\s+/g, "")
     .toUpperCase();
 
+const isMajorTouristPlace = (place) =>
+  Number(place?.typeNo ?? place?.TYPE_NO) === 1 ||
+  ["주요관광지", "관광명소", "관광지"].includes(
+    normalizeCategoryName(place?.type ?? place?.TYPE),
+  );
+
 // 핀·계획·추천 API마다 소분류 필드 구성이 달라도 Top10 전용 마커를 유지한다.
 const isTop10Place = (place) => {
   const typeDetailName =
@@ -381,6 +387,7 @@ const MapPage = () => {
   const [recommendationNearbyState, setRecommendationNearbyState] = useState("idle");
 
   const [top10OverlayState, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
+  const [dismissedTop10Entry, setDismissedTop10Entry] = useState(null);
   const [top10OverlayDetail, setTop10OverlayDetail] = useState(null);
   const [overlapSelection, setOverlapSelection] = useState(null);
 
@@ -567,7 +574,17 @@ const MapPage = () => {
   const isUserCourseDetail = isFixedCourseView && Boolean(userCourseId);
   const isCourseMapView =
     isCustomCourseView || isFixedCourseDetail || isUserCourseDetail;
-  const isTop10Screen = /^\/gimpoTop10(?:\/|$)/.test(location.pathname);
+  const isTop10Route = /^\/gimpoTop10(?:\/|$)/.test(location.pathname);
+  const isInitialMapTop10 =
+    location.pathname === "/map" &&
+    !mapMode &&
+    !location.state?.hideInitialTop10 &&
+    dismissedTop10Entry !== location.key &&
+    !isRouteOpen &&
+    !routeOrigin &&
+    !routeDestination &&
+    !generalRoute;
+  const isTop10Screen = isTop10Route || isInitialMapTop10;
 
   useEffect(() => {
     if (
@@ -1481,13 +1498,17 @@ const MapPage = () => {
             ? coursePins
             : selectedRoute
               ? (selectedRoute.routePoints || []).slice(1, -1)
-              : filteredPins,
+              : isTop10Screen
+                ? pins.filter(isMajorTouristPlace)
+                : filteredPins,
     [
       coursePins,
       filteredPins,
       isCourseMapView,
       isPlanMode,
       isRecommendationMode,
+      isTop10Screen,
+      pins,
       planPlaces,
       planRecommendationPins,
       selectedRoute,
@@ -1976,9 +1997,9 @@ const MapPage = () => {
           )}
           <Map
             mapTypeId="ROADMAP"
-            center={{ lat: 37.6105, lng: 126.7056 }}
+            center={{ lat: 37.665, lng: 126.59 }}
             style={{ width: "100%", height: "100%" }}
-            level={5}
+            level={8}
             onCreate={handleMapCreate}
             onClick={handleMapClick}
           >
@@ -2424,10 +2445,13 @@ const MapPage = () => {
       />
 
       <Top10Panel
-        isOpen={location.pathname === "/gimpoTop10"}
+        isOpen={isTop10Screen}
         onClose={() => {
           setTop10Overlay(null);
-          navigate("/map");
+          setDismissedTop10Entry(location.key);
+          if (isTop10Route) {
+            navigate("/map", { state: { hideInitialTop10: true } });
+          }
         }}
         onPlaceClick={handleTop10PlaceSelect}
       />
