@@ -12,36 +12,52 @@ import {
 import { useState, useEffect } from "react";
 import { PlaceAPI } from "../../../api/place";
 
-const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
+const Top10Panel = ({
+  isOpen,
+  onClose,
+  onPlaceClick,
+  onPlacesLoaded,
+  places,
+  placesLoading = false,
+  title = "김포 Top 10",
+  showRank = true,
+}) => {
   const [top10List, setTop10List] = useState([]);
   const [loading, setLoading] = useState(false);
+  const hasProvidedPlaces = Array.isArray(places);
 
   useEffect(() => {
-    if (isOpen && top10List.length === 0 && !loading) {
+    let cancelled = false;
+    if (isOpen && !hasProvidedPlaces) {
       const fetchTop10 = async () => {
         setLoading(true);
         try {
           const res = await PlaceAPI.getGimpoTop10();
+          if (cancelled) return;
+          let places = [];
           if (res && res.code === 200 && res.data && res.data.content) {
-            setTop10List(res.data.content);
+            places = res.data.content;
           } else if (res && res.data && Array.isArray(res.data)) {
             // In case the API directly returns an array
-            setTop10List(res.data);
+            places = res.data;
           } else if (Array.isArray(res)) {
-            setTop10List(res);
-          } else {
-            setTop10List([]);
+            places = res;
           }
+          setTop10List(places);
+          onPlacesLoaded?.(places);
         } catch (err) {
+          if (cancelled) return;
           console.error("Top10 API 호출 실패:", err);
           setTop10List([]);
+          onPlacesLoaded?.([]);
         } finally {
-          setLoading(false);
+          if (!cancelled) setLoading(false);
         }
       };
       fetchTop10();
     }
-  }, [isOpen, top10List.length, loading]);
+    return () => { cancelled = true; };
+  }, [isOpen, onPlacesLoaded, hasProvidedPlaces]);
 
   const handlePlaceClick = (place) => {
     // onPlaceClick 사용을 위해 addr 파라미터를 API 응답의 address로 맞춰준다 (하위 호환)
@@ -55,7 +71,8 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
     }
   };
 
-  const listToRender = top10List;
+  const listToRender = hasProvidedPlaces ? places : top10List;
+  const isLoading = hasProvidedPlaces ? placesLoading : loading;
 
   return (
     <PanelContainer $isOpen={isOpen}>
@@ -63,17 +80,20 @@ const Top10Panel = ({ isOpen, onClose, onPlaceClick }) => {
         <button className="close-btn" onClick={onClose}>
           <FaChevronLeft size={20} />
         </button>
-        <h2>김포 Top 10</h2>
+        <h2>{title}</h2>
         <div style={{ width: 30 }} /> {/* 균형을 맞추기 위한 빈 공간 */}
       </Header>
 
       <ListContainer>
-        {loading && <div style={{ padding: "20px", textAlign: "center" }}>데이터를 불러오는 중입니다...</div>}
-        {!loading && listToRender.map((place, index) => (
+        {isLoading && <div style={{ padding: "20px", textAlign: "center" }}>데이터를 불러오는 중입니다...</div>}
+        {!isLoading && listToRender.length === 0 && (
+          <div style={{ padding: "20px", textAlign: "center" }}>표시할 장소가 없습니다.</div>
+        )}
+        {!isLoading && listToRender.map((place, index) => (
           <Top10Card key={place.placeNo} onClick={() => handlePlaceClick(place)}>
             <ImageWrapper>
               <PlaceImage src={place.imageUrl || place.imgUrl} place={place} alt={place.placeName} />
-              <div className="rank-badge">{index + 1}</div>
+              {showRank && <div className="rank-badge">{index + 1}</div>}
             </ImageWrapper>
 
             <InfoWrapper>

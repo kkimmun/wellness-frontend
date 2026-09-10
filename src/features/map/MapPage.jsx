@@ -101,6 +101,12 @@ const normalizeCategoryName = (value) =>
     .replace(/\s+/g, "")
     .toUpperCase();
 
+const isMajorTouristPlace = (place) =>
+  Number(place?.typeNo ?? place?.TYPE_NO) === 1 ||
+  ["주요관광지", "관광명소", "관광지"].includes(
+    normalizeCategoryName(place?.type ?? place?.TYPE),
+  );
+
 // 핀·계획·추천 API마다 소분류 필드 구성이 달라도 Top10 전용 마커를 유지한다.
 const isTop10Place = (place) => {
   const typeDetailName =
@@ -381,6 +387,12 @@ const MapPage = () => {
   const [recommendationNearbyState, setRecommendationNearbyState] = useState("idle");
 
   const [top10OverlayState, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
+  const [dismissedTop10Entry, setDismissedTop10Entry] = useState(null);
+  const [top10Places, setTop10Places] = useState([]);
+  const top10PlaceNos = useMemo(
+    () => new Set(top10Places.map((place) => String(place.placeNo))),
+    [top10Places],
+  );
   const [top10OverlayDetail, setTop10OverlayDetail] = useState(null);
   const [overlapSelection, setOverlapSelection] = useState(null);
 
@@ -405,7 +417,7 @@ const MapPage = () => {
     };
   }, [top10OverlayState?.placeNo, top10OverlayState?.isExternal]);
 
-  const top10Overlay = useMemo(() => {
+  const resolvedTop10Overlay = useMemo(() => {
     const detail =
       top10OverlayState &&
       top10OverlayDetail?.placeNo === top10OverlayState.placeNo
@@ -567,7 +579,22 @@ const MapPage = () => {
   const isUserCourseDetail = isFixedCourseView && Boolean(userCourseId);
   const isCourseMapView =
     isCustomCourseView || isFixedCourseDetail || isUserCourseDetail;
-  const isTop10Screen = /^\/gimpoTop10(?:\/|$)/.test(location.pathname);
+  const isTop10Route = /^\/gimpoTop10(?:\/|$)/.test(location.pathname);
+  const isInitialMapTop10 =
+    location.pathname === "/map" &&
+    !mapMode &&
+    !location.state?.hideInitialTop10 &&
+    dismissedTop10Entry !== location.key &&
+    !isRouteOpen &&
+    !routeOrigin &&
+    !routeDestination &&
+    !generalRoute;
+  const isTop10Screen = isTop10Route || isInitialMapTop10;
+  const top10Overlay =
+    isTop10Route &&
+    !top10PlaceNos.has(String(resolvedTop10Overlay?.placeNo))
+      ? null
+      : resolvedTop10Overlay;
 
   useEffect(() => {
     if (
@@ -1139,7 +1166,9 @@ const MapPage = () => {
     // 필터가 바뀌면 기존 장소 요약 오버레이를 닫고 일반 지도 주소로 복귀한다.
     setTop10Overlay(null);
     if (placeNo) {
-      navigate(isPlanMode ? "/map?mode=j" : "/map");
+      navigate(isPlanMode ? "/map?mode=j" : "/map", {
+        state: { hideInitialTop10: true },
+      });
     }
 
     const requestId = filterRequestIdRef.current + 1;
@@ -1175,6 +1204,8 @@ const MapPage = () => {
     }
 
     setIsFilterLoading(true);
+    setFilterPins([]);
+    setFilteredPins([]);
     try {
       const response = await PlaceAPI.getPinsByFilters(nextFilters);
 
@@ -1481,13 +1512,21 @@ const MapPage = () => {
             ? coursePins
             : selectedRoute
               ? (selectedRoute.routePoints || []).slice(1, -1)
-              : filteredPins,
+              : isTop10Route
+                ? pins.filter((pin) => top10PlaceNos.has(String(pin.placeNo)))
+                : isInitialMapTop10
+                  ? pins.filter(isMajorTouristPlace)
+                  : filteredPins,
     [
       coursePins,
       filteredPins,
       isCourseMapView,
       isPlanMode,
       isRecommendationMode,
+      isTop10Route,
+      isInitialMapTop10,
+      top10PlaceNos,
+      pins,
       planPlaces,
       planRecommendationPins,
       selectedRoute,
@@ -1678,7 +1717,9 @@ const MapPage = () => {
       {/* 길찾기 기능 연동: 검색 목록의 출발/도착 버튼을 실제 패널과 연결한다. */}
       {!isTop10Screen && <SearchPanel
         pins={searchablePins}
-        onPlaceSelect={handlePlaceSelect}
+        onPlaceSelect={hasPlaceFilter ? handleTop10PlaceSelect : handlePlaceSelect}
+        showFilteredResults={hasPlaceFilter}
+        filtersLoading={isFilterLoading}
         bookmarks={bookmarks}
         toggleBookmark={toggleBookmark}
         isVisible={
@@ -1976,9 +2017,9 @@ const MapPage = () => {
           )}
           <Map
             mapTypeId="ROADMAP"
-            center={{ lat: 37.6105, lng: 126.7056 }}
+            center={{ lat: 37.665, lng: 126.59 }}
             style={{ width: "100%", height: "100%" }}
-            level={5}
+            level={8}
             onCreate={handleMapCreate}
             onClick={handleMapClick}
           >
@@ -2424,10 +2465,18 @@ const MapPage = () => {
       />
 
       <Top10Panel
-        isOpen={location.pathname === "/gimpoTop10"}
+        isOpen={isTop10Screen}
+        title={isInitialMapTop10 ? "주요 관광지" : "김포 Top 10"}
+        places={isInitialMapTop10 ? visibleMapPins : undefined}
+        placesLoading={pinsState === "loading"}
+        showRank={!isInitialMapTop10}
+        onPlacesLoaded={setTop10Places}
         onClose={() => {
           setTop10Overlay(null);
-          navigate("/map");
+          setDismissedTop10Entry(location.key);
+          if (isTop10Route) {
+            navigate("/map", { state: { hideInitialTop10: true } });
+          }
         }}
         onPlaceClick={handleTop10PlaceSelect}
       />

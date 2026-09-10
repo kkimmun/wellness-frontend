@@ -37,7 +37,9 @@ const Header = () => {
   const isLoggedIn = status === "authenticated";
 
   const handleNavigate = (path) => {
-    navigate(path);
+    navigate(path, path === "/map"
+      ? { state: { hideInitialTop10: true } }
+      : undefined);
     setMobileOpen(false);
     setProfileOpen(false);
   };

@@ -34,7 +34,9 @@ function Footer() {
     <FooterContainer>
       <FooterNav>
         {FOOTER_MENUS.map((menu) => (
-          <FooterNavItem key={menu.id} onClick={() => navigate(menu.path)}>
+          <FooterNavItem key={menu.id} onClick={() => navigate(menu.path,
+            menu.path === "/map" ? { state: { hideInitialTop10: true } } : undefined,
+          )}>
             <span>{menu.label}</span>
 
             {/* 서브메뉴가 존재하는 경우 렌더링 */}
