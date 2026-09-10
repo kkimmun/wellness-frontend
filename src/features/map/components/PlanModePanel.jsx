@@ -241,7 +241,6 @@ const PlanModePanel = ({
 
               <S.SectionTitle>
                 <strong>어떤 장소를 찾을까요?</strong>
-                <span>선택한 기준 위치에서 반경 3km를 조회합니다.</span>
               </S.SectionTitle>
 
               <S.CategoryGrid>

@@ -36,7 +36,9 @@ const Header = () => {
   const isLoggedIn = status === "authenticated";
 
   const handleNavigate = (path) => {
-    navigate(path);
+    navigate(path, path === "/map"
+      ? { state: { hideInitialTop10: true } }
+      : undefined);
     setMobileOpen(false);
     setProfileOpen(false);
   };
@@ -116,20 +118,14 @@ const Header = () => {
             $active={location.pathname === "/gimpoTop10"}
             onClick={() => handleNavigate("/gimpoTop10")}
           >
-            김포Top10
-          </NavItem>
-          <NavItem
-            $active={isPilgrimActive}
-            onClick={() => handleNavigate("/pilgrim/fixed")}
-          >
-            순례자의 길
+            TOP 10
           </NavItem>
           {isLoggedIn && (
             <NavItem
               $active={isTravelPlanActive}
               onClick={openSavedTravelPlans}
             >
-              나의 여행계획
+              계획모드
             </NavItem>
           )}
           {isLoggedIn && (
@@ -140,6 +136,12 @@ const Header = () => {
               추천모드
             </NavItem>
           )}
+          <NavItem
+            $active={isPilgrimActive}
+            onClick={() => handleNavigate("/pilgrim/fixed")}
+          >
+            순례길 목록
+          </NavItem>
         </DesktopNavList>
 
         {/* 데스크톱 마이페이지/로그인 아이콘 + 팝업 메뉴 */}
@@ -211,20 +213,14 @@ const Header = () => {
             $active={location.pathname === "/gimpoTop10"}
             onClick={() => handleNavigate("/gimpoTop10")}
           >
-            김포Top10
-          </MobileNavItem>
-          <MobileNavItem
-            $active={isPilgrimActive}
-            onClick={() => handleNavigate("/pilgrim/fixed")}
-          >
-            순례자의 길
+            TOP 10
           </MobileNavItem>
           {isLoggedIn && (
             <MobileNavItem
               $active={isTravelPlanActive}
               onClick={openSavedTravelPlans}
             >
-              나의 여행계획
+              계획모드
             </MobileNavItem>
           )}
           {isLoggedIn && (
@@ -235,6 +231,12 @@ const Header = () => {
               추천모드
             </MobileNavItem>
           )}
+          <MobileNavItem
+            $active={isPilgrimActive}
+            onClick={() => handleNavigate("/pilgrim/fixed")}
+          >
+            순례길 목록
+          </MobileNavItem>
         </MobileNavList>
       </MobileDrawer>
     </>

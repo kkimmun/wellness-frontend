@@ -16,11 +16,11 @@ const thumbnailTones = [
 
 export const PanelContainer = styled.section`
   position: absolute;
-  top: 112px;
+  top: ${theme.spacing.lg};
   left: ${theme.spacing.lg};
   z-index: 11;
   width: 540px;
-  max-height: calc(100% - 136px);
+  max-height: calc(100% - 48px);
   display: flex;
   flex-direction: column;
   padding: ${theme.spacing.lg};
@@ -30,10 +30,10 @@ export const PanelContainer = styled.section`
   box-shadow: 0 8px 32px rgba(15, 23, 42, 0.16);
 
   @media (max-width: ${theme.breakpoints.md}) {
-    top: 104px;
+    top: ${theme.spacing.md};
     left: ${theme.spacing.md};
     width: min(480px, calc(100% - 32px));
-    max-height: calc(100% - 120px);
+    max-height: calc(100% - 32px);
     padding: ${theme.spacing.md};
   }
 `;
