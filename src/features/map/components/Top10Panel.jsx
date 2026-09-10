@@ -1,3 +1,4 @@
+import useIncrementalPlaces from "../hooks/useIncrementalPlaces";
 import PlaceImage from "../../../components/PlaceImage";
 import { FaChevronLeft } from "react-icons/fa";
 import {
@@ -71,6 +72,7 @@ const Top10Panel = ({
   };
 
   const listToRender = hasProvidedPlaces ? places : top10List;
+  const { listRef, onScroll, visiblePlaces, hasMore } = useIncrementalPlaces(listToRender, isOpen);
   const isLoading = hasProvidedPlaces ? placesLoading : loading;
 
   return (
@@ -83,12 +85,12 @@ const Top10Panel = ({
         <div style={{ width: 30 }} /> {/* 균형을 맞추기 위한 빈 공간 */}
       </Header>
 
-      <ListContainer>
+      <ListContainer ref={listRef} onScroll={onScroll} role="region" aria-label="장소 목록" tabIndex={0}>
         {isLoading && <div style={{ padding: "20px", textAlign: "center" }}>데이터를 불러오는 중입니다...</div>}
         {!isLoading && listToRender.length === 0 && (
           <div style={{ padding: "20px", textAlign: "center" }}>표시할 장소가 없습니다.</div>
         )}
-        {!isLoading && listToRender.map((place) => (
+        {!isLoading && visiblePlaces.map((place) => (
           <Top10Card key={place.placeNo} onClick={() => handlePlaceClick(place)}>
             <ImageWrapper>
               <PlaceImage src={place.imageUrl || place.imgUrl} place={place} alt={place.placeName} />
@@ -116,6 +118,7 @@ const Top10Panel = ({
             </InfoWrapper>
           </Top10Card>
         ))}
+        {!isLoading && hasMore && <div style={{ padding: 20, textAlign: "center", color: "#777" }}>스크롤을 내려 더보기</div>}
       </ListContainer>
     </PanelContainer>
   );

@@ -52,6 +52,8 @@ import {
   RouteReopenButton,
   TagList,
   FilterSelect,
+  TagFilterPopover,
+  TagFilterChip,
   FilterResetButton,
   ToggleButton,
   OverlayCard,
@@ -344,10 +346,12 @@ const MapPage = () => {
   const [typeOptions, setTypeOptions] = useState([]);
   const [tagOptions, setTagOptions] = useState([]);
   const [placeFilters, setPlaceFilters] = useState(EMPTY_PLACE_FILTERS);
-  // 장소 핀 초기 상태: 선택 안 함에서는 빈 지도, 전체 선택을 눌렀을 때만 전체 장소를 표시한다.
+  // 장소 핀 초기 상태: 선택 안 함에서는 빈 지도, 모든 장소를 선택하면 전체 장소를 표시한다.
   const [isAllPinsVisible, setIsAllPinsVisible] = useState(false);
+  const [isAllTypesSelected, setIsAllTypesSelected] = useState(false);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
   const [isTagsOpen, setIsTagsOpen] = useState(true);
+  const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
   const [bookmarks, setBookmarks] = useState({}); // { placeNo: boolean } 북마크 상태 공유용
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
@@ -534,11 +538,10 @@ const MapPage = () => {
     }));
   }, [typeOptions]);
 
-  const selectedTypeValue = placeFilters.typeDetailNo
-    ? `detail:${placeFilters.typeDetailNo}`
-    : placeFilters.typeNo
-      ? `type:${placeFilters.typeNo}`
-      : "";
+  const selectedTypeGroup = groupedTypeOptions.find(
+    (group) => String(group.typeNo) === String(placeFilters.typeNo),
+  );
+  const selectedTag = tagOptions.find((tag) => String(tag.tagNo) === String(placeFilters.tagNo));
   const hasPlaceFilter = Boolean(
     placeFilters.typeNo || placeFilters.typeDetailNo || placeFilters.tagNo,
   );
@@ -1159,6 +1162,7 @@ const MapPage = () => {
 
   const handleToggleTags = () => {
     setIsTagsOpen((prev) => !prev);
+    setIsTagFilterOpen(false);
   };
 
   // DB 장소 필터 연동: 타입과 태그 선택을 함께 유지하고 PK 조건을 AND로 조회한다.
@@ -1175,14 +1179,16 @@ const MapPage = () => {
     filterRequestIdRef.current = requestId;
 
     let nextFilters = { ...placeFilters };
+    const showAllTypes = kind === "type" ? value === "all" : isAllTypesSelected;
     if (kind === "type") {
+      setIsAllTypesSelected(showAllTypes);
       nextFilters = {
         ...nextFilters,
-        typeNo: value.startsWith("type:") ? Number(value.split(":")[1]) : null,
-        typeDetailNo: value.startsWith("detail:")
-          ? Number(value.split(":")[1])
-          : null,
+        typeNo: value && value !== "all" ? Number(value) : null,
+        typeDetailNo: null,
       };
+    } else if (kind === "detail") {
+      nextFilters = { ...nextFilters, typeDetailNo: value ? Number(value) : null };
     } else if (kind === "tag") {
       nextFilters = {
         ...nextFilters,
@@ -1198,7 +1204,8 @@ const MapPage = () => {
     );
     if (!hasNextFilter) {
       setFilterPins([]);
-      setFilteredPins([]);
+      setFilteredPins(showAllTypes ? pins : []);
+      setIsAllPinsVisible(showAllTypes);
       setIsFilterLoading(false);
       return;
     }
@@ -1207,7 +1214,10 @@ const MapPage = () => {
     setFilterPins([]);
     setFilteredPins([]);
     try {
-      const response = await PlaceAPI.getPinsByFilters(nextFilters);
+      const response = await PlaceAPI.getPinsByFilters({
+        ...nextFilters,
+        typeNo: nextFilters.typeDetailNo ? null : nextFilters.typeNo,
+      });
 
       // 연속 선택 시 늦게 도착한 이전 응답이 최신 필터 결과를 덮지 않게 한다.
       if (requestId !== filterRequestIdRef.current) return;
@@ -1364,24 +1374,6 @@ const MapPage = () => {
     setSelectedRoute(null);
     setRouteInputRevision((current) => current + 1);
     setRouteRenderRevision((current) => current + 1);
-  };
-
-  const handleAllPinsToggle = () => {
-    // 장소 핀 UX 개선: 전체 선택 버튼을 다시 누르면 선택 안 함 상태로 복귀한다.
-    if (isAllPinsVisible) {
-      setPlaceFilters(EMPTY_PLACE_FILTERS);
-      setFilterPins([]);
-      setFilteredPins([]);
-      setIsAllPinsVisible(false);
-      return;
-    }
-
-    filterRequestIdRef.current += 1;
-    setPlaceFilters(EMPTY_PLACE_FILTERS);
-    setFilterPins([]);
-    setFilteredPins(pins);
-    setIsAllPinsVisible(true);
-    setIsFilterLoading(false);
   };
 
   // 길찾기 표시 안정화: 패널 열림 상태에 맞는 여백으로 경로 전체가 보이도록 지도를 조정한다.
@@ -1722,8 +1714,8 @@ const MapPage = () => {
       {/* 길찾기 기능 연동: 검색 목록의 출발/도착 버튼을 실제 패널과 연결한다. */}
       {!isTop10Screen && <SearchPanel
         pins={searchablePins}
-        onPlaceSelect={hasPlaceFilter ? handleTop10PlaceSelect : handlePlaceSelect}
-        showFilteredResults={hasPlaceFilter}
+        onPlaceSelect={hasPlaceFilter || isAllPinsVisible ? handleTop10PlaceSelect : handlePlaceSelect}
+        showFilteredResults={hasPlaceFilter || isAllPinsVisible}
         filtersLoading={isFilterLoading}
         bookmarks={bookmarks}
         toggleBookmark={toggleBookmark}
@@ -1892,60 +1884,46 @@ const MapPage = () => {
       {!isTop10Screen && !isTravelMode && !isFixedCourseView && !isCustomCourseView && (
         <FloatingTags>
           <TagList $isOpen={isTagsOpen}>
-            {/* DB 장소 필터 연동: 존재하지 않는 임시 태그 버튼을 실제 타입·태그 선택으로 교체한다. */}
             <FilterSelect
-              aria-label="장소 타입 선택"
-              value={selectedTypeValue}
-              $isActive={Boolean(
-                placeFilters.typeNo || placeFilters.typeDetailNo,
-              )}
+              aria-label="장소 종류 선택"
+              value={placeFilters.typeNo || (isAllTypesSelected ? "all" : "")}
+              $isActive={Boolean(placeFilters.typeNo) || isAllTypesSelected}
               disabled={isFilterLoading}
-              onChange={(event) =>
-                handlePlaceFilter("type", event.target.value)
-              }
+              onChange={(event) => handlePlaceFilter("type", event.target.value)}
             >
-              <option value="">타입 선택 안 함</option>
+              <option value="">장소 종류 선택</option>
+              <option value="all">모든 장소</option>
               {groupedTypeOptions.map((group) => (
-                <optgroup key={group.typeNo} label={group.type}>
-                  <option value={`type:${group.typeNo}`}>
-                    {group.type} 전체
+                <option key={group.typeNo} value={group.typeNo}>{group.type}</option>
+              ))}
+            </FilterSelect>
+            {selectedTypeGroup && (
+              <FilterSelect
+                aria-label="세부 종류 선택"
+                value={placeFilters.typeDetailNo || ""}
+                $isActive={Boolean(placeFilters.typeDetailNo)}
+                disabled={isFilterLoading}
+                onChange={(event) => handlePlaceFilter("detail", event.target.value)}
+              >
+                <option value="">{selectedTypeGroup.type} 전체</option>
+                {selectedTypeGroup.details.map((detail) => (
+                  <option key={detail.typeDetailNo} value={detail.typeDetailNo}>
+                    {detail.typeDetailContent}
                   </option>
-                  {group.details.map((detail) => (
-                    <option
-                      key={detail.typeDetailNo}
-                      value={`detail:${detail.typeDetailNo}`}
-                    >
-                      {detail.typeDetailContent}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </FilterSelect>
-
-            <FilterSelect
-              aria-label="장소 태그 선택"
-              value={placeFilters.tagNo || ""}
-              $isActive={Boolean(placeFilters.tagNo)}
-              disabled={isFilterLoading}
-              onChange={(event) => handlePlaceFilter("tag", event.target.value)}
-            >
-              <option value="">태그 선택 안 함</option>
-              {tagOptions.map((tag) => (
-                <option key={tag.tagNo} value={tag.tagNo}>
-                  # {tag.tagContent}
-                </option>
-              ))}
-            </FilterSelect>
-
+                ))}
+              </FilterSelect>
+            )}
             <FilterResetButton
               type="button"
-              $isActive={isAllPinsVisible}
-              disabled={isFilterLoading}
-              aria-pressed={isAllPinsVisible}
-              onClick={handleAllPinsToggle}
+              $isActive={Boolean(placeFilters.tagNo)}
+              aria-expanded={isTagFilterOpen}
+              aria-controls="map-tag-filter"
+              onClick={() => setIsTagFilterOpen((open) => !open)}
             >
-              전체 선택
+              {selectedTag ? '# ' + selectedTag.tagContent : '태그 필터'}
             </FilterResetButton>
+
+
           </TagList>
 
           <ToggleButton onClick={handleToggleTags}>
@@ -1958,6 +1936,25 @@ const MapPage = () => {
               <FaChevronRight size={21} />
             )}
           </ToggleButton>
+          {isTagsOpen && isTagFilterOpen && (
+            <TagFilterPopover id="map-tag-filter" aria-label="태그 필터"
+              onKeyDown={(event) => { if (event.key === "Escape") setIsTagFilterOpen(false); }}>
+              <header><strong>태그 선택</strong><button type="button" onClick={() => setIsTagFilterOpen(false)} aria-label="태그 필터 닫기">닫기</button></header>
+              <div className="tag-options">
+                <TagFilterChip type="button" $active={!placeFilters.tagNo}
+                  aria-pressed={!placeFilters.tagNo} disabled={isFilterLoading}
+                  onClick={() => handlePlaceFilter("tag", "")}>전체</TagFilterChip>
+                {tagOptions.map((tag) => {
+                  const active = String(placeFilters.tagNo) === String(tag.tagNo);
+                  return <TagFilterChip key={tag.tagNo} type="button" $active={active}
+                    aria-pressed={active} disabled={isFilterLoading}
+                    onClick={() => handlePlaceFilter("tag", active ? "" : String(tag.tagNo))}>
+                    # {tag.tagContent}
+                  </TagFilterChip>;
+                })}
+              </div>
+            </TagFilterPopover>
+          )}
         </FloatingTags>
       )}
 
