@@ -11,12 +11,12 @@ test("일반 관광지가 먼저 와도 겹친 그룹의 초기 대표는 TOP 10
   assert.equal(pins[1], top10);
 });
 
-test("TOP 10이 여러 개면 첫 TOP 10, 없으면 첫 일반 장소를 표시한다", () => {
+test("TOP 10이 여러 개면 고정 아이콘 순서, 없으면 첫 일반 장소를 표시한다", () => {
   assert.equal(getInitialTop10PinIndex([
     { placeName: "일반 관광지", typeNo: 1 },
     { placeName: "대명항", typeNo: 1, typeDetailNo: 18 },
     { placeName: "김포함상공원", typeNo: 1, typeDetailNo: 18 },
-  ]), 1);
+  ]), 2);
   assert.equal(getInitialTop10PinIndex([{ placeName: "일반 관광지", typeNo: 1 }]), 0);
   assert.equal(getInitialTop10PinIndex([{ PLACE_NAME: "김포 아트빌리지", TYPE_NO: 1 }]), 0);
   assert.equal(getInitialTop10PinIndex([]), 0);
@@ -32,6 +32,7 @@ test("TOP 10 열 곳 모두 각 전용 아이콘으로 연결한다", () => {
     assert.equal(getTop10IconKeyByName(placeName), icon);
     assert.equal(isTop10Place({ placeName, typeNo: 1, typeDetail: "김포 TOP 10" }), true);
     assert.equal(isTop10Place({ placeName }), true);
+    assert.equal(isTop10Place({ placeName, typeNo: 1 }), true);
   }
 });
 test("이전 장소 PK만 같은 일반 장소를 TOP 10으로 오분류하지 않는다", () => {
@@ -57,7 +58,7 @@ test("근처 음식점 이름만 TOP 10 장소를 포함해도 전용 마커로 
 test("관광지 대분류만으로 TOP 10을 판정하지 않는다", () => {
   for (const metadata of [{ typeNo: 1 }, { type: "주요관광지" }, { type: "관광명소" }, { type: "관광지" }, { TYPE_NO: 1 }, { TYPE: "관광지" }]) {
     assert.equal(isTop10Place({ placeName: "대명항 카페", ...metadata }), false);
-    assert.equal(isTop10Place({ placeName: "대명항", ...metadata }), false);
+    assert.equal(isTop10Place({ placeName: "대명항", ...metadata }), true);
   }
 });
 
@@ -77,11 +78,11 @@ test("TOP 10 키워드가 있어도 다른 소분류를 이름이나 대분류�
   }
 });
 
-test("소분류가 없는 경우 이름 기반 복원은 대분류도 없는 저장 데이터에만 허용한다", () => {
+test("소분류가 없으면 관광 대분류 또는 분류 없는 응답에서 정확한 장소명으로 복원한다", () => {
   assert.equal(isTop10Place({ placeName: "김포 아트빌리지", type: null, typeNo: null, typeDetail: null, typeDetailNo: null }), true);
   assert.equal(isTop10Place({ PLACE_NAME: "김포 아트빌리지" }), true);
-  assert.equal(isTop10Place({ placeName: "김포 아트빌리지", type: "", typeNo: 1 }), false);
-  assert.equal(isTop10Place({ placeName: "김포 아트빌리지", type: "관광지", typeNo: null }), false);
+  assert.equal(isTop10Place({ placeName: "김포 아트빌리지", type: "", typeNo: 1 }), true);
+  assert.equal(isTop10Place({ placeName: "김포 아트빌리지", type: "관광지", typeNo: null }), true);
 });
 
 test("소분류 번호로도 TOP 10을 인식하고 일반 부가시설보다 대표로 우선 표시한다", () => {
@@ -93,4 +94,52 @@ test("소분류 번호로도 TOP 10을 인식하고 일반 부가시설보다 �
     { placeName: "대명항", type: "주요관광지", typeDetail: "김포 TOP 10" },
   ];
   assert.equal(getInitialTop10PinIndex(pins), 1);
+});
+
+test("소분류 누락 시 실제 TOP 10 이름이어도 명백한 비관광 분류는 제외한다", () => {
+  for (const metadata of [
+    { type: "음식점" }, { type: "카페" }, { type: "의료기관" }, { type: "종교시설" },
+    { typeNo: 6 }, { TYPE_NO: 2 }, { TYPE: "생활체육시설" },
+    { type: "관광지", typeNo: 6 }, { type: "카페", typeNo: 1 },
+  ]) assert.equal(isTop10Place({ placeName: "대명항", ...metadata }), false);
+  assert.equal(isTop10Place({ placeName: "대명항", typeNo: 3 }), true);
+});
+
+test("키워드 기반 상호와 부가시설은 분류가 모두 없어도 TOP 10이 아니다", () => {
+  for (const placeName of ["대명항 카페", "아트빌리지 식당", "애기봉 주차장", "문수산성 매점", "김포국제조각공원 화장실"]) {
+    assert.equal(isTop10Place({ placeName }), false);
+    assert.equal(isTop10Place({ placeName, type: "관광지" }), false);
+  }
+  assert.equal(isTop10Place({ PLACE_NAME: "김포 아라 마리나", TYPE: "관광지" }), true);
+  assert.equal(isTop10Place({ placeName: "현대프리미엄아웃렛 김포점", typeNo: 1 }), true);
+});
+
+test("명시된 비TOP10 소분류는 정확한 TOP10 장소명보다도 우선한다", () => {
+  assert.equal(isTop10Place({ placeName: "대명항", type: "관광지", typeDetail: "카페" }), false);
+  assert.equal(isTop10Place({ placeName: "대명항", typeDetailNo: 14 }), false);
+});
+
+test("모든 배열 순열과 소분류 누락에서도 동일한 TOP 10을 초기 대표로 선택한다", () => {
+  const places = [
+    { placeNo: 30, placeName: "대명항", type: "주요관광지", typeDetail: "김포 TOP 10" },
+    { placeNo: 20, placeName: "김포국제조각공원", type: "주요관광지", typeDetail: "김포 TOP 10" },
+    { placeNo: 10, placeName: "대명항 카페", type: "관광지", typeDetail: "카페" },
+  ];
+  for (const order of [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]]) {
+    for (const omitDetails of [false, true]) {
+      const pins = Object.freeze(order.map(i => omitDetails ? { ...places[i], typeDetail: undefined } : places[i]));
+      assert.equal(pins[getInitialTop10PinIndex(pins)].placeNo, 20);
+      assert.deepEqual(pins.map(pin=>pin.placeNo), order.map(i=>places[i].placeNo));
+    }
+  }
+});
+
+test("동일한 TOP 10 아이콘도 장소 식별값으로 결정하고 후보가 없으면 첫 핀을 유지한다", () => {
+  const a = { placeNo: 10, placeName: "김포국제조각공원", typeNo: 1 };
+  const b = { placeNo: 20, placeName: "김포국제조각공원", typeNo: 1 };
+  for (const pins of [[a,b],[b,a]]) assert.equal(pins[getInitialTop10PinIndex(pins)].placeNo,10);
+  const c = { placeName: "김포국제조각공원", xAxis: 126.5, yAxis: 37.6 };
+  const d = { ...c, xAxis: 126.6 };
+  for (const pins of [[c,d],[d,c]]) assert.equal(pins[getInitialTop10PinIndex(pins)].xAxis,126.5);
+  assert.equal(getInitialTop10PinIndex([{placeName:"일반 관광지"},{placeName:"대명항 카페"}]),0);
 });
