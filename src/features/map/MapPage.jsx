@@ -758,6 +758,9 @@ const MapPage = () => {
       setMapPickMode(null);
       setSelectedRoute(null);
       setRecommendationCourse(null);
+      setActivePlanId(null);
+      setTop10Overlay(null);
+      setIsPlanOriginPickMode(false);
       setPlanDetailPlace(null);
       setIsRecommendationPanelOpen(true);
       const saved = getSavedTrip(planOwnerKey, requestedSavedPlanId, TRAVEL_PLAN_KIND.RECOMMENDATION);
@@ -781,6 +784,9 @@ const MapPage = () => {
         setAlertMessage("저장된 여행을 찾을 수 없습니다. 현재 계정과 브라우저의 저장 목록을 확인해주세요.");
         setIsAlertModalOpen(true);
       }
+      setPlanOrigin(null);
+      setRecommendationNearbyPlaces([]);
+      setRecommendationNearbyState("idle");
       requestCurrentPlanLocation();
     }, 0);
 
