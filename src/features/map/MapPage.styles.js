@@ -184,16 +184,25 @@ export const MapPinCreateButton = styled.button`
 
 export const FloatingTags = styled.div`
   position: absolute;
-  top: 24px;
-  left: 580px; /* SearchPanel(너비 540px + left 24px + 간격) 우측에 배치 */
+  top: 16px;
+  left: 416px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   z-index: 10;
   
   @media (max-width: 1024px) {
     top: 16px;
-    left: 350px;
+    left: 416px;
+  }
+
+  @media (max-width: 768px) {
+    top: 88px;
+    left: 12px;
+    right: 12px;
+    gap: 8px;
+    > div { overflow-x: auto; }
+    select { min-width: 140px; }
   }
 `;
 
@@ -202,7 +211,7 @@ export const FloatingTags = styled.div`
 export const TagList = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px; /* 8 * 1.5 */
+  gap: 8px; /* 8 * 1.5 */
   overflow: hidden; 
   
   /* 부드러운 슬라이딩 및 페이드 효과 */
@@ -220,19 +229,23 @@ export const TagList = styled.div`
 /* DB 장소 필터 연동: 타입과 태그의 실제 DB 값을 선택하는 공통 셀렉트다. */
 export const FilterSelect = styled.select`
   min-width: 170px;
+  height: 50px;
+  box-sizing: border-box;
+  flex-shrink: 0;
   background-color: white;
-  border: 1px solid
+  border: 2px solid
     ${({ $isActive }) =>
-      $isActive ? theme.colors.primaryHover : theme.colors.borderLight};
-  border-radius: ${theme.radius.pill};
-  padding: 12px 38px 12px 18px;
+      $isActive ? theme.colors.primaryHover : theme.colors.primary};
+  border-radius: 8px;
+  padding: 0 12px;
   font-size: ${theme.fontSize.md};
-  font-weight: 700;
+  font-weight: 600;
   color: ${theme.colors.textPrimary};
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   cursor: pointer;
   white-space: nowrap;
   outline: none;
+  background-color: ${({ $isActive }) => ($isActive ? "#eef9fd" : "white")};
 
   &:hover,
   &:focus {
@@ -248,17 +261,20 @@ export const FilterSelect = styled.select`
 /* DB 장소 필터 연동: 선택한 타입·태그 조건을 해제하고 전체 핀으로 복원한다. */
 export const FilterResetButton = styled.button`
   min-width: 88px;
-  padding: 12px 18px;
-  border: 1px solid
+  height: 50px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  padding: 0 14px;
+  border: 2px solid
     ${({ $isActive }) =>
-      $isActive ? theme.colors.primaryHover : theme.colors.borderLight};
-  border-radius: ${theme.radius.pill};
+      $isActive ? theme.colors.primaryHover : theme.colors.primary};
+  border-radius: 8px;
   background: ${theme.colors.bgWhite};
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   color: ${({ $isActive }) =>
     $isActive ? theme.colors.textPrimary : theme.colors.textSecondary};
   font-size: ${theme.fontSize.md};
-  font-weight: 700;
+  font-weight: 600;
 
   &:hover:not(:disabled) {
     border-color: ${theme.colors.primaryHover};
@@ -272,17 +288,18 @@ export const FilterResetButton = styled.button`
 `;
 
 export const ToggleButton = styled.button`
-  width: 60px; /* 40 * 1.5 */
-  height: 60px; /* 40 * 1.5 */
-  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
   background-color: ${theme.colors.bgWhite};
   color: ${theme.colors.textSecondary};
-  border: none;
+  border: 2px solid ${theme.colors.primary};
+  box-sizing: border-box;
   padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
@@ -503,4 +520,34 @@ export const OverlapNavigation = styled.div`
     font-weight: 700;
     text-align: center;
   }
+`;
+
+export const TagFilterPopover = styled.div`
+  position: absolute;
+  top: 60px;
+  left: 0;
+  width: min(360px, calc(100vw - 32px));
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 16px;
+  box-sizing: border-box;
+  border: 2px solid ${theme.colors.primary};
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  header button { padding: 4px 8px; color: #666; }
+  .tag-options { display: flex; flex-wrap: wrap; gap: 8px; }
+`;
+
+export const TagFilterChip = styled.button`
+  padding: 8px 12px;
+  border: 1px solid ${({ $active }) => ($active ? theme.colors.primaryHover : theme.colors.borderLight)};
+  border-radius: 8px;
+  background: ${({ $active }) => ($active ? "#eef9fd" : "white")};
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  &:disabled { opacity: 0.65; cursor: wait; }
+  &:focus-visible { outline: 2px solid ${theme.colors.primaryHover}; outline-offset: 2px; }
 `;
