@@ -1,3 +1,4 @@
+import PlaceImage from "../../../components/PlaceImage";
 import { visibleMapPlaces } from "../utils/placeVisibility";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -299,7 +300,7 @@ const PlanModePanel = ({
                       onClick={() => onPreviewPlace(place)}
                     >
                       {place.imageUrl ? (
-                        <img src={place.imageUrl} alt="" />
+                        <PlaceImage src={place.imageUrl} place={place} alt="" />
                       ) : (
                         <span className="image-empty">이미지 없음</span>
                       )}
@@ -457,3 +458,4 @@ const PlanModePanel = ({
 };
 
 export default PlanModePanel;
+
