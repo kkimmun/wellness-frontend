@@ -1,3 +1,4 @@
+import { isVisibleMapPlace, visibleMapPlaces } from "./utils/placeVisibility";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { FaChevronRight } from "react-icons/fa";
 import {
@@ -247,6 +248,7 @@ const toValidPins = (places = []) => {
   const seenLocationKeys = new Set();
   return (Array.isArray(places) ? places : places?.content || []).filter(
     (place) => {
+      if (!isVisibleMapPlace(place)) return false;
       if (
         !Number.isFinite(Number(place?.xAxis)) ||
         !Number.isFinite(Number(place?.yAxis))
@@ -369,6 +371,7 @@ const MapPage = () => {
   // 길찾기 표시 안정화: 경로가 바뀔 때 Kakao Polyline을 새 인스턴스로 교체하기 위한 번호다.
   const [routeRenderRevision, setRouteRenderRevision] = useState(0);
   const mapRef = useRef(null);
+  const detailReturnViewRef = useRef(null);
   const filterRequestIdRef = useRef(0);
   const restaurantViewportRef = useRef(null);
 
@@ -493,7 +496,9 @@ const MapPage = () => {
     Promise.all([PlaceAPI.getTypeOptions(), PlaceAPI.getTagOptions()])
       .then(([types, tags]) => {
         if (ignore) return;
-        setTypeOptions(Array.isArray(types) ? types : []);
+        setTypeOptions(visibleMapPlaces(types).filter(
+          (option) => Number(option.typeNo) !== 2 && option.type?.trim() !== "의료기관",
+        ));
         setTagOptions(Array.isArray(tags) ? tags : []);
       })
       .catch((err) => {
@@ -1157,7 +1162,27 @@ const MapPage = () => {
   };
 
   const handlePlaceSelect = (place) => {
-    navigate(`/place/${place.placeNo}`);
+    if (!placeNo && mapRef.current) {
+      const center = mapRef.current.getCenter();
+      detailReturnViewRef.current = { lat: center.getLat(), lng: center.getLng(), level: mapRef.current.getLevel() };
+    }
+    navigate(`/place/${place.placeNo}`, {
+      replace: Boolean(placeNo),
+      state: { ...location.state, returnToMapHistory: location.state?.returnToMapHistory || !placeNo },
+    });
+  };
+
+  const returnFromPlaceDetail = () => {
+    if (location.state?.returnToMapHistory) {
+      navigate(-1);
+    } else {
+      navigate(location.state?.courseReturnTo || "/map", { state: { hideInitialTop10: true } });
+    }
+    const view = detailReturnViewRef.current;
+    if (view && mapRef.current && window.kakao?.maps) {
+      mapRef.current.setLevel(view.level);
+      mapRef.current.setCenter(new window.kakao.maps.LatLng(view.lat, view.lng));
+    }
   };
 
   const handleToggleTags = () => {
@@ -1800,7 +1825,7 @@ const MapPage = () => {
           onUserCourseSelect={(course) =>
             navigate(`/pilgrim/fixed/mine/${encodeURIComponent(course.id)}`)
           }
-          onClose={() => navigate("/map")}
+          onClose={() => navigate("/map", { state: { hideInitialTop10: true } })}
           onCourseSelect={(course) =>
             navigate(`/pilgrim/fixed/${course.courseNo}`)
           }
@@ -2255,7 +2280,7 @@ const MapPage = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (isPlanMode) openPlanPlaceDetail(selectedPlace);
-                          else navigate(`/place/${selectedPlace.placeNo}`);
+                          else handlePlaceSelect(selectedPlace);
                         }}
                       >
                         상세보기
@@ -2378,7 +2403,7 @@ const MapPage = () => {
                           else {
                             // 더미 데이터의 placeNo가 카카오나 DB와 어떻게 연결될지에 따라 다름
                             // 일단 DB 핀인 경우에만 정상 동작하도록 placeNo 사용
-                            navigate(`/place/${top10Overlay.placeNo}`);
+                            handlePlaceSelect(top10Overlay);
                           }
                         }}
                       >
@@ -2436,7 +2461,7 @@ const MapPage = () => {
             if (isPlanMode) setIsPlanPanelOpen(true);
             if (isRecommendationMode) setIsRecommendationPanelOpen(true);
           } else if (isCourseRestaurantDetail) navigate(-1);
-          else navigate(location.state?.courseReturnTo || "/map");
+          else returnFromPlaceDetail();
         }}
         isBookmarked={
           mapDetailPlace

@@ -1,3 +1,4 @@
+import { visibleMapPlaces } from "../utils/placeVisibility";
 import useIncrementalPlaces from "../hooks/useIncrementalPlaces";
 import PlaceImage from "../../../components/PlaceImage";
 import { FaChevronLeft } from "react-icons/fa";
@@ -43,6 +44,7 @@ const Top10Panel = ({
           } else if (Array.isArray(res)) {
             places = res;
           }
+          places = visibleMapPlaces(places);
           setTop10List(places);
           onPlacesLoaded?.(places);
         } catch (err) {

@@ -1,15 +1,13 @@
-import {
-  FaMapMarkerAlt,
-  FaPhoneAlt,
-  FaInfoCircle,
-} from "react-icons/fa";
+import { FaMapMarkerAlt, FaPhoneAlt, FaInfoCircle } from "react-icons/fa";
 import { InfoSection, InfoRow, BottomArea } from "./DetailPanel.styles";
 
 // 계획 모드 연동: 기존 경로찾기 버튼을 그대로 유지하면서 계획 화면에서만 버튼 문구와 동작을 바꾼다.
 const BasicInfoTab = ({ place, onFindRoute, actionLabel = "경로찾기" }) => {
   const phoneNumber = [place?.phoneNumber, place?.phone]
     .map((value) => String(value ?? "").trim())
-    .find((value) => value && !/^(번호\s*없음|전화번호\s*없음|없음|-)$/.test(value));
+    .find(
+      (value) => value && !/^(번호\s*없음|전화번호\s*없음|없음|-)$/.test(value),
+    );
 
   return (
     <>
@@ -58,20 +56,39 @@ const BasicInfoTab = ({ place, onFindRoute, actionLabel = "경로찾기" }) => {
       </InfoSection>
 
       <BottomArea>
-        <div className="tags" style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
-          {place?.tags?.length > 0 ? (
-            place.tags.map((tag, idx) => {
-              const tagLabel = typeof tag === "string"
-                ? tag
-                : tag.tagContent || tag.tagName || "";
+        <div
+          className="tags"
+          style={{
+            display: "flex",
+            gap: "8px",
+            flexWrap: "wrap",
+            marginBottom: "16px",
+          }}
+        >
+          {place?.tags?.length > 0
+            ? place.tags.map((tag, idx) => {
+                const tagLabel =
+                  typeof tag === "string"
+                    ? tag
+                    : tag.tagContent || tag.tagName || "";
 
-              return tagLabel ? (
-                <div key={tag.tagNo ?? idx} className="tag" style={{ padding: "4px 8px", backgroundColor: "#f0f0f0", borderRadius: "12px", fontSize: "12px", color: "#666" }}>
-                  # {tagLabel}
-                </div>
-              ) : null;
-            })
-          ) : null}
+                return tagLabel ? (
+                  <div
+                    key={tag.tagNo ?? idx}
+                    className="tag"
+                    style={{
+                      padding: "4px 8px",
+                      backgroundColor: "#f0f0f0",
+                      borderRadius: "12px",
+                      fontSize: "12px",
+                      color: "#666",
+                    }}
+                  >
+                    # {tagLabel}
+                  </div>
+                ) : null;
+              })
+            : null}
         </div>
         <button
           className="route-btn"

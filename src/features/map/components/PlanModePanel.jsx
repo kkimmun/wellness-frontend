@@ -1,3 +1,4 @@
+import { visibleMapPlaces } from "../utils/placeVisibility";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FaChevronLeft,
@@ -116,7 +117,7 @@ const PlanModePanel = ({
         excludePlaceNos: places.map((place) => place.placeNo),
         signal: controller.signal,
       });
-      const nextRecommendations = Array.isArray(result) ? result : [];
+      const nextRecommendations = visibleMapPlaces(result);
       setRecommendations(nextRecommendations);
       onRecommendationsChange(nextRecommendations);
       setRequestState("success");
