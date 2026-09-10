@@ -38,7 +38,7 @@ import {
   ReligionMarker,
   EventMarker,
 } from "./components/CustomMarkers";
-import { getTop10IconByName } from "./components/Top10Icons";
+import { getInitialTop10PinIndex, isTop10Place } from "./utils/top10Marker";
 import { Modal } from "../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
@@ -87,20 +87,6 @@ import {
 
 const EMPTY_RESTAURANTS = [];
 
-const TOP10_TYPE_DETAIL_NOS = new Set(["18", "46"]);
-const TOP10_PLACE_NOS = new Set([
-  "1",
-  "4",
-  "5",
-  "7",
-  "8",
-  "9",
-  "10",
-  "14",
-  "178",
-  "1043",
-]);
-
 const normalizeCategoryName = (value) =>
   String(value ?? "")
     .replace(/\s+/g, "")
@@ -111,26 +97,6 @@ const isMajorTouristPlace = (place) =>
   ["주요관광지", "관광명소", "관광지"].includes(
     normalizeCategoryName(place?.type ?? place?.TYPE),
   );
-
-// 핀·계획·추천 API마다 소분류 필드 구성이 달라도 Top10 전용 마커를 유지한다.
-const isTop10Place = (place) => {
-  const typeDetailName =
-    place?.typeDetail ??
-    place?.typeDetailContent ??
-    place?.TYPE_DETAIL ??
-    place?.TYPE_DETAIL_CONTENT;
-  const typeDetailNo = place?.typeDetailNo ?? place?.TYPE_DETAIL_NO;
-  const placeNo = place?.placeNo ?? place?.PLACE_NO;
-  const typeName = normalizeCategoryName(place?.type ?? place?.TYPE);
-  const isTouristType = ["주요관광지", "관광명소", "관광지"].includes(typeName);
-
-  return (
-    normalizeCategoryName(typeDetailName) === "김포TOP10" ||
-    TOP10_TYPE_DETAIL_NOS.has(String(typeDetailNo ?? "")) ||
-    TOP10_PLACE_NOS.has(String(placeNo ?? "")) ||
-    (isTouristType && Boolean(getTop10IconByName(place?.placeName)))
-  );
-};
 
 // 계획 모드: 위치 권한을 사용할 수 없을 때 출발지로 사용할 김포시청 좌표다.
 const GIMPO_CITY_HALL = {
@@ -158,7 +124,7 @@ const getCourseMarkerImage = (index) => {
 
 const PlaceCategoryMarker = ({ place, onClick }) => {
   if (isTop10Place(place)) {
-    return <Top10Marker placeName={place?.placeName} onClick={onClick} />;
+    return <Top10Marker placeName={place?.placeName ?? place?.PLACE_NAME} onClick={onClick} />;
   }
 
   if (place?.type === "의료기관") return <MedicalMarker onClick={onClick} />;
@@ -186,11 +152,14 @@ const PlaceCategoryMarker = ({ place, onClick }) => {
 
 const OverlappingPlaceMarker = ({
   group,
-  activeIndex = 0,
+  activeIndex,
   disabled,
   onPlaceClick,
 }) => {
-  const normalizedIndex = getCircularPinIndex(activeIndex, group.pins.length);
+  const normalizedIndex = getCircularPinIndex(
+    activeIndex ?? getInitialTop10PinIndex(group.pins),
+    group.pins.length,
+  );
   const activePlace = group.pins[normalizedIndex] ?? group.pins[0];
   const groupContainsTop10 = group.pins.some(isTop10Place);
 
@@ -2154,7 +2123,7 @@ const MapPage = () => {
                     activeIndex={
                       overlapSelection?.groupKey === group.key
                         ? overlapSelection.index
-                        : 0
+                        : undefined
                     }
                     disabled={Boolean(selectedRoute)}
                     onPlaceClick={selectOverlappingPlace}

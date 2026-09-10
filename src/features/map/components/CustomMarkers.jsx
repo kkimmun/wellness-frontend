@@ -1,11 +1,9 @@
-import React from "react";
 import styled, { keyframes } from "styled-components";
 import {
   FaCamera,
   FaDumbbell,
   FaUtensils,
   FaHandsPraying,
-  FaPlus,
 } from "react-icons/fa6";
 
 const bounceSubtle = keyframes`
@@ -280,14 +278,12 @@ export const RouteMarker = ({ onClick }) => (
   </RouteMarkerWrapper>
 );
 
-// 기존 Top10, General 마커 (임시 유지용)
-import { FaAward } from "react-icons/fa";
-
-import TOP10_ICONS, { getTop10IconByName } from "./Top10Icons";
+import TOP10_ICONS from "./Top10Icons";
+import { getTop10IconKeyByName } from "../utils/top10Marker";
 
 const Top10MarkerBody = styled.div`
   width: 56px;
-  height: 56px;
+  height: 63px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -297,18 +293,14 @@ const Top10MarkerBody = styled.div`
 `;
 
 export const Top10Marker = ({ placeName, onClick }) => {
-  const SvgIcon = getTop10IconByName(placeName);
+  const SvgIcon = TOP10_ICONS[getTop10IconKeyByName(placeName)] ?? null;
+  // 전용 아이콘이 없는 장소는 일반 마커로 표시하고 노란 배지를 만들지 않는다.
+  if (!SvgIcon) return <GeneralMarker onClick={onClick} />;
 
   return (
     <MarkerWrapper onClick={onClick}>
       <Top10MarkerBody>
-        {SvgIcon ? (
-          SvgIcon
-        ) : (
-          <div style={{ background: "linear-gradient(to bottom right, #fde047, #f59e0b)", width: "100%", height: "100%", borderRadius: "9999px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <FaAward color="white" size={20} />
-          </div>
-        )}
+        {SvgIcon}
       </Top10MarkerBody>
     </MarkerWrapper>
   );
