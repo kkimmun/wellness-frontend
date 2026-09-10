@@ -30,6 +30,8 @@ const SearchPanel = ({
   bookmarks,
   toggleBookmark,
   isVisible,
+  showFilteredResults = false,
+  filtersLoading = false,
   onSearchResults,
   // 길찾기 기능 연동: 검색 결과를 출발지/도착지로 전달하는 콜백
   onSetOrigin,
@@ -136,6 +138,9 @@ const SearchPanel = ({
     }
   };
 
+  const resultsToRender = hasSearched ? displayedResults : pins;
+  const resultsLoading = filtersLoading || isSearching;
+
   return (
     <PanelContainer $isVisible={isVisible}>
       <SearchHeader>
@@ -159,9 +164,10 @@ const SearchPanel = ({
         </SearchBarBox>
       </SearchHeader>
 
-      {hasSearched && (
+      {(hasSearched || showFilteredResults) && (
         <ResultListContainer>
-          {displayedResults.map((place) => {
+          {filtersLoading && <LoadingSpinner>장소를 불러오는 중입니다...</LoadingSpinner>}
+          {!filtersLoading && resultsToRender.map((place) => {
             const isBookmarked = bookmarks[place.placeNo];
             return (
               <ListCard key={place.placeNo} onClick={() => onPlaceSelect(place)}>
@@ -247,18 +253,18 @@ const SearchPanel = ({
             );
           })}
 
-          {hasMore && (
+          {hasSearched && hasMore && !filtersLoading && (
             <LoadingSpinner ref={observerTarget}>
               {isSearching ? "검색 중..." : "스크롤을 내려 더보기"}
             </LoadingSpinner>
           )}
-          {!hasMore && displayedResults.length > 0 && (
+          {(!hasSearched || !hasMore) && resultsToRender.length > 0 && !resultsLoading && (
             <LoadingSpinner style={{ color: "#CCC" }}>
               마지막 결과입니다.
             </LoadingSpinner>
           )}
-          {displayedResults.length === 0 && !isSearching && (
-            <LoadingSpinner>검색 결과가 없습니다.</LoadingSpinner>
+          {resultsToRender.length === 0 && !resultsLoading && (
+            <LoadingSpinner>선택한 조건에 해당하는 장소가 없습니다.</LoadingSpinner>
           )}
         </ResultListContainer>
       )}
