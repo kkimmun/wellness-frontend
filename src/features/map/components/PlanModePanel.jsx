@@ -25,6 +25,7 @@ const VIEW = {
 const PlanModePanel = ({
   isOpen,
   initialView = VIEW.CATEGORY,
+  initialPlanName = "",
   origin,
   originStatus,
   typeOptions,
@@ -49,9 +50,17 @@ const PlanModePanel = ({
   const [selectedType, setSelectedType] = useState(null);
   const [requestState, setRequestState] = useState("idle");
   const [message, setMessage] = useState("");
-  const [planName, setPlanName] = useState("");
+  const [planName, setPlanName] = useState(initialPlanName);
+  const [previousInitialPlanName, setPreviousInitialPlanName] = useState(initialPlanName);
   const requestControllerRef = useRef(null);
   const previousPlaceCountRef = useRef(places.length);
+
+  // 인증 정보가 늦게 도착해 복원 이름이 바뀐 경우만 동기화한다.
+  // 일반 재렌더링에서는 사용자가 입력 중인 이름을 유지한다.
+  if (previousInitialPlanName !== initialPlanName) {
+    setPreviousInitialPlanName(initialPlanName);
+    setPlanName(initialPlanName);
+  }
 
   const groupedTypes = useMemo(() => {
     const groups = new Map();
@@ -154,6 +163,7 @@ const PlanModePanel = ({
   // 계획 모드: 저장 목록에서 계획을 선택하면 지도 상태를 복원하고 계획 내용을 즉시 보여준다.
   const openSavedPlan = (plan) => {
     onOpenSavedPlan(plan);
+    setPlanName(plan.name || "");
     setMessage("");
     setView(VIEW.PLAN);
   };
@@ -163,6 +173,7 @@ const PlanModePanel = ({
     requestControllerRef.current?.abort();
     setRecommendations([]);
     setSelectedType(null);
+    setPlanName("");
     setRequestState("idle");
     setMessage("");
     onRecommendationsChange([]);

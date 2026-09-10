@@ -72,6 +72,53 @@ export const groupOverlappingPins = (places = [], maxDistanceMeters = 30) => {
   return groups;
 };
 
+const getScreenDistancePixels = (left, right) =>
+  Math.hypot(right.x - left.x, right.y - left.y);
+
+// 현재 줌에서 실제로 겹치는 마커만 화면 좌표 기준으로 묶는다.
+// 지도 확대 시 좌표 사이의 픽셀 간격이 벌어지면 자동으로 다시 분리된다.
+export const groupPinsByScreenDistance = (
+  places = [],
+  projectPlace,
+  maxDistancePixels = 62,
+) => {
+  if (typeof projectPlace !== "function") {
+    return groupOverlappingPins(places);
+  }
+
+  const groups = [];
+
+  places.forEach((place, index) => {
+    const point = projectPlace(place);
+    if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return;
+
+    const matchingGroup = groups.find((group) =>
+      group.points.some(
+        (groupPoint) =>
+          getScreenDistancePixels(groupPoint, point) <= maxDistancePixels,
+      ),
+    );
+    const placeKey = getPlaceKey(place, index);
+
+    if (matchingGroup) {
+      matchingGroup.pins.push(place);
+      matchingGroup.points.push(point);
+      matchingGroup.keys.push(placeKey);
+      matchingGroup.key = [...matchingGroup.keys].sort().join("|");
+      return;
+    }
+
+    groups.push({
+      key: placeKey,
+      keys: [placeKey],
+      pins: [place],
+      points: [point],
+    });
+  });
+
+  return groups;
+};
+
 export const getCircularPinIndex = (index, length) => {
   if (!Number.isInteger(length) || length <= 0) return 0;
   return ((index % length) + length) % length;

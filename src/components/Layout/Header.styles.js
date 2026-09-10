@@ -81,6 +81,9 @@ export const UserIconWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  @media (max-width: 1024px) {
+    display: ${({ $desktop }) => ($desktop ? "none" : "flex")};
+  }
 `;
 
 export const DesktopUserIconArea = styled.div`

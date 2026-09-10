@@ -1,5 +1,6 @@
 import { isVisibleMapPlace, visibleMapPlaces } from "./utils/placeVisibility";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { getSavedTrip } from "../mypage/myPageModel";
 import { FaChevronRight } from "react-icons/fa";
 import {
   Map,
@@ -81,6 +82,7 @@ import {
 import {
   getCircularPinIndex,
   groupOverlappingPins,
+  groupPinsByScreenDistance,
 } from "./utils/overlappingPins";
 
 const EMPTY_RESTAURANTS = [];
@@ -402,6 +404,8 @@ const MapPage = () => {
   );
   const [top10OverlayDetail, setTop10OverlayDetail] = useState(null);
   const [overlapSelection, setOverlapSelection] = useState(null);
+  const [mapInstance, setMapInstance] = useState(null);
+  const [mapLevel, setMapLevel] = useState(null);
 
   useEffect(() => {
     const targetPlaceNo = top10OverlayState?.placeNo;
@@ -569,6 +573,7 @@ const MapPage = () => {
     ? courseLocation.userCourseId
     : params.userCourseId;
   const mapMode = new URLSearchParams(location.search).get("mode");
+  const requestedSavedPlanId = new URLSearchParams(location.search).get("savedPlan");
   const isPlanModeRequested = location.pathname === "/map" && mapMode === "j";
   const isRecommendationModeRequested =
     location.pathname === "/map" && mapMode === "p";
@@ -625,8 +630,14 @@ const MapPage = () => {
   // 사용자가 클릭한 계획·추천 장소 대신 출발지로 포커스가 돌아간다.
   const handleMapCreate = useCallback((map) => {
     mapRef.current = map;
+    setMapInstance(map);
     map.setMaxLevel(14);
     map.setMinLevel(2);
+    setMapLevel(map.getLevel());
+  }, []);
+
+  const handleMapZoomChanged = useCallback((map) => {
+    setMapLevel(map.getLevel());
   }, []);
 
   const applyGimpoCityHallFallback = useCallback(() => {
@@ -683,6 +694,23 @@ const MapPage = () => {
       setMapPickMode(null);
       setSelectedRoute(null);
       setIsPlanPanelOpen(true);
+      const saved = getSavedTrip(planOwnerKey, requestedSavedPlanId, TRAVEL_PLAN_KIND.PLAN);
+      if (saved) {
+        planLocationRequestRef.current += 1;
+        setPlanOrigin(saved.origin);
+        setPlanPlaces(saved.places);
+        setActivePlanId(saved.id);
+        setPlanOriginStatus("restored");
+        setPlanRecommendationPins([]);
+        setPlanDetailPlace(null);
+        setTop10Overlay(null);
+        moveMapToPlanPoint(saved.origin);
+        return;
+      }
+      if (requestedSavedPlanId) {
+        setAlertMessage("저장된 여행을 찾을 수 없습니다. 현재 계정과 브라우저의 저장 목록을 확인해주세요.");
+        setIsAlertModalOpen(true);
+      }
       const draft = readTravelPlanDraft(planOwnerKey);
       if (draft) {
         setPlanOrigin(draft.origin);
@@ -704,6 +732,7 @@ const MapPage = () => {
     moveMapToPlanPoint,
     planOwnerKey,
     requestCurrentPlanLocation,
+    requestedSavedPlanId,
   ]);
 
   useEffect(() => {
@@ -725,7 +754,7 @@ const MapPage = () => {
   }, [isTravelMode, planOwnerKey]);
 
   useEffect(() => {
-    if (!isRecommendationMode) return undefined;
+    if (!isRecommendationMode || !planOwnerKey) return undefined;
 
     const initializationTimer = window.setTimeout(() => {
       setIsRouteOpen(false);
@@ -734,8 +763,35 @@ const MapPage = () => {
       setMapPickMode(null);
       setSelectedRoute(null);
       setRecommendationCourse(null);
+      setActivePlanId(null);
+      setTop10Overlay(null);
+      setIsPlanOriginPickMode(false);
       setPlanDetailPlace(null);
       setIsRecommendationPanelOpen(true);
+      const saved = getSavedTrip(planOwnerKey, requestedSavedPlanId, TRAVEL_PLAN_KIND.RECOMMENDATION);
+      if (saved) {
+        planLocationRequestRef.current += 1;
+        setPlanOrigin(saved.origin);
+        setPlanOriginStatus("restored");
+        setActivePlanId(saved.id);
+        setRecommendationCourse({
+          courseSignature: `saved-${saved.places.map((place) => place.placeNo).join("-")}`,
+          placeCount: saved.places.length,
+          totalDistanceMeters: null,
+          places: saved.places.map((place) => ({ ...place, distanceFromPreviousMeters: null })),
+          isSaved: true,
+        });
+        setTop10Overlay(null);
+        moveMapToPlanPoint(saved.origin);
+        return;
+      }
+      if (requestedSavedPlanId) {
+        setAlertMessage("저장된 여행을 찾을 수 없습니다. 현재 계정과 브라우저의 저장 목록을 확인해주세요.");
+        setIsAlertModalOpen(true);
+      }
+      setPlanOrigin(null);
+      setRecommendationNearbyPlaces([]);
+      setRecommendationNearbyState("idle");
       requestCurrentPlanLocation();
     }, 0);
 
@@ -743,7 +799,7 @@ const MapPage = () => {
       window.clearTimeout(initializationTimer);
       planLocationRequestRef.current += 1;
     };
-  }, [isRecommendationMode, requestCurrentPlanLocation]);
+  }, [isRecommendationMode, planOwnerKey, requestedSavedPlanId, moveMapToPlanPoint, requestCurrentPlanLocation]);
 
   useEffect(() => {
     if (!isRecommendationMode || !planOrigin) return undefined;
@@ -868,6 +924,7 @@ const MapPage = () => {
 
   const handleOpenSavedPlan = useCallback(
     (plan) => {
+      planLocationRequestRef.current += 1;
       setPlanOrigin(plan.origin);
       setPlanPlaces(plan.places);
       setPlanOriginStatus("restored");
@@ -937,6 +994,7 @@ const MapPage = () => {
 
   const handleOpenSavedRecommendation = useCallback(
     (plan) => {
+      planLocationRequestRef.current += 1;
       const places = toValidPins(plan?.places || []);
       if (!plan?.origin || places.length === 0) return;
 
@@ -1564,10 +1622,25 @@ const MapPage = () => {
       distanceMeters: Number(place.distanceMeters ?? place.distance),
     }));
   }, [pins, recommendationNearbyPlaces]);
-  const visiblePinGroups = useMemo(
-    () => groupOverlappingPins(visibleMapPins),
-    [visibleMapPins],
-  );
+  const visiblePinGroups = useMemo(() => {
+    const mapsApi = globalThis.kakao?.maps;
+    const projection = mapInstance?.getProjection?.();
+
+    if (!Number.isFinite(mapLevel) || !mapsApi?.LatLng || !projection) {
+      return groupOverlappingPins(visibleMapPins);
+    }
+
+    return groupPinsByScreenDistance(visibleMapPins, (place) => {
+      const lat = Number(place?.yAxis ?? place?.Y_AXIS);
+      const lng = Number(place?.xAxis ?? place?.X_AXIS);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+      const point = projection.containerPointFromCoords(
+        new mapsApi.LatLng(lat, lng),
+      );
+      return { x: Number(point?.x), y: Number(point?.y) };
+    });
+  }, [mapInstance, mapLevel, visibleMapPins]);
   const activeOverlapGroup = overlapSelection
     ? visiblePinGroups.find(
         (group) => group.key === overlapSelection.groupKey,
@@ -1757,7 +1830,8 @@ const MapPage = () => {
         <PlanModePanel
           key={`plan-mode-${location.key}`}
           isOpen={isPlanPanelOpen && !planDetailPlace}
-          initialView={location.state?.planView === "saved" ? "saved" : "category"}
+          initialView={requestedSavedPlanId ? "plan" : location.state?.planView === "saved" ? "saved" : "category"}
+          initialPlanName={getSavedTrip(planOwnerKey, requestedSavedPlanId, TRAVEL_PLAN_KIND.PLAN)?.name || ""}
           origin={planOrigin}
           originStatus={planOriginStatus}
           typeOptions={typeOptions}
@@ -1786,6 +1860,8 @@ const MapPage = () => {
 
       {isRecommendationMode && (
         <RecommendationModePanel
+          key={`recommendation-mode-${location.key}`}
+          initialView={location.state?.recommendationView === "saved" ? "saved" : "recommend"}
           isOpen={isRecommendationPanelOpen && !planDetailPlace}
           origin={planOrigin}
           originStatus={planOriginStatus}
@@ -2048,6 +2124,7 @@ const MapPage = () => {
             style={{ width: "100%", height: "100%" }}
             level={8}
             onCreate={handleMapCreate}
+            onZoomChanged={handleMapZoomChanged}
             onClick={handleMapClick}
           >
             {isCourseMapView
