@@ -85,22 +85,6 @@ export const ImageWrapper = styled.div`
     border-radius: 8px;
   }
 
-  .rank-badge {
-    position: absolute;
-    top: 0;
-    left: 0;
-    background: #81D4FA;
-    color: white;
-    font-weight: bold;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-top-left-radius: 8px;
-    border-bottom-right-radius: 8px;
-    font-size: 13px;
-  }
 `;
 
 export const InfoWrapper = styled.div`

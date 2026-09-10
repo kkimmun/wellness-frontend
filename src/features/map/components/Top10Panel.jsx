@@ -1,5 +1,5 @@
 import PlaceImage from "../../../components/PlaceImage";
-import { FaChevronLeft, FaPhoneAlt } from "react-icons/fa";
+import { FaChevronLeft } from "react-icons/fa";
 import {
   PanelContainer,
   Header,
@@ -19,8 +19,7 @@ const Top10Panel = ({
   onPlacesLoaded,
   places,
   placesLoading = false,
-  title = "김포 Top 10",
-  showRank = true,
+  title = "TOP 10",
 }) => {
   const [top10List, setTop10List] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -89,11 +88,10 @@ const Top10Panel = ({
         {!isLoading && listToRender.length === 0 && (
           <div style={{ padding: "20px", textAlign: "center" }}>표시할 장소가 없습니다.</div>
         )}
-        {!isLoading && listToRender.map((place, index) => (
+        {!isLoading && listToRender.map((place) => (
           <Top10Card key={place.placeNo} onClick={() => handlePlaceClick(place)}>
             <ImageWrapper>
               <PlaceImage src={place.imageUrl || place.imgUrl} place={place} alt={place.placeName} />
-              {showRank && <div className="rank-badge">{index + 1}</div>}
             </ImageWrapper>
 
             <InfoWrapper>
@@ -101,10 +99,6 @@ const Top10Panel = ({
                 <div className="title">{place.placeName}</div>
                 <div className="address">{place.address || place.addr}</div>
                 {place.addrDetail && <div className="address">{place.addrDetail}</div>}
-                <div className="phone">
-                  <FaPhoneAlt size={10} />
-                  {place.phoneNumber || place.phone || "번호없음"}
-                </div>
               </div>
 
               <div className="stats">
