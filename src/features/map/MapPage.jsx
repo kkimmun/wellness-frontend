@@ -1320,8 +1320,13 @@ const MapPage = () => {
       return;
     }
 
-    if (isCourseMapView) return;
-    navigate(isFixedCourseView ? "/pilgrim/fixed" : "/map");
+    // 빈 지도 클릭은 현재 목록·검색 상태를 유지하고 말풍선만 닫는다.
+    if (isCourseMapView || location.pathname === "/map" || isTop10Route) return;
+    if (isFixedCourseView) {
+      navigate("/pilgrim/fixed");
+      return;
+    }
+    navigate("/map", { state: { hideInitialTop10: true } });
   };
 
   // 길찾기 표시 안정화: 새 경로마다 렌더링 번호를 변경해 이전 Polyline을 확실히 제거한다.
@@ -2466,10 +2471,9 @@ const MapPage = () => {
 
       <Top10Panel
         isOpen={isTop10Screen}
-        title={isInitialMapTop10 ? "주요 관광지" : "김포 Top 10"}
+        title={isInitialMapTop10 ? "주요 관광지" : "TOP 10"}
         places={isInitialMapTop10 ? visibleMapPins : undefined}
         placesLoading={pinsState === "loading"}
-        showRank={!isInitialMapTop10}
         onPlacesLoaded={setTop10Places}
         onClose={() => {
           setTop10Overlay(null);

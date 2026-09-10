@@ -210,8 +210,8 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
           >
             <CourseCover src={latestDestination?.imageUrl} place={latestDestination} name={latestDestination?.placeName} number={0} />
             <CourseInfo>
-              <CourseName>내가 만드는 순례자의 길</CourseName>
-              <CourseDescription>나만의 순례길을 만들거나 저장된 순례길을 만나보세요.</CourseDescription>
+              <CourseName>내가 만드는 순례길</CourseName>
+              <CourseDescription>나만의 순례길을 만들어보세요.</CourseDescription>
               <CourseMeta>
                 <RouteInfo>
                   <FiMapPin aria-hidden="true" />
