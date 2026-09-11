@@ -142,15 +142,8 @@ export const PointFields = styled.div`
 `;
 
 export const PointRow = styled.div`
-<<<<<<< HEAD
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr) 36px 36px;
-=======
-  display: flex;
-  > label { flex: 0 0 58px; }
-  > input { flex: 1; }
-  > button { flex-shrink: 0; order: 2; }
->>>>>>> origin/main
   align-items: center;
   gap: 10px;
   padding: 9px 0;
