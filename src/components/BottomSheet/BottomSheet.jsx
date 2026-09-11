@@ -32,6 +32,7 @@ export const BottomSheet = ({
   priority = 0,
 }) => {
   const containerRef = useRef(null);
+  const stackId = useId();
   const titleId = useId();
   const messageId = useId();
 
@@ -40,12 +41,12 @@ export const BottomSheet = ({
     modalStack.getSnapshot,
     modalStack.getSnapshot,
   );
-  const visible = isOpen && activeId === titleId;
+  const visible = isOpen && activeId === stackId;
 
   useLayoutEffect(() => {
     if (!isOpen) return undefined;
-    return modalStack.register(titleId, priority);
-  }, [isOpen, titleId, priority]);
+    return modalStack.register(stackId, priority);
+  }, [isOpen, stackId, priority]);
 
   // Focus management
   useEffect(() => {

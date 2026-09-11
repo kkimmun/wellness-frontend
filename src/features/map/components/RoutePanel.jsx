@@ -193,31 +193,52 @@ const RoutePanel = ({
   const panelRef = useRef(null);        // RoutePanelContainer DOM 참조
 
   const handleDragStart = (e) => {
-    const touch = e.touches[0];
-    dragStartYRef.current = touch.clientY;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStartYRef.current = clientY;
     dragStartHRef.current = panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.52;
     setIsDragging(true);
   };
 
-  const handleDragMove = (e) => {
-    if (!isDragging || dragStartYRef.current === null) return;
-    const deltaY = dragStartYRef.current - e.touches[0].clientY; // 위로 올리면 +
-    const newHeight = Math.min(
-      window.innerHeight * 0.92,
-      Math.max(180, dragStartHRef.current + deltaY),
-    );
-    setMobileHeight(`${newHeight}px`);
-  };
+  const handleDragMove = useCallback(
+    (e) => {
+      if (!isDragging || dragStartYRef.current === null) return;
+      if (e.cancelable) e.preventDefault();
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const deltaY = dragStartYRef.current - clientY; // 위로 올리면 +
+      const newHeight = Math.min(
+        window.innerHeight * 0.92,
+        Math.max(180, dragStartHRef.current + deltaY),
+      );
+      setMobileHeight(`${newHeight}px`);
+    },
+    [isDragging],
+  );
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
     setIsDragging(false);
     dragStartYRef.current = null;
-    // 손 뗐을 때 스냅: 화면의 25% 미만이면 최소(25vh), 이상이면 그대로 유지
     const currentH = parseFloat(mobileHeight) || window.innerHeight * 0.32;
     if (currentH < window.innerHeight * 0.25) {
       setMobileHeight("25vh");
     }
-  };
+  }, [isDragging, mobileHeight]);
+
+  useEffect(() => {
+    if (!isDragging) return undefined;
+    const onMove = (e) => handleDragMove(e);
+    const onEnd = () => handleDragEnd();
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
   // ─────────────────────────────────────────────────────────────────────────────
 
   useEffect(
@@ -693,13 +714,12 @@ const RoutePanel = ({
       aria-hidden={!isOpen}
       // 코드 리뷰 반영: 닫힌 패널의 입력창과 버튼이 키보드 Tab 순서에 포함되지 않도록 한다.
       inert={!isOpen}
-      onTouchMove={isDragging ? handleDragMove : undefined}
-      onTouchEnd={isDragging ? handleDragEnd : undefined}
     >
       {/* 모바일 전용 드래그 핸들: 손가락으로 잡고 올리면 패널 높이가 늘어남 */}
       <DragHandle
         aria-hidden
         onTouchStart={handleDragStart}
+        onMouseDown={handleDragStart}
       />
 
       <RouteHeader>

@@ -35,13 +35,14 @@ export const PanelContainer = styled.div`
     padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 12px));
     box-sizing: border-box;
     z-index: 250;
-    pointer-events: auto;
+    pointer-events: ${({ $isVisible }) => ($isVisible ? "auto" : "none")};
+    visibility: ${({ $isVisible }) => ($isVisible ? "visible" : "hidden")};
     transform: ${({ $isVisible }) =>
-      $isVisible ? "translateY(0)" : "translateY(100%)"};
+      $isVisible ? "translateY(0)" : "translateY(110%)"};
     transition: ${({ $isDragging }) =>
       $isDragging
         ? "none"
-        : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), height 0.2s ease"};
+        : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), height 0.2s ease, visibility 0.3s ease"};
   }
 `;
 

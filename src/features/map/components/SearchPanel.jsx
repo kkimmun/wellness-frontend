@@ -57,6 +57,7 @@ const SearchPanel = ({
   const handleDragMove = useCallback(
     (e) => {
       if (!isDragging || dragStartYRef.current === null) return;
+      if (e.cancelable) e.preventDefault();
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const deltaY = dragStartYRef.current - clientY;
       const newHeight = Math.min(
@@ -81,7 +82,7 @@ const SearchPanel = ({
 
       window.addEventListener("mousemove", onMove);
       window.addEventListener("mouseup", onEnd);
-      window.addEventListener("touchmove", onMove);
+      window.addEventListener("touchmove", onMove, { passive: false });
       window.addEventListener("touchend", onEnd);
 
       return () => {
