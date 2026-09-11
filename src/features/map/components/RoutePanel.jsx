@@ -738,6 +738,7 @@ const RoutePanel = ({
             <label htmlFor="route-origin">출발지</label>
             <PointInput
               id="route-origin"
+              autoComplete="off"
               value={originText}
               placeholder="장소명 입력 후 Enter"
               onFocus={() => setActiveTarget("origin")}
@@ -776,6 +777,7 @@ const RoutePanel = ({
             <label htmlFor="route-destination">도착지</label>
             <PointInput
               id="route-destination"
+              autoComplete="off"
               value={destinationText}
               placeholder="장소명 입력 후 Enter"
               onFocus={() => setActiveTarget("destination")}
@@ -823,6 +825,7 @@ const RoutePanel = ({
               <WaypointRow key={`waypoint-${index}`}>
                 <span className="order">{index + 1}</span>
                 <input
+                  autoComplete="off"
                   value={waypoint.text}
                   placeholder="DB 장소명 입력 후 Enter"
                   onFocus={() => setActiveTarget(`waypoint:${index}`)}

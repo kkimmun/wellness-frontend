@@ -7,6 +7,8 @@ const spin = keyframes`
 `;
 
 export const PanelContainer = styled.aside`
+  visibility: ${({ $isPicking }) => ($isPicking ? "hidden" : "visible")};
+  pointer-events: ${({ $isPicking }) => ($isPicking ? "none" : "auto")};
   position: absolute;
   inset: 0 auto 0 0;
   z-index: 240;
