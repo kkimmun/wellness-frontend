@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { FaSearch, FaStar } from "react-icons/fa";
+import { FaSearch, FaStar, FaTimes } from "react-icons/fa";
 import { BsBookmark, BsBookmarkFill } from "react-icons/bs";
 import {
   PanelContainer,
+  DragHandle,
   SearchHeader,
   CompactSearchBarBox as SearchBarBox,
   CompactSearchInput as SearchInput,
   CompactSearchButton as SearchButton,
+  ClearButton,
   ResultListContainer,
   CardHeader,
   ReviewInfo,
@@ -14,7 +16,6 @@ import {
   CardFooter,
   ActionButtons,
   LoadingSpinner,
-  DragHandle,
   MobileFilterBar,
 } from "./SearchPanel.styles";
 import PlaceImage from "../../../components/PlaceImage";
@@ -50,7 +51,7 @@ const SearchPanel = ({
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     dragStartYRef.current = clientY;
     dragStartHRef.current =
-      panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.5;
+      panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.4;
     setIsDragging(true);
   };
 
@@ -61,7 +62,7 @@ const SearchPanel = ({
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const deltaY = dragStartYRef.current - clientY;
       const newHeight = Math.min(
-        window.innerHeight * 0.85,
+        window.innerHeight - 56,
         Math.max(120, dragStartHRef.current + deltaY)
       );
       setMobileHeight(`${newHeight}px`);
@@ -93,6 +94,14 @@ const SearchPanel = ({
       };
     }
   }, [isDragging, handleDragMove, handleDragEnd]);
+
+  const [prevIsVisible, setPrevIsVisible] = useState(isVisible);
+  if (prevIsVisible !== isVisible) {
+    setPrevIsVisible(isVisible);
+    if (!isVisible) {
+      setMobileHeight(null);
+    }
+  }
 
   // 목록과 지도 모두 같은 검색 결과를 사용한다.
   const matchingPlaces = useMemo(
@@ -126,6 +135,7 @@ const SearchPanel = ({
       <DragHandle
         onTouchStart={handleDragStart}
         onMouseDown={handleDragStart}
+        aria-hidden="true"
       />
       <SearchHeader $hasResults={hasSearched || showFilteredResults}>
         <SearchBarBox $isFloating={!hasSearched && !showFilteredResults}>
@@ -143,8 +153,20 @@ const SearchPanel = ({
             }}
             onKeyDown={handleKeyDown}
           />
+          {keyword.length > 0 && (
+            <ClearButton
+              type="button"
+              aria-label="검색어 지우기"
+              onClick={() => {
+                setKeyword("");
+                setLastSearchedKeyword("");
+              }}
+            >
+              <FaTimes size={14} />
+            </ClearButton>
+          )}
           <SearchButton aria-label="검색" onClick={handleSearchClick}>
-            <FaSearch size={21} />
+            <FaSearch size={18} />
           </SearchButton>
         </SearchBarBox>
       </SearchHeader>
