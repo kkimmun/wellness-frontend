@@ -16,6 +16,7 @@ import { RouteAPI } from "../../../api/route";
 import {
   AddWaypointButton,
   ClearPointButton,
+  DragHandle,
   EmptyState,
   FindRouteButton,
   IconButton,
@@ -183,6 +184,41 @@ const RoutePanel = ({
   const searchControllerRef = useRef(null);
   const routeControllerRef = useRef(null);
   const transitDetailControllerRef = useRef(null);
+
+  // ── 모바일 바텀시트 드래그 리사이즈 (기존 로직과 완전히 분리) ──────────────
+  const [mobileHeight, setMobileHeight] = useState(null); // null → CSS 기본값(52vh) 사용
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartYRef = useRef(null);   // 터치 시작 Y 좌표
+  const dragStartHRef = useRef(null);   // 터치 시작 시점의 패널 높이(px)
+  const panelRef = useRef(null);        // RoutePanelContainer DOM 참조
+
+  const handleDragStart = (e) => {
+    const touch = e.touches[0];
+    dragStartYRef.current = touch.clientY;
+    dragStartHRef.current = panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.52;
+    setIsDragging(true);
+  };
+
+  const handleDragMove = (e) => {
+    if (!isDragging || dragStartYRef.current === null) return;
+    const deltaY = dragStartYRef.current - e.touches[0].clientY; // 위로 올리면 +
+    const newHeight = Math.min(
+      window.innerHeight * 0.92,
+      Math.max(180, dragStartHRef.current + deltaY),
+    );
+    setMobileHeight(`${newHeight}px`);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    dragStartYRef.current = null;
+    // 손 뗐을 때 스냅: 화면의 25% 미만이면 최소(25vh), 이상이면 그대로 유지
+    const currentH = parseFloat(mobileHeight) || window.innerHeight * 0.32;
+    if (currentH < window.innerHeight * 0.25) {
+      setMobileHeight("25vh");
+    }
+  };
+  // ─────────────────────────────────────────────────────────────────────────────
 
   useEffect(
     () => () => {
@@ -650,11 +686,22 @@ const RoutePanel = ({
 
   return (
     <RoutePanelContainer
+      ref={panelRef}
       $isOpen={isOpen}
+      $mobileHeight={mobileHeight}
+      $isDragging={isDragging}
       aria-hidden={!isOpen}
       // 코드 리뷰 반영: 닫힌 패널의 입력창과 버튼이 키보드 Tab 순서에 포함되지 않도록 한다.
       inert={!isOpen}
+      onTouchMove={isDragging ? handleDragMove : undefined}
+      onTouchEnd={isDragging ? handleDragEnd : undefined}
     >
+      {/* 모바일 전용 드래그 핸들: 손가락으로 잡고 올리면 패널 높이가 늘어남 */}
+      <DragHandle
+        aria-hidden
+        onTouchStart={handleDragStart}
+      />
+
       <RouteHeader>
         <h2>경로 찾기</h2>
         {/* 길찾기 UX 개선: X는 단순 숨김이 아니라 전체 길찾기 종료를 의미한다. */}

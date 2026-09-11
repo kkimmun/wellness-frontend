@@ -93,9 +93,7 @@ export const RouteReopenButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    left: ${({ $isOpen }) => ($isOpen ? "calc(min(100%, 540px) - 30px)" : "16px")};
-    width: 48px;
-    height: 48px;
+    display: none;
   }
 `;
 
@@ -122,7 +120,21 @@ export const MapPickNotice = styled.div`
     color: #81d4fa;
     font-weight: 700;
   }
+
+  @media (max-width: 768px) {
+    /* 검색창이 있던 자리(top: 12px)로 올림 — 바텀시트와 겹치지 않음 */
+    top: 12px;
+    left: 12px;
+    transform: none;  /* 가운데 정렬 대신 좌측 고정 */
+    right: 12px;
+    justify-content: center;
+    font-size: 12px;
+    padding: 10px 14px;
+    white-space: nowrap;
+    border-radius: 14px;
+  }
 `;
+
 
 export const MapPinToolbar = styled.div`
   position: absolute;
@@ -137,6 +149,17 @@ export const MapPinToolbar = styled.div`
   border-radius: ${theme.radius.lg};
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+
+  /* 모바일: FloatingTags 제거 후 상단 우측 배치 */
+  @media (max-width: 768px) {
+    top: 76px;
+    right: 12px;
+    left: auto;
+    flex-direction: row;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 20px;
+  }
 `;
 
 export const MapPinCreateButton = styled.button`
@@ -180,6 +203,27 @@ export const MapPinCreateButton = styled.button`
   &:hover {
     background: ${({ $color }) => `${$color}18`};
   }
+
+  /* 모바일: 핀 아이콘 숨기고 텍스트만 pill 버튼 */
+  @media (max-width: 768px) {
+    flex-direction: row;
+    width: auto;
+    padding: 5px 12px;
+    border-radius: 20px;
+    gap: 0;
+    background: ${({ $active, $color }) => ($active ? `${$color}18` : "transparent")};
+    border: 1px solid ${({ $color }) => $color}44;
+
+    span {
+      display: none;
+    }
+
+    small {
+      font-size: 12px;
+      font-weight: 700;
+      color: ${({ $color }) => $color};
+    }
+  }
 `;
 
 export const FloatingTags = styled.div`
@@ -190,6 +234,7 @@ export const FloatingTags = styled.div`
   align-items: center;
   gap: 8px;
   z-index: 10;
+  pointer-events: none; /* 컨테이너 자체는 터치 통과 → 지도 드래그 허용 */
   
   @media (max-width: 1024px) {
     top: 16px;
@@ -197,12 +242,7 @@ export const FloatingTags = styled.div`
   }
 
   @media (max-width: 768px) {
-    top: 88px;
-    left: 12px;
-    right: 12px;
-    gap: 8px;
-    > div { overflow-x: auto; }
-    select { min-width: 140px; }
+    display: none;
   }
 `;
 
@@ -211,19 +251,27 @@ export const FloatingTags = styled.div`
 export const TagList = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px; /* 8 * 1.5 */
-  overflow: hidden; 
+  gap: 8px;
+  overflow: hidden;
+  pointer-events: auto; /* FloatingTags의 none을 자식에서 다시 활성화 */
   
-  /* 부드러운 슬라이딩 및 페이드 효과 */
-  max-width: ${({ $isOpen }) => ($isOpen ? "750px" : "0px")}; /* 500 * 1.5 */
+  max-width: ${({ $isOpen }) => ($isOpen ? "750px" : "0px")};
   opacity: ${({ $isOpen }) => ($isOpen ? "1" : "0")};
-  transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out;
+  transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out;
   
-  /* 스크롤바 숨기기 (모바일 대응) */
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  &::-webkit-scrollbar { display: none; }
   scrollbar-width: none;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    max-width: none;
+    width: 100%;
+    /* 모바일: 열림/닫힘을 display로 확실하게 제어 */
+    display: ${({ $isOpen }) => ($isOpen ? "flex" : "none")};
+    opacity: 1;
+  }
 `;
 
 /* DB 장소 필터 연동: 타입과 태그의 실제 DB 값을 선택하는 공통 셀렉트다. */
@@ -256,6 +304,14 @@ export const FilterSelect = styled.select`
     cursor: wait;
     opacity: 0.65;
   }
+
+  @media (max-width: 768px) {
+    min-width: 0;
+    width: 100%;             /* FloatingTags max-width 안에서 꽉 채움 */
+    padding: 7px 28px 7px 12px;
+    font-size: 12px;
+    border-radius: 10px;
+  }
 `;
 
 /* DB 장소 필터 연동: 선택한 타입·태그 조건을 해제하고 전체 핀으로 복원한다. */
@@ -285,6 +341,15 @@ export const FilterResetButton = styled.button`
     cursor: default;
     opacity: 0.5;
   }
+
+  @media (max-width: 768px) {
+    min-width: 0;
+    width: 100%;             /* FloatingTags max-width 안에서 꽉 채움 */
+    padding: 7px 12px;
+    font-size: 12px;
+    border-radius: 10px;
+    text-align: center;
+  }
 `;
 
 export const ToggleButton = styled.button`
@@ -303,14 +368,40 @@ export const ToggleButton = styled.button`
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
+  pointer-events: auto; /* FloatingTags의 none을 자식에서 다시 활성화 */
 
   svg {
-    transform: translateX(1.5px); /* 아이콘 살짝 조정 */
+    transform: translateX(1.5px);
+  }
+
+  /* 모바일 pill에서만 보이는 텍스트 레이블 - 데스크톱에서는 숨김 */
+  .toggle-label {
+    display: none;
   }
 
   &:hover {
     background-color: #F5F5F5;
     color: ${theme.colors.textPrimary};
+  }
+
+  @media (max-width: 768px) {
+    width: auto;
+    height: auto;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    gap: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+    svg {
+      transform: none;
+      font-size: 11px;
+    }
+
+    .toggle-label {
+      display: inline; /* 모바일 pill에서만 "필터" / "접기" 텍스트 표시 */
+    }
   }
 `;
 
@@ -323,7 +414,7 @@ export const OverlayCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: 260px; /* 고정 너비로 변경하여 크기를 통일하고 간격을 확보 */
+  width: 260px;
   position: relative;
   /* 마커 크기(24px)를 고려하여 꼬리가 핀을 정확히 가리키도록 여백 조정 */
   margin-bottom: 22px; 
@@ -443,6 +534,42 @@ export const OverlayCard = styled.div`
       text-overflow: ellipsis;
     }
   }
+
+  /* ── 모바일: 카드 전체를 확실하게 축소 ── */
+  @media (max-width: 768px) {
+    width: 170px !important;
+    padding: 7px 8px !important;
+    gap: 4px !important;
+    margin-bottom: 36px !important;
+
+    .header-row .action-buttons {
+      gap: 3px;
+      button {
+        padding: 2px 5px !important;
+        font-size: 9px !important;
+        border-radius: 3px;
+        line-height: 1.4;
+      }
+    }
+
+    .sub-row {
+      font-size: 9px !important;
+      gap: 5px;
+      margin-top: 0;
+    }
+
+    .badge {
+      font-size: 8px !important;
+      padding: 1px 4px !important;
+    }
+
+    .addr-row {
+      font-size: 9px !important;
+      gap: 2px;
+      margin-top: 2px !important;
+      .addr-label { min-width: 28px; }
+    }
+  }
 `;
 
 export const OverlayTitle = styled.div`
@@ -454,6 +581,11 @@ export const OverlayTitle = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 150px;
+
+  @media (max-width: 768px) {
+    font-size: 12px !important;
+    max-width: 90px;
+  }
 `;
 
 export const OverlapMarkerContainer = styled.div`

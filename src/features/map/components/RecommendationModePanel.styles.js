@@ -49,7 +49,12 @@ export const Header = styled.header`
     font-size: 20px;
   }
 
-  > button {
+  .header-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  button {
     width: 34px;
     height: 34px;
     display: grid;

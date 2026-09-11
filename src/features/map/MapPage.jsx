@@ -1309,6 +1309,7 @@ const MapPage = () => {
     setRouteInputRevision((current) => current + 1);
     setRouteRenderRevision((current) => current + 1);
     setIsRouteOpen(true);
+    setIsTagsOpen(false); // 경로찾기 열릴 때 필터 태그 자동 접기
     navigate("/map");
   };
 
@@ -1318,6 +1319,7 @@ const MapPage = () => {
     setRouteInputRevision((current) => current + 1);
     setRouteRenderRevision((current) => current + 1);
     setIsRouteOpen(true);
+    setIsTagsOpen(false); // 경로찾기 열릴 때 필터 태그 자동 접기
     navigate("/map");
   };
 
@@ -1792,6 +1794,54 @@ const MapPage = () => {
         onSearchResults={handleSearchResults}
         onSetOrigin={openRouteWithOrigin}
         onSetDestination={openRouteWithDestination}
+        mobileFilterContent={
+          !isFixedCourseView && !isCustomCourseView ? (
+            <>
+              <select
+                aria-label="장소 종류 선택"
+                value={placeFilters.typeNo || (isAllTypesSelected ? "all" : "")}
+                disabled={isFilterLoading}
+                onChange={(event) => handlePlaceFilter("type", event.target.value)}
+              >
+                <option value="">장소 종류 선택</option>
+                <option value="all">모든 장소</option>
+                {groupedTypeOptions.map((group) => (
+                  <option key={group.typeNo} value={group.typeNo}>
+                    {group.type}
+                  </option>
+                ))}
+              </select>
+              {selectedTypeGroup && (
+                <select
+                  aria-label="세부 종류 선택"
+                  value={placeFilters.typeDetailNo || ""}
+                  disabled={isFilterLoading}
+                  onChange={(event) => handlePlaceFilter("detail", event.target.value)}
+                >
+                  <option value="">{selectedTypeGroup.type} 전체</option>
+                  {selectedTypeGroup.details.map((detail) => (
+                    <option key={detail.typeDetailNo} value={detail.typeDetailNo}>
+                      {detail.typeDetailContent}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <select
+                aria-label="장소 태그 선택"
+                value={placeFilters.tagNo || ""}
+                disabled={isFilterLoading}
+                onChange={(event) => handlePlaceFilter("tag", event.target.value)}
+              >
+                <option value="">태그 전체</option>
+                {tagOptions.map((tag) => (
+                  <option key={tag.tagNo} value={tag.tagNo}>
+                    #{tag.tagContent}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : null
+        }
       />}
 
       {/* 계획 모드: 기존 지도 기능은 유지하고 추천·계획 상태만 독립 패널에서 관리한다. */}
@@ -1952,7 +2002,7 @@ const MapPage = () => {
       )}
 
       {!isTop10Screen && !isTravelMode && !isFixedCourseView && !isCustomCourseView && (
-        <FloatingTags>
+        <FloatingTags $isRouteOpen={isRouteOpen} $mapPickMode={Boolean(mapPickMode)}>
           <TagList $isOpen={isTagsOpen}>
             <FilterSelect
               aria-label="장소 종류 선택"
@@ -1998,12 +2048,18 @@ const MapPage = () => {
 
           <ToggleButton onClick={handleToggleTags}>
             {isTagsOpen ? (
-              <FaChevronRight
-                size={21}
-                style={{ transform: "rotate(180deg)" }}
-              />
+              <>
+                <FaChevronRight
+                  size={11}
+                  style={{ transform: "rotate(180deg)" }}
+                />
+                <span className="toggle-label">접기</span>
+              </>
             ) : (
-              <FaChevronRight size={21} />
+              <>
+                <FaChevronRight size={11} />
+                <span className="toggle-label">필터</span>
+              </>
             )}
           </ToggleButton>
           {isTagsOpen && isTagFilterOpen && (
