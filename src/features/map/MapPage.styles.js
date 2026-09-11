@@ -656,6 +656,7 @@ export const OverlapNavigation = styled.div`
 `;
 
 export const TagFilterPopover = styled.div`
+  pointer-events: auto;
   position: absolute;
   top: 60px;
   left: 0;
