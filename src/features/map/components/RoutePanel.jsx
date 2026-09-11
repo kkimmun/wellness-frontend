@@ -715,7 +715,7 @@ const RoutePanel = ({
       $isDragging={isDragging}
       aria-hidden={!isOpen}
       // 코드 리뷰 반영: 닫힌 패널의 입력창과 버튼이 키보드 Tab 순서에 포함되지 않도록 한다.
-      inert={!isOpen}
+      inert={!isOpen ? "" : undefined}
     >
       {/* 모바일 전용 드래그 핸들: 손가락으로 잡고 올리면 패널 높이가 늘어남 */}
       <DragHandle

@@ -121,7 +121,7 @@ const SearchPanel = ({
       $mobileHeight={mobileHeight}
       $isDragging={isDragging}
       aria-hidden={!isVisible}
-      inert={!isVisible}
+      inert={!isVisible ? "" : undefined}
     >
       <DragHandle
         onTouchStart={handleDragStart}
