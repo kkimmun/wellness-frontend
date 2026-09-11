@@ -2,6 +2,7 @@ import { isVisibleMapPlace, visibleMapPlaces } from "./utils/placeVisibility";
 import { useState, useEffect, useMemo, useRef, useCallback, useSyncExternalStore } from "react";
 import { getSavedTrip } from "../mypage/myPageModel";
 import { FaChevronRight } from "react-icons/fa";
+import { BsBookmark, BsBookmarkFill } from "react-icons/bs";
 import {
   Map,
   MapMarker,
@@ -446,6 +447,31 @@ const MapPage = () => {
     }
   };
 
+  // 장소 목록 API가 북마크 여부를 내려주지 않으므로, 특정 장소를 열어볼 때
+  // 상세 조회용 북마크 상태 API(GET /places/{placeNo}/bookmarks)로 실제 값을 채워
+  // 새로고침이나 화면 재진입 후에도 북마크 표시가 유지되도록 한다.
+  const hydratedBookmarkPlacesRef = useRef(new Set());
+  const hydrateBookmarkStatus = useCallback((targetPlaceNo) => {
+    if (status !== "authenticated") return;
+    if (targetPlaceNo == null) return;
+    if (hydratedBookmarkPlacesRef.current.has(targetPlaceNo)) return;
+    hydratedBookmarkPlacesRef.current.add(targetPlaceNo);
+
+    BookmarkAPI.getStatus(targetPlaceNo)
+      .then((data) => {
+        if (typeof data?.bookmarked !== "boolean") return;
+        setBookmarks((prev) =>
+          prev[targetPlaceNo] !== undefined
+            ? prev
+            : { ...prev, [targetPlaceNo]: data.bookmarked },
+        );
+      })
+      .catch(() => {
+        // 실패 시 다음 조회에서 다시 시도할 수 있도록 캐시에서 제거한다.
+        hydratedBookmarkPlacesRef.current.delete(targetPlaceNo);
+      });
+  }, [status]);
+
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_MAP_KEY,
     libraries: ["services", "clusterer"],
@@ -616,6 +642,11 @@ const MapPage = () => {
     !top10PlaceNos.has(String(resolvedTop10Overlay?.placeNo))
       ? null
       : resolvedTop10Overlay;
+
+  useEffect(() => {
+    if (top10Overlay?.isExternal) return;
+    hydrateBookmarkStatus(top10Overlay?.placeNo);
+  }, [top10Overlay?.placeNo, top10Overlay?.isExternal, hydrateBookmarkStatus]);
 
   useEffect(() => {
     if (
@@ -1174,6 +1205,10 @@ const MapPage = () => {
 
   const isDetailOpen = Boolean(placeNo && selectedPlace);
   const mapDetailPlace = isTravelMode ? planDetailPlace : selectedPlace;
+
+  useEffect(() => {
+    hydrateBookmarkStatus(mapDetailPlace?.placeNo);
+  }, [mapDetailPlace?.placeNo, hydrateBookmarkStatus]);
 
   // 기존 코드 개선: effect에서는 URL 상태를 다시 저장하지 않고 지도 이동만 수행한다.
   useEffect(() => {
@@ -1847,6 +1882,7 @@ const MapPage = () => {
         filtersLoading={isFilterLoading}
         bookmarks={bookmarks}
         toggleBookmark={toggleBookmark}
+        hydrateBookmarkStatus={hydrateBookmarkStatus}
         isVisible={
           !isTravelMode && !isDetailOpen && !hasRouteSession && !isCourseView
         }
@@ -2389,6 +2425,25 @@ const MapPage = () => {
                     <div className="header-row">
                       <OverlayTitle>{selectedPlace.placeName}</OverlayTitle>
                       <div className="action-buttons">
+                        <button
+                          type="button"
+                          className="btn-bookmark"
+                          aria-label={
+                            (bookmarks[selectedPlace.placeNo] ?? Boolean(selectedPlace.bookmarked))
+                              ? "북마크 해제"
+                              : "북마크 추가"
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleBookmark(e, selectedPlace.placeNo);
+                          }}
+                        >
+                          {(bookmarks[selectedPlace.placeNo] ?? Boolean(selectedPlace.bookmarked)) ? (
+                            <BsBookmarkFill size={13} color="#C9A227" />
+                          ) : (
+                            <BsBookmark size={13} />
+                          )}
+                        </button>
                         {isPlanMode ? (
                           <button
                             className="btn-plan"
@@ -2511,6 +2566,27 @@ const MapPage = () => {
                     <div className="header-row">
                       <OverlayTitle>{top10Overlay.placeName}</OverlayTitle>
                       <div className="action-buttons">
+                        {!top10Overlay.isExternal && (
+                          <button
+                            type="button"
+                            className="btn-bookmark"
+                            aria-label={
+                              (bookmarks[top10Overlay.placeNo] ?? Boolean(top10Overlay.bookmarked))
+                                ? "북마크 해제"
+                                : "북마크 추가"
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleBookmark(e, top10Overlay.placeNo);
+                            }}
+                          >
+                            {(bookmarks[top10Overlay.placeNo] ?? Boolean(top10Overlay.bookmarked)) ? (
+                              <BsBookmarkFill size={13} color="#C9A227" />
+                            ) : (
+                              <BsBookmark size={13} />
+                            )}
+                          </button>
+                        )}
                         {isPlanMode ? (
                           <button
                             className="btn-plan"
@@ -2662,6 +2738,9 @@ const MapPage = () => {
         places={isInitialMapTop10 ? visibleMapPins : undefined}
         placesLoading={pinsState === "loading"}
         onPlacesLoaded={setTop10Places}
+        bookmarks={bookmarks}
+        toggleBookmark={toggleBookmark}
+        hydrateBookmarkStatus={hydrateBookmarkStatus}
         onClose={() => {
           setTop10Overlay(null);
           setDismissedTop10Entry(location.key);

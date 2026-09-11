@@ -96,7 +96,8 @@ const EmailVerify = () => {
       // 보안성 강화를 위해 sessionStorage에 저장 (창 닫으면 증발)
       sessionStorage.setItem("verifiedEmail", requestEmail);
       alert("이메일 인증이 완료되었습니다.");
-      navigate("/signup");
+      // 회원가입 화면 이후 뒤로가기로 인증 완료된 이 화면이 되살아나지 않도록 replace로 이동한다.
+      navigate("/signup", { replace: true });
     } catch (err) {
       setCodeError(err.message || "인증번호가 일치하지 않거나 만료되었습니다.");
     } finally {

@@ -89,17 +89,40 @@ export const ImageWrapper = styled.div`
 
 `;
 
+export const BookmarkBtn = styled.button`
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #777;
+  cursor: pointer;
+  &:hover { background: #f1f3f5; }
+`;
+
 export const InfoWrapper = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
 
+  .title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
   .title {
     font-size: 16px;
     font-weight: bold;
     color: #333;
     margin-bottom: 4px;
+    overflow-wrap: anywhere;
   }
 
   .address {

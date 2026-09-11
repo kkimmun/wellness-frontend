@@ -27,6 +27,7 @@ const SearchPanel = ({
   onPlaceSelect,
   bookmarks,
   toggleBookmark,
+  hydrateBookmarkStatus,
   isVisible,
   showFilteredResults = false,
   filtersLoading = false,
@@ -108,6 +109,15 @@ const SearchPanel = ({
     useIncrementalPlaces(matchingPlaces, lastSearchedKeyword);
   const resultsLoading = filtersLoading;
 
+  // 목록 API는 로그인 사용자별 북마크 여부를 내려주지 않으므로,
+  // 화면에 실제로 보이는 카드에 한해 북마크 상태 API로 값을 채운다.
+  useEffect(() => {
+    if (!hydrateBookmarkStatus) return;
+    resultsToRender.forEach((place) => {
+      if (!place.isExternal) hydrateBookmarkStatus(place.placeNo);
+    });
+  }, [resultsToRender, hydrateBookmarkStatus]);
+
   const handleSearchClick = () => setLastSearchedKeyword(keyword.trim());
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.nativeEvent.isComposing) handleSearchClick();
@@ -164,7 +174,7 @@ const SearchPanel = ({
           {filtersLoading && <LoadingSpinner>장소를 불러오는 중입니다...</LoadingSpinner>}
           {!filtersLoading &&
             resultsToRender.map((place) => {
-              const isBookmarked = bookmarks[place.placeNo];
+              const isBookmarked = bookmarks[place.placeNo] ?? Boolean(place.bookmarked);
               return (
                 <Top10Card key={place.placeNo} onClick={() => onPlaceSelect(place)}>
                   <ImageWrapper>

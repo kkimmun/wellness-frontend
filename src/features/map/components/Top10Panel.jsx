@@ -2,6 +2,7 @@ import { visibleMapPlaces } from "../utils/placeVisibility";
 import useIncrementalPlaces from "../hooks/useIncrementalPlaces";
 import PlaceImage from "../../../components/PlaceImage";
 import { FaChevronLeft } from "react-icons/fa";
+import { BsBookmark, BsBookmarkFill } from "react-icons/bs";
 import {
   PanelContainer,
   Header,
@@ -9,6 +10,7 @@ import {
   Top10Card,
   ImageWrapper,
   InfoWrapper,
+  BookmarkBtn,
 } from "./Top10Panel.styles";
 
 import { useState, useEffect } from "react";
@@ -22,6 +24,9 @@ const Top10Panel = ({
   places,
   placesLoading = false,
   title = "TOP 10",
+  bookmarks = {},
+  toggleBookmark,
+  hydrateBookmarkStatus,
 }) => {
   const [top10List, setTop10List] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -77,6 +82,15 @@ const Top10Panel = ({
   const { listRef, onScroll, visiblePlaces, hasMore } = useIncrementalPlaces(listToRender, isOpen);
   const isLoading = hasProvidedPlaces ? placesLoading : loading;
 
+  // 목록 API는 로그인 사용자별 북마크 여부를 내려주지 않으므로,
+  // 화면에 실제로 보이는 카드에 한해 북마크 상태 API로 값을 채운다.
+  useEffect(() => {
+    if (!hydrateBookmarkStatus) return;
+    visiblePlaces.forEach((place) => {
+      if (!place.isExternal) hydrateBookmarkStatus(place.placeNo);
+    });
+  }, [visiblePlaces, hydrateBookmarkStatus]);
+
   return (
     <PanelContainer
       $isOpen={isOpen}
@@ -96,7 +110,9 @@ const Top10Panel = ({
         {!isLoading && listToRender.length === 0 && (
           <div style={{ padding: "20px", textAlign: "center" }}>표시할 장소가 없습니다.</div>
         )}
-        {!isLoading && visiblePlaces.map((place) => (
+        {!isLoading && visiblePlaces.map((place) => {
+          const isBookmarked = bookmarks[place.placeNo] ?? Boolean(place.bookmarked);
+          return (
           <Top10Card key={place.placeNo} onClick={() => handlePlaceClick(place)}>
             <ImageWrapper>
               <PlaceImage src={place.imageUrl || place.imgUrl} place={place} alt={place.placeName} />
@@ -104,7 +120,24 @@ const Top10Panel = ({
 
             <InfoWrapper>
               <div>
-                <div className="title">{place.placeName}</div>
+                <div className="title-row">
+                  <div className="title">{place.placeName}</div>
+                  {!place.isExternal && toggleBookmark && (
+                    <BookmarkBtn
+                      aria-label={isBookmarked ? "북마크 해제" : "북마크 추가"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleBookmark(e, place.placeNo);
+                      }}
+                    >
+                      {isBookmarked ? (
+                        <BsBookmarkFill size={16} color="#C9A227" />
+                      ) : (
+                        <BsBookmark size={16} />
+                      )}
+                    </BookmarkBtn>
+                  )}
+                </div>
                 <div className="address">{place.address || place.addr}</div>
                 {place.addrDetail && <div className="address">{place.addrDetail}</div>}
               </div>
@@ -123,7 +156,8 @@ const Top10Panel = ({
               </div>
             </InfoWrapper>
           </Top10Card>
-        ))}
+          );
+        })}
         {!isLoading && hasMore && <div style={{ padding: 20, textAlign: "center", color: "#777" }}>스크롤을 내려 더보기</div>}
       </ListContainer>
     </PanelContainer>

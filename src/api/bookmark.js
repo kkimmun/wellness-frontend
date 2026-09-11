@@ -7,4 +7,10 @@ export const BookmarkAPI = {
     const response = await api.post(`/places/${placeNo}/bookmarks`);
     return response.data;
   },
+
+  // 장소 북마크 상태 단건 조회. 응답 data 형식: { placeNo, bookmarked }
+  getStatus: async (placeNo) => {
+    const response = await api.get(`/places/${placeNo}/bookmarks`);
+    return response.data;
+  },
 };
