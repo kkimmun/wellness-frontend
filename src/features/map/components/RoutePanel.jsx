@@ -205,9 +205,10 @@ const RoutePanel = ({
       if (e.cancelable) e.preventDefault();
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const deltaY = dragStartYRef.current - clientY; // 위로 올리면 +
+      const minAllowedH = Math.max(140, window.innerHeight * 0.25);
       const newHeight = Math.min(
         window.innerHeight * 0.92,
-        Math.max(180, dragStartHRef.current + deltaY),
+        Math.max(minAllowedH, dragStartHRef.current + deltaY),
       );
       setMobileHeight(`${newHeight}px`);
     },
@@ -219,7 +220,8 @@ const RoutePanel = ({
     setIsDragging(false);
     dragStartYRef.current = null;
     const currentH = parseFloat(mobileHeight) || window.innerHeight * 0.32;
-    if (currentH < window.innerHeight * 0.25) {
+    const minAllowedH = Math.max(140, window.innerHeight * 0.25);
+    if (currentH <= minAllowedH + 10) {
       setMobileHeight("25vh");
     }
   }, [isDragging, mobileHeight]);
