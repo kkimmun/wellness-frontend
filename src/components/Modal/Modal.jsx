@@ -44,7 +44,7 @@ export const Modal = ({
     };
   }, [visible]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !visible) return null;
 
   // onCancel이 있으면 Confirm(2버튼), 없으면 Alert(1버튼) 모드로 작동
   const isConfirmMode = Boolean(onCancel);
@@ -57,7 +57,7 @@ export const Modal = ({
   };
 
   return createPortal(
-    <S.Overlay $visible={visible} aria-hidden={!visible} inert={!visible} onClick={handleOverlayClick}>
+    <S.Overlay $visible={visible} aria-hidden={!visible} onClick={handleOverlayClick}>
       {/* 모달 본체 클릭 시 이벤트 버블링 차단 */}
       <S.ModalContainer
         ref={containerRef}

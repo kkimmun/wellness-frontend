@@ -61,7 +61,7 @@ export const BottomSheet = ({
     };
   }, [visible]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !visible) return null;
 
   const handleOverlayClick = () => {
     if (onClose) onClose();
@@ -71,7 +71,6 @@ export const BottomSheet = ({
     <S.Overlay
       $visible={visible}
       aria-hidden={!visible}
-      inert={!visible}
       onClick={handleOverlayClick}
     >
       <S.SheetContainer
