@@ -103,7 +103,7 @@ const DetailPanel = ({
     <PanelContainer
       $isOpen={isOpen}
       aria-hidden={!isOpen}
-      inert={!isOpen}
+      inert={!isOpen ? "" : undefined}
     >
       <TopHeader>
         <TitleGroup>

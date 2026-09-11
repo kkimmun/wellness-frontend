@@ -81,7 +81,7 @@ const Top10Panel = ({
     <PanelContainer
       $isOpen={isOpen}
       aria-hidden={!isOpen}
-      inert={!isOpen}
+      inert={!isOpen ? "" : undefined}
     >
       <Header>
         <button className="close-btn" onClick={onClose}>
