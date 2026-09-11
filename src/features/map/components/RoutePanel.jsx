@@ -724,7 +724,7 @@ const RoutePanel = ({
       $isDragging={isDragging}
       aria-hidden={!isOpen}
       // 코드 리뷰 반영: 닫힌 패널의 입력창과 버튼이 키보드 Tab 순서에 포함되지 않도록 한다.
-      inert={!isOpen}
+      inert={!isOpen ? "" : undefined}
     >
       <DragHandle
         onTouchStart={handleDragStart}
@@ -746,6 +746,7 @@ const RoutePanel = ({
             <PointInputWrapper>
               <PointInput
                 id="route-origin"
+                autoComplete="off"
                 value={originText}
                 placeholder="장소명 입력 후 Enter"
                 onFocus={() => setActiveTarget("origin")}
@@ -787,6 +788,7 @@ const RoutePanel = ({
             <PointInputWrapper>
               <PointInput
                 id="route-destination"
+                autoComplete="off"
                 value={destinationText}
                 placeholder="장소명 입력 후 Enter"
                 onFocus={() => setActiveTarget("destination")}
@@ -836,6 +838,7 @@ const RoutePanel = ({
               <WaypointRow key={`waypoint-${index}`}>
                 <span className="order">{index + 1}</span>
                 <input
+                  autoComplete="off"
                   value={waypoint.text}
                   placeholder="DB 장소명 입력 후 Enter"
                   onFocus={() => setActiveTarget(`waypoint:${index}`)}

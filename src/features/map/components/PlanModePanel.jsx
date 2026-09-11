@@ -11,7 +11,7 @@ import {
   FaSave,
   FaTrash,
 } from "react-icons/fa";
-import { FiX } from "react-icons/fi";
+import { FiX, FiHelpCircle } from "react-icons/fi";
 import { PlanRecommendationAPI } from "../../../api/planRecommendation";
 import { MAX_TRAVEL_PLAN_PLACES } from "../utils/travelPlanStorage";
 import * as S from "./PlanModePanel.styles";
@@ -46,6 +46,7 @@ const PlanModePanel = ({
   onDeleteSavedPlan,
   onStartNewPlan,
 }) => {
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const [view, setView] = useState(initialView);
   const [recommendations, setRecommendations] = useState([]);
   const [selectedType, setSelectedType] = useState(null);
@@ -195,10 +196,39 @@ const PlanModePanel = ({
               {view === VIEW.SAVED && "저장된 계획"}
             </h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="계획 패널 숨기기">
-            <FiX />
-          </button>
+          <div className="header-actions">
+            <button 
+              type="button" 
+              onClick={() => setIsTooltipOpen(!isTooltipOpen)} 
+              aria-label="도움말 보기"
+            >
+              <FiHelpCircle size={18} />
+            </button>
+            <button type="button" onClick={onClose} aria-label="계획 패널 숨기기">
+              <FiX size={18} />
+            </button>
+          </div>
         </S.PanelHeader>
+
+        {isTooltipOpen && (
+          <div style={{
+            padding: "16px 20px",
+            backgroundColor: "#f8f9fa",
+            borderBottom: "1px solid #eee",
+            fontSize: "13px",
+            lineHeight: "1.6",
+            color: "#333",
+            margin: "0"
+          }}>
+            <strong>📌 이렇게 사용해 보세요!</strong>
+            <ol style={{ margin: "8px 0 0", paddingLeft: "20px" }}>
+              <li>지도에서 장소를 찾습니다.</li>
+              <li>상세 창에서 <strong>'계획에 추가'</strong> 버튼을 눌러 장소를 담습니다.</li>
+              <li><strong>[계획]</strong> 탭에서 담은 장소들의 순서를 변경하거나 삭제할 수 있습니다.</li>
+              <li>완성된 코스를 저장하고 즐거운 하루를 보내세요!</li>
+            </ol>
+          </div>
+        )}
 
         <S.PanelNav aria-label="계획 메뉴">
           <button

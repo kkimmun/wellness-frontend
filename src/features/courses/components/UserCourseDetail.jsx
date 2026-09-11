@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FiChevronRight, FiChevronDown, FiChevronUp, FiX, FiMapPin, FiCoffee } from "react-icons/fi";
 import { SecondaryButton } from "../../../components/Button/Button.styles";
 import { BackButton } from "../../../components/Button/BackButton";
@@ -26,6 +26,59 @@ export default function UserCourseDetail({ course, places = [], onBack, backLabe
   const [reviewPlace, setReviewPlace] = useState(null);
   const triggerRef = useRef(null);
   const closeRef = useRef(null);
+
+  // 모바일 바텀시트 드래그 리사이즈
+  const [mobileHeight, setMobileHeight] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartYRef = useRef(null);
+  const dragStartHRef = useRef(null);
+  const panelRef = useRef(null);
+
+  const handleDragStart = (e) => {
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStartYRef.current = clientY;
+    dragStartHRef.current =
+      panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.5;
+    setIsDragging(true);
+  };
+
+  const handleDragMove = useCallback(
+    (e) => {
+      if (!isDragging || dragStartYRef.current === null) return;
+      if (e.cancelable) e.preventDefault();
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const deltaY = dragStartYRef.current - clientY;
+      const newHeight = Math.min(
+        window.innerHeight * 0.85,
+        Math.max(120, dragStartHRef.current + deltaY),
+      );
+      setMobileHeight(`${newHeight}px`);
+    },
+    [isDragging],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    dragStartYRef.current = null;
+  }, [isDragging]);
+
+  useEffect(() => {
+    if (!isDragging) return undefined;
+    const onMove = (e) => handleDragMove(e);
+    const onEnd = () => handleDragEnd();
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
+
   const stops = course.stops.map((stop) => {
     const place = Number.isSafeInteger(stop.placeNo)
       ? places.find((item) => item.placeNo === stop.placeNo) : null;
@@ -60,7 +113,18 @@ export default function UserCourseDetail({ course, places = [], onBack, backLabe
 
   return (
     <>
-      <S.CourseCard aria-label={course.courseKind === "FIXED" ? "고정 코스 상세정보" : "사용자 코스 상세정보"}>
+      <S.CourseCard
+        ref={panelRef}
+        aria-label={course.courseKind === "FIXED" ? "고정 코스 상세정보" : "사용자 코스 상세정보"}
+        $mobileHeight={mobileHeight}
+        $isDragging={isDragging}
+      >
+        {/* 모바일 바텀시트 드래그 핸들 */}
+        <S.DragHandle
+          aria-hidden="true"
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
+        />
         <S.BackRow><BackButton onClick={onBack} aria-label={`${backLabel} 돌아가기`} />{backLabel}</S.BackRow>
         <header>
           <h1>{course.courseName}</h1>

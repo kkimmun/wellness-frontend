@@ -19,6 +19,7 @@ export const PanelContainer = styled.div`
   visibility: ${({ $isVisible }) => ($isVisible ? "visible" : "hidden")};
   pointer-events: none;
 
+  /* 모바일: 하단 일체형 바텀시트 */
   @media (max-width: 768px) {
     position: fixed;
     bottom: 0;
@@ -54,6 +55,12 @@ export const SearchHeader = styled.div`
   background: ${({ $hasResults }) => ($hasResults ? "white" : "transparent")};
   border-bottom: 1px solid ${({ $hasResults }) => ($hasResults ? "#eee" : "transparent")};
   pointer-events: ${({ $hasResults }) => ($hasResults ? "auto" : "none")};
+
+  @media (max-width: 768px) {
+    padding: 4px 0;
+    background: transparent;
+    border-bottom: none;
+  }
 `;
 
 export const CompactSearchBarBox = styled.div`
@@ -229,8 +236,10 @@ export const ResultListContainer = styled(ListContainer)`
   min-height: 0;
   pointer-events: auto;
   overscroll-behavior: contain;
+
   @media (max-width: 768px) {
-    margin-top: 64px;
+    margin-top: 8px;
+    padding: 4px 0 0 0;
   }
 `;
 
@@ -295,4 +304,3 @@ export const LoadingSpinner = styled.div`
   color: #777;
   font-size: 13px;
 `;
-

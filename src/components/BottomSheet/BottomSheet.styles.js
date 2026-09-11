@@ -2,16 +2,12 @@ import styled from "styled-components";
 import { theme } from "../../styles/theme";
 
 export const Overlay = styled.div`
-  padding: ${theme.spacing.md};
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: ${theme.colors.bgDim};
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-end; /* bottom sheet */
   z-index: 1000;
   visibility: ${({ $visible }) => ($visible ? "visible" : "hidden")};
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
@@ -19,20 +15,21 @@ export const Overlay = styled.div`
   transition: opacity 0.2s ease, visibility 0.2s ease;
 `;
 
-export const ModalContainer = styled.div`
+export const SheetContainer = styled.div`
+  position: relative;
   background-color: ${theme.colors.bgWhite};
-  border-radius: ${theme.radius.lg};
-  padding: ${theme.spacing.lg};
+  border-top-left-radius: ${theme.radius.lg};
+  border-top-right-radius: ${theme.radius.lg};
   width: 100%;
-  max-width: ${({ $size }) => $size === "wide" ? "820px" : "320px"};
-  max-height: calc(100dvh - ${theme.spacing.xl});
+  max-width: ${({ $size }) => ($size === "wide" ? "820px" : "100%")};
+  max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: ${theme.spacing.lg};
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  align-items: ${({ $size }) => $size === "wide" ? "stretch" : "center"};
+  align-items: center;
   gap: ${theme.spacing.md};
-  position: relative; /* 닫기 버튼 배치를 위해 추가 */
 `;
 
 export const CloseButton = styled.button`
@@ -52,10 +49,7 @@ export const CloseButton = styled.button`
   background-color: #e0e0e0;
   width: 24px;
   height: 24px;
-  
-  &:hover {
-    background-color: #d0d0d0;
-  }
+  &:hover { background-color: #d0d0d0; }
 `;
 
 export const IconWrapper = styled.div`
@@ -79,41 +73,4 @@ export const Message = styled.p`
   color: ${theme.colors.textSecondary};
   text-align: center;
   margin: 0;
-  line-height: ${theme.lineHeight.normal};
-  word-break: keep-all;
-`;
-
-export const ButtonGroup = styled.div`
-  display: flex;
-  gap: ${theme.spacing.sm};
-  width: 100%;
-  margin-top: ${theme.spacing.sm};
-`;
-
-export const ActionButton = styled.button`
-  flex: 1;
-  padding: 10px 0;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  color: #fff;
-  transition: opacity 0.2s;
-
-  background-color: ${(props) => {
-    switch (props.$variant) {
-      case "danger":
-        return "#ff6b6b";
-      case "secondary":
-        return "#888";
-      case "primary":
-      default:
-        return theme.colors.primary;
-    }
-  }};
-
-  &:hover {
-    opacity: 0.9;
-  }
 `;

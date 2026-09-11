@@ -9,7 +9,7 @@ import {
   FaSave,
   FaTrash,
 } from "react-icons/fa";
-import { FiX } from "react-icons/fi";
+import { FiX, FiHelpCircle } from "react-icons/fi";
 import { CourseRecommendationAPI } from "../../../api/courseRecommendation";
 import {
   buildRecommendationConditionKey,
@@ -44,7 +44,8 @@ const RecommendationModePanel = ({
   onOpenSavedCourse,
   onDeleteSavedCourse,
 }) => {
-  const [view, setView] = useState(initialView);
+  const [view, setView] = useState(initialView || VIEW.RECOMMEND);
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const [placeCount, setPlaceCount] = useState(5);
   const [preferredPlaceNos, setPreferredPlaceNos] = useState(["", ""]);
   const [selectedTagNos, setSelectedTagNos] = useState([]);
@@ -232,10 +233,39 @@ const RecommendationModePanel = ({
             <small>추천 모드</small>
             <h2>{view === VIEW.SAVED ? "저장된 계획" : "맞춤 코스 추천"}</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="추천 패널 숨기기">
-            <FiX />
-          </button>
+          <div className="header-actions" style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              type="button" 
+              onClick={() => setIsTooltipOpen(!isTooltipOpen)} 
+              aria-label="도움말 보기"
+            >
+              <FiHelpCircle size={18} />
+            </button>
+            <button type="button" onClick={onClose} aria-label="추천 패널 숨기기">
+              <FiX size={18} />
+            </button>
+          </div>
         </S.Header>
+
+        {isTooltipOpen && (
+          <div style={{
+            padding: "16px 20px",
+            backgroundColor: "#f8f9fa",
+            borderBottom: "1px solid #eee",
+            fontSize: "13px",
+            lineHeight: "1.6",
+            color: "#333",
+            margin: "0"
+          }}>
+            <strong>📌 이렇게 사용해 보세요!</strong>
+            <ol style={{ margin: "8px 0 0", paddingLeft: "20px" }}>
+              <li>코스의 <strong>출발 위치</strong>를 지도에서 선택합니다.</li>
+              <li>방문할 장소의 개수와 취향에 맞는 <strong>테마(태그)</strong>를 고릅니다.</li>
+              <li>반드시 포함하고 싶은 장소가 있다면 <strong>'선호 장소'</strong>로 추가하세요.</li>
+              <li><strong>'맞춤 코스 추천받기'</strong>를 누르면 최적의 동선을 추천해드립니다!</li>
+            </ol>
+          </div>
+        )}
 
         <S.PanelNav aria-label="추천 모드 메뉴">
           <button

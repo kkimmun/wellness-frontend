@@ -1,5 +1,5 @@
 import { isVisibleMapPlace, visibleMapPlaces } from "./utils/placeVisibility";
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, useSyncExternalStore } from "react";
 import { getSavedTrip } from "../mypage/myPageModel";
 import { FaChevronRight } from "react-icons/fa";
 import {
@@ -40,6 +40,7 @@ import {
 } from "./components/CustomMarkers";
 import { getInitialTop10PinIndex, isTop10Place } from "./utils/top10Marker";
 import { Modal } from "../../components/Modal/Modal";
+import { modalStack } from "../../components/Modal/modalStack";
 import { FiAlertCircle } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -313,15 +314,15 @@ const toRouteMarker = (point, index) => {
 const MapPage = () => {
   const [pins, setPins] = useState([]);
   const [pinsState, setPinsState] = useState("loading");
-  const [filteredPins, setFilteredPins] = useState([]); // 지도에 표시할 핀 목록
+  const [filteredPins, setFilteredPins] = useState(null); // null이면 전체 장소, 배열이면 검색·필터 결과
   // DB 장소 필터 연동: 선택지와 선택된 PK를 분리해 DB 번호가 바뀌어도 화면 코드가 영향을 받지 않게 한다.
   const [filterPins, setFilterPins] = useState([]);
   const [typeOptions, setTypeOptions] = useState([]);
   const [tagOptions, setTagOptions] = useState([]);
   const [placeFilters, setPlaceFilters] = useState(EMPTY_PLACE_FILTERS);
-  // 장소 핀 초기 상태: 선택 안 함에서는 빈 지도, 모든 장소를 선택하면 전체 장소를 표시한다.
-  const [isAllPinsVisible, setIsAllPinsVisible] = useState(false);
-  const [isAllTypesSelected, setIsAllTypesSelected] = useState(false);
+  // 주요 관광지 목록을 닫으면 기본 지도에 모든 장소를 표시한다.
+  const [isAllPinsVisible, setIsAllPinsVisible] = useState(true);
+  const [isAllTypesSelected, setIsAllTypesSelected] = useState(true);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
   const [isTagsOpen, setIsTagsOpen] = useState(true);
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
@@ -333,6 +334,12 @@ const MapPage = () => {
   const [routeOrigin, setRouteOrigin] = useState(null);
   const [routeDestination, setRouteDestination] = useState(null);
   const [mapPickMode, setMapPickMode] = useState(null);
+  const [isCourseOriginPickMode, setIsCourseOriginPickMode] = useState(false);
+  const courseOriginPickRef = useRef(null);
+  const cancelCourseOriginPick = useCallback(() => {
+    courseOriginPickRef.current = null;
+    setIsCourseOriginPickMode(false);
+  }, []);
   const [generalRoute, setSelectedRoute] = useState(null);
   const [customRoute, setCustomRoute] = useState(null);
   const [fixedCourseMap, setFixedCourseMap] = useState(null);
@@ -366,6 +373,12 @@ const MapPage = () => {
 
   const [top10OverlayState, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
   const [isInitialTop10Dismissed, setIsInitialTop10Dismissed] = useState(false);
+  const requestCourseOriginPick = useCallback((onSelected) => {
+    courseOriginPickRef.current = onSelected;
+    setTop10Overlay(null);
+    setIsCourseOriginPickMode(true);
+  }, []);
+  const [dismissedTop10Entry, setDismissedTop10Entry] = useState(null);
   const [top10Places, setTop10Places] = useState([]);
   const top10PlaceNos = useMemo(
     () => new Set(top10Places.map((place) => String(place.placeNo))),
@@ -446,7 +459,7 @@ const MapPage = () => {
         // DB 지도 핀 연동: API가 반환한 PLACE 목록만 사용하고 목업 데이터로 대체하지 않는다.
         const validPins = toValidPins(response);
         setPins(validPins);
-        setFilteredPins([]);
+        setFilteredPins(null);
         setPinsState("success");
       } catch (err) {
         console.error("핀 데이터를 불러오는 데 실패했습니다.", err);
@@ -541,7 +554,34 @@ const MapPage = () => {
   const userCourseId = isCourseRestaurantDetail
     ? courseLocation.userCourseId
     : params.userCourseId;
+  const blockingModal = useSyncExternalStore(modalStack.subscribe, modalStack.getSnapshot, modalStack.getSnapshot);
+  const resetMapView = Boolean(location.state?.resetMapView);
   const mapMode = new URLSearchParams(location.search).get("mode");
+  // 메뉴 진입마다 검색·필터와 이전 경로를 정리하고 선택한 화면을 연다.
+  useEffect(() => {
+    if (location.pathname !== "/map" || (mapMode !== "route" && !resetMapView)) return;
+    filterRequestIdRef.current += 1;
+    const navigationTimer = window.setTimeout(() => {
+      setPlaceFilters(EMPTY_PLACE_FILTERS);
+      setFilterPins([]);
+      setFilteredPins(null);
+      setIsAllPinsVisible(true);
+      setIsAllTypesSelected(true);
+      setIsFilterLoading(false);
+      setTop10Overlay(null);
+      setIsRouteOpen(mapMode === "route");
+      setRouteOrigin(null);
+      setRouteDestination(null);
+      setMapPickMode(null);
+      setSelectedRoute(null);
+      setRouteInputRevision((current) => current + 1);
+      setRouteRenderRevision((current) => current + 1);
+      setIsTagsOpen(mapMode !== "route");
+      setIsTagFilterOpen(false);
+    }, 0);
+    return () => window.clearTimeout(navigationTimer);
+  }, [location.key, location.pathname, mapMode, resetMapView]);
+
   const requestedSavedPlanId = new URLSearchParams(location.search).get("savedPlan");
   const isPlanModeRequested = location.pathname === "/map" && mapMode === "j";
   const isRecommendationModeRequested =
@@ -1319,20 +1359,26 @@ const MapPage = () => {
 
   // 길찾기 기능 연동: 지도/검색/상세 화면에서 선택한 장소를 패널에 전달한다.
   const openRouteWithOrigin = (place) => {
+    setTop10Overlay(null);
+    setIsTagFilterOpen(false);
     setRouteOrigin(toRoutePlace(place));
     setSelectedRoute(null);
     setRouteInputRevision((current) => current + 1);
     setRouteRenderRevision((current) => current + 1);
     setIsRouteOpen(true);
+    setIsTagsOpen(false); // 경로찾기 열릴 때 필터 태그 자동 접기
     navigate("/map");
   };
 
   const openRouteWithDestination = (place) => {
+    setTop10Overlay(null);
+    setIsTagFilterOpen(false);
     setRouteDestination(toRoutePlace(place));
     setSelectedRoute(null);
     setRouteInputRevision((current) => current + 1);
     setRouteRenderRevision((current) => current + 1);
     setIsRouteOpen(true);
+    setIsTagsOpen(false); // 경로찾기 열릴 때 필터 태그 자동 접기
     navigate("/map");
   };
 
@@ -1352,6 +1398,16 @@ const MapPage = () => {
   );
 
   const handleMapClick = (_map, mouseEvent) => {
+    if (isCustomCourseView && isCourseOriginPickMode && mouseEvent?.latLng) {
+      courseOriginPickRef.current?.({
+        placeName: "지도에서 선택한 출발지",
+        address: "지도에서 선택한 위치",
+        X_AXIS: mouseEvent.latLng.getLng(),
+        Y_AXIS: mouseEvent.latLng.getLat(),
+      });
+      cancelCourseOriginPick();
+      return;
+    }
     setTop10Overlay(null);
 
     // 계획·추천 모드: 기존 출발지 선택 방식처럼 다음 지도 클릭 좌표로 시작 핀만 이동한다.
@@ -1434,6 +1490,7 @@ const MapPage = () => {
 
   // 길찾기 종료: X 버튼은 패널만 숨기지 않고 입력·결과·지도 경로를 모두 초기화한다.
   const endRoute = () => {
+    if (mapMode === "route") navigate("/map", { state: { hideInitialTop10: true } });
     setIsRouteOpen(false);
     setRouteOrigin(null);
     setRouteDestination(null);
@@ -1580,7 +1637,7 @@ const MapPage = () => {
                 ? pins.filter((pin) => top10PlaceNos.has(String(pin.placeNo)))
                 : isInitialMapTop10
                   ? pins.filter(isMajorTouristPlace)
-                  : filteredPins,
+                  : (filteredPins ?? pins),
     [
       coursePins,
       filteredPins,
@@ -1659,6 +1716,10 @@ const MapPage = () => {
   const hasRouteSession = Boolean(
     isRouteOpen || routeOrigin || routeDestination || selectedRoute,
   );
+  const showRoutePanel = isRouteOpen && !isCourseView && !isTravelMode
+    && !isTop10Screen && !isDetailOpen && !top10Overlay && !blockingModal;
+  const showRouteToggle = hasRouteSession && !isCourseView && !isTravelMode
+    && !isTop10Screen && !isDetailOpen && !top10Overlay && !blockingModal;
   const searchablePins = hasPlaceFilter ? filterPins : pins;
 
   const routeSelectionPins = useMemo(
@@ -1795,6 +1856,7 @@ const MapPage = () => {
     <MapContainer>
       {/* 길찾기 기능 연동: 검색 목록의 출발/도착 버튼을 실제 패널과 연결한다. */}
       {!isTop10Screen && <SearchPanel
+        key={location.key}
         pins={searchablePins}
         onPlaceSelect={hasPlaceFilter || isAllPinsVisible ? handleTop10PlaceSelect : handlePlaceSelect}
         showFilteredResults={hasPlaceFilter || isAllPinsVisible}
@@ -1807,6 +1869,54 @@ const MapPage = () => {
         onSearchResults={handleSearchResults}
         onSetOrigin={openRouteWithOrigin}
         onSetDestination={openRouteWithDestination}
+        mobileFilterContent={
+          !isFixedCourseView && !isCustomCourseView ? (
+            <>
+              <select
+                aria-label="장소 종류 선택"
+                value={placeFilters.typeNo || (isAllTypesSelected ? "all" : "")}
+                disabled={isFilterLoading}
+                onChange={(event) => handlePlaceFilter("type", event.target.value)}
+              >
+                <option value="">장소 종류 선택</option>
+                <option value="all">모든 장소</option>
+                {groupedTypeOptions.map((group) => (
+                  <option key={group.typeNo} value={group.typeNo}>
+                    {group.type}
+                  </option>
+                ))}
+              </select>
+              {selectedTypeGroup && (
+                <select
+                  aria-label="세부 종류 선택"
+                  value={placeFilters.typeDetailNo || ""}
+                  disabled={isFilterLoading}
+                  onChange={(event) => handlePlaceFilter("detail", event.target.value)}
+                >
+                  <option value="">{selectedTypeGroup.type} 전체</option>
+                  {selectedTypeGroup.details.map((detail) => (
+                    <option key={detail.typeDetailNo} value={detail.typeDetailNo}>
+                      {detail.typeDetailContent}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <select
+                aria-label="장소 태그 선택"
+                value={placeFilters.tagNo || ""}
+                disabled={isFilterLoading}
+                onChange={(event) => handlePlaceFilter("tag", event.target.value)}
+              >
+                <option value="">태그 전체</option>
+                {tagOptions.map((tag) => (
+                  <option key={tag.tagNo} value={tag.tagNo}>
+                    #{tag.tagContent}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : null
+        }
       />}
 
       {/* 계획 모드: 기존 지도 기능은 유지하고 추천·계획 상태만 독립 패널에서 관리한다. */}
@@ -1927,6 +2037,9 @@ const MapPage = () => {
 
         {isCustomCourseView && (
           <UserCourseFlow
+            onRequestOriginPick={requestCourseOriginPick}
+            onCancelOriginPick={cancelCourseOriginPick}
+            isOriginPickMode={isCourseOriginPickMode}
             onRestaurantsChange={handleRestaurantsChange}
             onRestaurantSelect={handleRestaurantSelect}
             key={courseLocation.key}
@@ -1966,8 +2079,8 @@ const MapPage = () => {
         </RouteReopenButton>
       )}
 
-      {!isTop10Screen && !isTravelMode && !isFixedCourseView && !isCustomCourseView && (
-        <FloatingTags>
+      {!isTop10Screen && !isTravelMode && !isFixedCourseView && !isCustomCourseView && !isRouteOpen && !isDetailOpen && !top10Overlay && !blockingModal && (
+        <FloatingTags $isRouteOpen={isRouteOpen} $mapPickMode={Boolean(mapPickMode)}>
           <TagList $isOpen={isTagsOpen}>
             <FilterSelect
               aria-label="장소 종류 선택"
@@ -2013,12 +2126,18 @@ const MapPage = () => {
 
           <ToggleButton onClick={handleToggleTags}>
             {isTagsOpen ? (
-              <FaChevronRight
-                size={21}
-                style={{ transform: "rotate(180deg)" }}
-              />
+              <>
+                <FaChevronRight
+                  size={11}
+                  style={{ transform: "rotate(180deg)" }}
+                />
+                <span className="toggle-label">접기</span>
+              </>
             ) : (
-              <FaChevronRight size={21} />
+              <>
+                <FaChevronRight size={11} />
+                <span className="toggle-label">필터</span>
+              </>
             )}
           </ToggleButton>
           {isTagsOpen && isTagFilterOpen && (
@@ -2086,12 +2205,13 @@ const MapPage = () => {
         </MapStatus>
       ) : (
         <>
-          {(!isCourseView && (isPlanMode ? isPlanOriginPickMode : mapPickMode)) && (
+          {(isCourseOriginPickMode || (!isCourseView && (isPlanMode ? isPlanOriginPickMode : mapPickMode))) && (
             <MapPickNotice role="status">
-              지도에서 {isPlanOriginPickMode ? (isRecommendationMode ? "추천 시작 위치" : "계획 시작 위치") : mapPickMode === "origin" ? "출발지" : "도착지"}로 사용할 위치를 클릭하세요.
+              지도에서 {isCourseOriginPickMode ? "출발지" : isPlanOriginPickMode ? (isRecommendationMode ? "추천 시작 위치" : "계획 시작 위치") : mapPickMode === "origin" ? "출발지" : "도착지"}로 사용할 위치를 클릭하세요.
               <button
                 type="button"
                 onClick={() => {
+                  cancelCourseOriginPick();
                   setMapPickMode(null);
                   setIsPlanOriginPickMode(false);
                   if (isPlanMode) setIsPlanPanelOpen(true);
@@ -2514,7 +2634,7 @@ const MapPage = () => {
         isOpen={
           isTravelMode
             ? Boolean(planDetailPlace)
-            : isDetailOpen && (!isRouteOpen || isCourseView)
+            : isDetailOpen
         }
         onClose={() => {
           if (isTravelMode) {

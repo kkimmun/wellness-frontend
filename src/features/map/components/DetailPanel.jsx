@@ -22,6 +22,7 @@ import BasicInfoTab from "./BasicInfoTab";
 
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useToast } from "../../../context/ToastContext";
 
 const DetailPanel = ({
   place,
@@ -68,16 +69,42 @@ const DetailPanel = ({
     if (!displayPlace?.placeNo) return;
     const basePath = location.pathname.startsWith("/gimpoTop10") ? "/gimpoTop10" : "/place";
     if (tab === "리뷰") {
-
       navigate(`${basePath}/${displayPlace.placeNo}/review`, { replace: true, state: location.state });
     } else {
       navigate(`${basePath}/${displayPlace.placeNo}`, { replace: true, state: location.state });
+    }
+  };
 
+  const { success, error } = useToast();
+
+  const handleShare = async () => {
+    try {
+      const currentUrl = window.location.href;
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(currentUrl);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = currentUrl;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      success("링크가 클립보드에 복사되었습니다.");
+    } catch {
+      error("링크 복사에 실패했습니다.");
     }
   };
 
   return (
-    <PanelContainer $isOpen={isOpen}>
+    <PanelContainer
+      $isOpen={isOpen}
+      aria-hidden={!isOpen}
+      inert={!isOpen ? "" : undefined}
+    >
       <TopHeader>
         <TitleGroup>
           <button className="back-btn" onClick={onClose} aria-label={location.state?.courseBackground ? "보던 음식점 목록으로 돌아가기" : "지도 화면으로 돌아가기"}>
@@ -87,7 +114,13 @@ const DetailPanel = ({
         </TitleGroup>
 
         <ActionIcons>
-          <button className="icon-circle">
+          <button
+            type="button"
+            className="icon-circle"
+            onClick={handleShare}
+            aria-label="장소 링크 복사"
+            title="링크 복사"
+          >
             <FaShareAlt size={16} />
           </button>
           <button className="icon-circle" onClick={onBookmark}>

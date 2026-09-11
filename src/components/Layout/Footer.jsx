@@ -33,7 +33,7 @@ function Footer() {
     }
 
     if (menu.id === "map") {
-      navigate("/map", { state: { hideInitialTop10: true } });
+      navigate("/map", { state: { hideInitialTop10: true, resetMapView: true } });
       return;
     }
 

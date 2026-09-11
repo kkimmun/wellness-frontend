@@ -4,6 +4,10 @@ export const ReviewContainer = styled.div`
   display: flex;
   flex-direction: column;
   padding: 0 24px 24px;
+
+  @media (max-width: 768px) {
+    padding: 0 16px 24px;
+  }
 `;
 
 export const RatingSummaryBox = styled.div`
@@ -15,6 +19,13 @@ export const RatingSummaryBox = styled.div`
   margin-bottom: 24px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 16px;
+    gap: 16px;
+    justify-content: ${({ $hasReviews }) => ($hasReviews ? "flex-start" : "center")};
+  }
+
   .avg-rating {
     display: flex;
     flex-direction: column;
@@ -23,6 +34,15 @@ export const RatingSummaryBox = styled.div`
     border-right: 1px solid #E0E0E0;
     padding-right: 24px;
     margin-right: 24px;
+
+    @media (max-width: 768px) {
+      border-right: none;
+      border-bottom: ${({ $hasReviews }) => ($hasReviews ? "1px solid #E0E0E0" : "none")};
+      padding-right: 0;
+      padding-bottom: ${({ $hasReviews }) => ($hasReviews ? "12px" : "0")};
+      margin-right: 0;
+      width: 100%;
+    }
 
     .star {
       color: #FFC107;
@@ -41,6 +61,11 @@ export const RatingSummaryBox = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
+
+    @media (max-width: 768px) {
+      display: ${({ $hasReviews }) => ($hasReviews ? "flex" : "none")};
+      width: 100%;
+    }
   }
 `;
 
@@ -82,6 +107,12 @@ export const ReviewWriteBox = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
 
     .left-col {
       display: flex;
@@ -134,6 +165,10 @@ export const ReviewWriteBox = styled.div`
     .btn-group {
       display: flex;
       gap: 8px;
+
+      @media (max-width: 768px) {
+        justify-content: flex-end;
+      }
       
       button {
         padding: 8px 16px;
@@ -162,6 +197,10 @@ export const ReviewList = styled.div`
 export const ReviewItem = styled.div`
   border-bottom: 1px solid #E0E0E0;
   padding: 24px 0;
+
+  @media (max-width: 768px) {
+    padding: 18px 0;
+  }
   
   .header {
     display: flex;
@@ -249,6 +288,12 @@ export const ReviewItem = styled.div`
     border-radius: 8px;
     margin-bottom: 12px;
     display: block;
+
+    @media (max-width: 768px) {
+      max-width: 100%;
+      height: auto;
+      max-height: 200px;
+    }
   }
 
   .footer {

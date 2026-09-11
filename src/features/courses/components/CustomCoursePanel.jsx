@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { FiCheck, FiCompass, FiX } from "react-icons/fi";
-import { FaLocationArrow, FaSearch } from "react-icons/fa";
+import { FaLocationArrow, FaMapMarkerAlt, FaTimes } from "react-icons/fa";
 import { CourseAPI } from "../../../api/course";
 import { PlaceAPI } from "../../../api/place";
 import { createUserCourse } from "../utils/userCourseStorage";
@@ -19,10 +19,6 @@ import {
   Header,
   IconButton,
   InlineSpinner,
-  OriginLocationButton,
-  OriginSearchBar,
-  OriginSearchButton,
-  OriginSearchInput,
   PanelBody,
   PanelContainer,
   PanelTitle,
@@ -33,6 +29,7 @@ import {
   TagOption,
 } from "./CustomCoursePanel.styles";
 import {
+  PointFields, PointRow, PointInput, LocationButton, MapPickButton, ClearPointButton,
   InlineState,
   SearchResultButton,
   SearchResults,
@@ -83,7 +80,7 @@ const toWaypoint = (candidate) => {
   };
 };
 
-const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
+const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginPick, onCancelOriginPick, isOriginPickMode = false }) => {
   const [origin, setOrigin] = useState(null);
   const [originText, setOriginText] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -166,6 +163,8 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
 
     return () => controller.abort();
   }, []);
+
+  useEffect(() => () => onCancelOriginPick?.(), [onCancelOriginPick]);
 
   const clearGeneratedData = () => {
     recommendationControllerRef.current?.abort();
@@ -465,7 +464,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
   };
 
   return (
-    <PanelContainer aria-label="순례자의 길 제작">
+    <PanelContainer aria-label="순례자의 길 제작" $isPicking={isOriginPickMode} aria-hidden={isOriginPickMode} inert={isOriginPickMode}>
       <Header>
         <PanelTitle>
           <FiCompass aria-hidden="true" />
@@ -490,39 +489,38 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
               performOriginSearch();
             }}
           >
-            <OriginSearchBar>
-              <OriginSearchInput
-                id="course-origin"
-                aria-label="출발지"
-                value={originText}
-                placeholder="검색어를 입력해주세요"
-                autoComplete="off"
-                enterKeyHint="search"
-                aria-describedby="course-origin-help"
-                onChange={(event) => updateOriginText(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && event.nativeEvent.isComposing) {
-                    event.preventDefault();
-                  }
-                }}
-              />
-              <OriginSearchButton
-                type="submit"
-                aria-label="출발지 검색"
-                title="검색"
-              >
-                <FaSearch size={18} aria-hidden="true" />
-              </OriginSearchButton>
-            </OriginSearchBar>
+            <PointFields>
+              <PointRow $accent="#2196F3" $last>
+                <label htmlFor="course-origin">출발지</label>
+                <PointInput
+                  id="course-origin"
+                  value={originText}
+                  placeholder="장소명 입력 후 Enter"
+                  autoComplete="off"
+                  enterKeyHint="search"
+                  aria-describedby="course-origin-help"
+                  onChange={(event) => updateOriginText(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault();
+                  }}
+                />
+                <LocationButton type="button" title="현재 위치를 출발지로 사용" aria-label="현재 위치를 출발지로 사용" onClick={useCurrentLocation}>
+                  <FaLocationArrow />
+                </LocationButton>
+                <MapPickButton type="button" title="지도에서 출발지 선택" aria-label="지도에서 출발지 선택" onClick={() => {
+                  searchControllerRef.current?.abort();
+                  setSearchState("idle");
+                  setSearchResults([]);
+                  onRequestOriginPick?.(selectOrigin);
+                }}>
+                  <FaMapMarkerAlt />
+                </MapPickButton>
+                <ClearPointButton type="button" title="출발지 지우기" aria-label="출발지 지우기" disabled={!origin} onClick={() => updateOriginText("")}>
+                  <FaTimes />
+                </ClearPointButton>
+              </PointRow>
+            </PointFields>
           </form>
-          <OriginLocationButton
-            type="button"
-            onClick={useCurrentLocation}
-            aria-label="현재 위치를 출발지로 사용"
-          >
-            <FaLocationArrow aria-hidden="true" />
-            현재 위치를 출발지로
-          </OriginLocationButton>
           <FieldMessage id="course-origin-help">
             검색 결과에서 출발지를 선택해주세요.
           </FieldMessage>
@@ -722,7 +720,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
           >
             {creationState === "loading" ? (
               <>
-                <InlineSpinner /> 로딩중 ...
+                <InlineSpinner /> 코스 설명 생성중...
               </>
             ) : (
               "순례길 코스 제작"

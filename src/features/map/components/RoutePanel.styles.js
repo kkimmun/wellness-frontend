@@ -17,9 +17,11 @@ export const RoutePanelContainer = styled.aside`
   box-shadow: 4px 0 18px rgba(0, 0, 0, 0.14);
   transform: ${({ $isOpen }) =>
     $isOpen ? "translateX(0)" : "translateX(-105%)"};
-  transition: transform 0.3s ease-in-out;
+  visibility: ${({ $isOpen }) => ($isOpen ? "visible" : "hidden")};
+  transition: transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
   pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
 
+  /* ── 모바일: 좌측 풀패널 → 하단 바텀시트로 전환 ── */
   @media (max-width: 768px) {
     /* 위치를 좌측 슬라이드에서 하단 슬라이드로 완전히 재정의 */
     inset: auto 0 0 0;
@@ -140,8 +142,15 @@ export const PointFields = styled.div`
 `;
 
 export const PointRow = styled.div`
+<<<<<<< HEAD
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr) 36px 36px;
+=======
+  display: flex;
+  > label { flex: 0 0 58px; }
+  > input { flex: 1; }
+  > button { flex-shrink: 0; order: 2; }
+>>>>>>> origin/main
   align-items: center;
   gap: 10px;
   padding: 9px 0;
@@ -248,10 +257,11 @@ export const MapPickButton = styled(LocationButton)`
 `;
 
 export const ClearPointButton = styled(LocationButton)`
+  && { order: 1; }
   color: ${theme.colors.textMuted};
 
   &:disabled {
-    visibility: hidden;
+    display: none;
   }
 `;
 

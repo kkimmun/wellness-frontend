@@ -78,7 +78,11 @@ const Top10Panel = ({
   const isLoading = hasProvidedPlaces ? placesLoading : loading;
 
   return (
-    <PanelContainer $isOpen={isOpen}>
+    <PanelContainer
+      $isOpen={isOpen}
+      aria-hidden={!isOpen}
+      inert={!isOpen ? "" : undefined}
+    >
       <Header>
         <button className="close-btn" onClick={onClose} aria-label={title + " 닫기"}>
           <span className="desktop-icon"><FaChevronLeft size={20} /></span>

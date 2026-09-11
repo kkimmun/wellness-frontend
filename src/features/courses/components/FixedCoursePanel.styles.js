@@ -36,6 +36,7 @@ export const PanelContainer = styled.section`
     max-height: calc(100% - 32px);
     padding: ${theme.spacing.md};
   }
+
   /* 모바일: 하단 바텀시트 */
   @media (max-width: 768px) {
     position: fixed;
@@ -94,6 +95,11 @@ export const Header = styled.div`
   justify-content: space-between;
   gap: ${theme.spacing.md};
   margin-bottom: ${theme.spacing.md};
+
+  @media (max-width: 768px) {
+    padding-top: 4px;
+    flex-shrink: 0;
+  }
 `;
 
 export const HeaderText = styled.div`
@@ -158,6 +164,11 @@ export const CourseList = styled.ol`
   &::-webkit-scrollbar-thumb {
     background: ${theme.colors.borderLight};
     border-radius: ${theme.radius.pill};
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 0 8px 0;
+    -webkit-overflow-scrolling: touch;
   }
 `;
 

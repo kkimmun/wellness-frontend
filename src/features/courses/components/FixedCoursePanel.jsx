@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FiChevronRight,
   FiClock,
@@ -121,7 +121,6 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
     setPrevSelectedCourseNo(selectedCourseNo);
     setMobileHeight(null);
   }
-
   useEffect(() => {
     let isCancelled = false;
 

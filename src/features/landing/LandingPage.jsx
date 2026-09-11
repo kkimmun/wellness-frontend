@@ -21,8 +21,6 @@ const LandingPage = () => {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-
-
   const handleLogout = async () => {
     try {
       await logout();

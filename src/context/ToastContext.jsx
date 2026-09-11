@@ -7,20 +7,27 @@ const ToastContext = createContext(null);
 
 // --- Styled Components ---
 
-const slideIn = keyframes`
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+const slideUp = keyframes`
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 `;
 
 const ToastContainerWrapper = styled.div`
   position: fixed;
-  top: 24px;
+  bottom: 24px;
   right: 24px;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse; /* 새 알림이 아래쪽에 쌓이도록 */
   gap: 12px;
   z-index: 9999;
   pointer-events: none;
+
+  @media (max-width: 768px) {
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    left: 16px;
+    right: 16px;
+    align-items: center;
+  }
 `;
 
 const ToastBox = styled.div`
@@ -40,7 +47,14 @@ const ToastBox = styled.div`
     return theme.colors.textSecondary || '#666';
   }};
   
-  animation: ${slideIn} 0.3s ease-out forwards;
+  animation: ${slideUp} 0.3s ease-out forwards;
+
+  @media (max-width: 768px) {
+    min-width: 0;
+    width: 100%;
+    max-width: 420px;
+    padding: 12px 16px;
+  }
 
   .toast-content {
     display: flex;
