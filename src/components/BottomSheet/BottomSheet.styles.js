@@ -5,10 +5,14 @@ export const Overlay = styled.div`
   position: fixed;
   inset: 0;
   background-color: ${theme.colors.bgDim};
-  display: ${({ $visible }) => ($visible ? "flex" : "none")};
+  display: flex;
   justify-content: center;
   align-items: flex-end; /* bottom sheet */
   z-index: 1000;
+  visibility: ${({ $visible }) => ($visible ? "visible" : "hidden")};
+  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+  pointer-events: ${({ $visible }) => ($visible ? "auto" : "none")};
+  transition: opacity 0.2s ease, visibility 0.2s ease;
 `;
 
 export const SheetContainer = styled.div`

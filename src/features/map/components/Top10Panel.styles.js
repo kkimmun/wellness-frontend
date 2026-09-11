@@ -11,7 +11,9 @@ export const PanelContainer = styled.div`
   display: flex;
   flex-direction: column;
   transform: ${({ $isOpen }) => ($isOpen ? "translateX(0)" : "translateX(-100%)")};
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  visibility: ${({ $isOpen }) => ($isOpen ? "visible" : "hidden")};
+  pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   overflow-y: hidden;
 `;
