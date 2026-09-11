@@ -37,7 +37,7 @@ const Header = () => {
 
   const handleNavigate = (path) => {
     navigate(path, path === "/map"
-      ? { state: { hideInitialTop10: true } }
+      ? { state: { hideInitialTop10: true, resetMapView: true } }
       : undefined);
     setMobileOpen(false);
     setProfileOpen(false);
@@ -82,8 +82,10 @@ const Header = () => {
     location.pathname === "/map" && currentMapMode === "j";
   const isRecommendationModeActive =
     location.pathname === "/map" && currentMapMode === "p";
+  const isRouteMenuActive = location.pathname === "/map" && currentMapMode === "route";
   const isRegularMapActive =
     location.pathname === "/map" &&
+    !isRouteMenuActive &&
     !isTravelPlanActive &&
     !isRecommendationModeActive;
 
@@ -113,6 +115,12 @@ const Header = () => {
             onClick={() => handleNavigate("/map")}
           >
             지도
+          </NavItem>
+          <NavItem
+            $active={isRouteMenuActive}
+            onClick={() => handleNavigate("/map?mode=route")}
+          >
+            길찾기
           </NavItem>
           <NavItem
             $active={location.pathname === "/gimpoTop10"}
@@ -208,6 +216,12 @@ const Header = () => {
             onClick={() => handleNavigate("/map")}
           >
             지도
+          </MobileNavItem>
+          <MobileNavItem
+            $active={isRouteMenuActive}
+            onClick={() => handleNavigate("/map?mode=route")}
+          >
+            길찾기
           </MobileNavItem>
           <MobileNavItem
             $active={location.pathname === "/gimpoTop10"}

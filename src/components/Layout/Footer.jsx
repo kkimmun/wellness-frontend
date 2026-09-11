@@ -10,6 +10,7 @@ import {
 
 const FOOTER_MENUS = [
   { id: "map", label: "지도", path: "/map" },
+  { id: "route", label: "길찾기", path: "/map?mode=route" },
   {
     id: "pilgrim",
     label: "순례길 목록",
@@ -35,7 +36,7 @@ function Footer() {
       <FooterNav>
         {FOOTER_MENUS.map((menu) => (
           <FooterNavItem key={menu.id} onClick={() => navigate(menu.path,
-            menu.path === "/map" ? { state: { hideInitialTop10: true } } : undefined,
+            menu.path === "/map" ? { state: { hideInitialTop10: true, resetMapView: true } } : undefined,
           )}>
             <span>{menu.label}</span>
 
