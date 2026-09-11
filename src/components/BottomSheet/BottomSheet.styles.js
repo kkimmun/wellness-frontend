@@ -12,6 +12,7 @@ export const Overlay = styled.div`
 `;
 
 export const SheetContainer = styled.div`
+  position: relative;
   background-color: ${theme.colors.bgWhite};
   border-top-left-radius: ${theme.radius.lg};
   border-top-right-radius: ${theme.radius.lg};

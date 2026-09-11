@@ -120,6 +120,8 @@ const SearchPanel = ({
       $hasResults={hasSearched || showFilteredResults}
       $mobileHeight={mobileHeight}
       $isDragging={isDragging}
+      aria-hidden={!isVisible}
+      inert={!isVisible}
     >
       <DragHandle
         onTouchStart={handleDragStart}
