@@ -42,9 +42,9 @@ export const BottomSheet = ({
   );
   const visible = isOpen && activeId === titleId;
 
-  // Register stack entry when opening
   useLayoutEffect(() => {
-    if (isOpen) return modalStack.register(titleId, priority);
+    if (!isOpen) return undefined;
+    return modalStack.register(titleId, priority);
   }, [isOpen, titleId, priority]);
 
   // Focus management
@@ -67,7 +67,12 @@ export const BottomSheet = ({
   };
 
   return createPortal(
-    <S.Overlay $visible={visible} onClick={handleOverlayClick}>
+    <S.Overlay
+      $visible={visible}
+      aria-hidden={!visible}
+      inert={!visible}
+      onClick={handleOverlayClick}
+    >
       <S.SheetContainer
         ref={containerRef}
         $size={size}

@@ -34,7 +34,7 @@ export const PanelContainer = styled.div`
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 12px));
     box-sizing: border-box;
-    z-index: 200;
+    z-index: 250;
     pointer-events: auto;
     transform: ${({ $isVisible }) =>
       $isVisible ? "translateY(0)" : "translateY(100%)"};

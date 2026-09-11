@@ -150,11 +150,12 @@ export const MapPinToolbar = styled.div`
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
 
-  /* 모바일: FloatingTags 제거 후 상단 우측 배치 */
+  /* 모바일: FloatingTags 제거 후 상단 우측 배치, 바텀시트(z-index: 250) 아래에 위치 */
   @media (max-width: 768px) {
     top: 76px;
     right: 12px;
     left: auto;
+    z-index: 50;
     flex-direction: row;
     gap: 6px;
     padding: 5px 8px;
