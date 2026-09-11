@@ -365,7 +365,7 @@ const MapPage = () => {
   const [recommendationNearbyState, setRecommendationNearbyState] = useState("idle");
 
   const [top10OverlayState, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
-  const [dismissedTop10Entry, setDismissedTop10Entry] = useState(null);
+  const [isInitialTop10Dismissed, setIsInitialTop10Dismissed] = useState(false);
   const [top10Places, setTop10Places] = useState([]);
   const top10PlaceNos = useMemo(
     () => new Set(top10Places.map((place) => String(place.placeNo))),
@@ -565,8 +565,8 @@ const MapPage = () => {
   const isInitialMapTop10 =
     location.pathname === "/map" &&
     !mapMode &&
+    !isInitialTop10Dismissed &&
     !location.state?.hideInitialTop10 &&
-    dismissedTop10Entry !== location.key &&
     !isRouteOpen &&
     !routeOrigin &&
     !routeDestination &&
@@ -1188,7 +1188,19 @@ const MapPage = () => {
     }
   };
 
+  const [prevPlaceNo, setPrevPlaceNo] = useState(placeNo);
+  if (prevPlaceNo !== placeNo) {
+    setPrevPlaceNo(placeNo);
+    if (!placeNo) {
+      setTop10Overlay(null);
+      setTop10OverlayDetail(null);
+    }
+  }
+
   const handlePlaceSelect = (place) => {
+    setIsInitialTop10Dismissed(true);
+    setTop10Overlay(null);
+    setTop10OverlayDetail(null);
     if (!placeNo && mapRef.current) {
       const center = mapRef.current.getCenter();
       detailReturnViewRef.current = { lat: center.getLat(), lng: center.getLng(), level: mapRef.current.getLevel() };
@@ -1200,6 +1212,9 @@ const MapPage = () => {
   };
 
   const returnFromPlaceDetail = () => {
+    setTop10Overlay(null);
+    setTop10OverlayDetail(null);
+    setIsInitialTop10Dismissed(true);
     if (location.state?.returnToMapHistory) {
       navigate(-1);
     } else {
@@ -1926,7 +1941,7 @@ const MapPage = () => {
       {/* 길찾기 기능 연동: 지도 위 독립 패널에서 입력·검색·결과 선택을 처리한다. */}
       <RoutePanel
         key={`route-input-${routeInputRevision}`}
-        isOpen={isRouteOpen && !isCourseView && !isTravelMode}
+        isOpen={isRouteOpen && !isCourseView && !isTravelMode && !isTop10Screen}
         initialOrigin={routeOrigin}
         initialDestination={routeDestination}
         onClose={endRoute}
@@ -1937,7 +1952,7 @@ const MapPage = () => {
       />
 
       {/* 길찾기 패널 표시 전환: 경로 상태는 유지하고 패널만 접거나 다시 연다. */}
-      {!isTravelMode && !isCourseView && hasRouteSession && (
+      {!isTravelMode && !isCourseView && !isTop10Screen && hasRouteSession && (
         <RouteReopenButton
           type="button"
           $isOpen={isRouteOpen}
@@ -2545,7 +2560,7 @@ const MapPage = () => {
         onPlacesLoaded={setTop10Places}
         onClose={() => {
           setTop10Overlay(null);
-          setDismissedTop10Entry(location.key);
+          setIsInitialTop10Dismissed(true);
           if (isTop10Route) {
             navigate("/map", { state: { hideInitialTop10: true } });
           }

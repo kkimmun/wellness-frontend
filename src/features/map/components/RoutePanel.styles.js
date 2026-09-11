@@ -21,7 +21,54 @@ export const RoutePanelContainer = styled.aside`
   pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
 
   @media (max-width: 768px) {
-    width: min(100%, 540px);
+    /* 위치를 좌측 슬라이드에서 하단 슬라이드로 완전히 재정의 */
+    inset: auto 0 0 0;
+    width: 100%;
+    height: ${({ $mobileHeight }) => $mobileHeight ?? "40vh"};
+    min-height: 140px;
+    max-height: calc(100dvh - 56px);
+
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+
+    /* 좌측 슬라이드 대신 하단에서 위로 올라오는 애니메이션 */
+    transform: ${({ $isOpen }) =>
+      $isOpen ? "translateY(0)" : "translateY(105%)"};
+
+    /* 드래그 중에는 transition을 끄고 손가락을 놓을 때만 스냅 애니메이션 적용 */
+    transition: ${({ $isDragging }) =>
+      $isDragging
+        ? "none"
+        : "transform 0.3s ease-in-out, height 0.25s ease-out"};
+  }
+`;
+
+/* 모바일 전용 드래그 핸들 바 */
+export const DragHandle = styled.div`
+  display: none; /* 데스크톱에서는 숨김 */
+
+  @media (max-width: 768px) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 10px 0 6px;
+    cursor: grab;
+    flex-shrink: 0;
+    touch-action: none; /* 드래그 중 브라우저 스크롤 방지 */
+
+    &::after {
+      content: "";
+      display: block;
+      width: 44px;
+      height: 5px;
+      border-radius: 999px;
+      background: ${theme.colors.borderLight};
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
   }
 `;
 
@@ -36,6 +83,13 @@ export const RouteHeader = styled.header`
     margin: 0;
     font-size: 22px;
     font-weight: 800;
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+    h2 {
+      font-size: 18px;
+    }
   }
 `;
 
@@ -68,6 +122,10 @@ export const RouteBody = styled.div`
     border-radius: 999px;
     background: #d4d4d8;
   }
+
+  @media (max-width: 768px) {
+    padding: 12px 16px 20px;
+  }
 `;
 
 export const PointFields = styled.div`
@@ -75,11 +133,15 @@ export const PointFields = styled.div`
   border: 1px solid ${theme.colors.borderLight};
   border-radius: ${theme.radius.lg};
   background: ${theme.colors.bgLight};
+
+  @media (max-width: 768px) {
+    padding: 10px 12px;
+  }
 `;
 
 export const PointRow = styled.div`
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) 36px 36px 36px;
+  grid-template-columns: 58px minmax(0, 1fr) 36px 36px;
   align-items: center;
   gap: 10px;
   padding: 9px 0;
@@ -91,12 +153,36 @@ export const PointRow = styled.div`
     font-weight: 700;
     color: ${({ $accent }) => $accent || theme.colors.textSecondary};
   }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 46px minmax(0, 1fr) 32px 32px;
+    gap: 6px;
+    padding: 6px 0;
+
+    label {
+      font-size: 12px;
+    }
+  }
+`;
+
+export const PointInputWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  background: ${theme.colors.bgWhite};
+  border: 1px solid ${theme.colors.borderLight};
+  border-radius: ${theme.radius.md};
+  padding: 2px 6px;
+
+  &:focus-within {
+    border-color: ${theme.colors.primaryHover};
+  }
 `;
 
 export const PointInput = styled.input`
-  width: 100%;
+  flex: 1;
   min-width: 0;
-  padding: 8px 4px;
+  padding: 6px 4px;
   border: 0;
   outline: 0;
   color: ${theme.colors.textPrimary};
@@ -105,6 +191,30 @@ export const PointInput = styled.input`
 
   &::placeholder {
     color: ${theme.colors.textMuted};
+  }
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+    padding: 5px 2px;
+  }
+`;
+
+export const PointClearButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  color: #94a3b8;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 50%;
+  transition: color 0.2s, background-color 0.2s;
+
+  &:hover {
+    color: #475569;
+    background-color: rgba(0, 0, 0, 0.05);
   }
 `;
 
@@ -122,6 +232,12 @@ export const LocationButton = styled.button`
   &:hover {
     border-color: ${theme.colors.primary};
     background: #eefaff;
+  }
+
+  @media (max-width: 768px) {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
   }
 `;
 

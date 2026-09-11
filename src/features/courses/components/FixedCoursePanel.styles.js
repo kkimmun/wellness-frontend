@@ -36,6 +36,56 @@ export const PanelContainer = styled.section`
     max-height: calc(100% - 32px);
     padding: ${theme.spacing.md};
   }
+  /* 모바일: 하단 바텀시트 */
+  @media (max-width: 768px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100vw;
+    height: ${({ $mobileHeight }) => $mobileHeight || "40vh"};
+    max-height: calc(100dvh - 56px);
+    overflow: hidden;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    padding: 0 16px calc(12px + env(safe-area-inset-bottom, 12px));
+    box-sizing: border-box;
+    z-index: 200;
+    transition: ${({ $isDragging }) =>
+      $isDragging ? "none" : "height 0.2s ease"};
+  }
+`;
+
+/* 모바일에서만 표시되는 드래그 핸들 */
+export const DragHandle = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: calc(100% + 32px); /* 좌우 padding 보정 */
+    margin: 0 -16px;
+    padding: 10px 0 12px;
+    flex-shrink: 0;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    &::after {
+      content: "";
+      width: 40px;
+      height: 4px;
+      background-color: #cbd5e1;
+      border-radius: 2px;
+    }
+  }
 `;
 
 export const Header = styled.div`

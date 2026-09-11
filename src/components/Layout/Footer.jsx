@@ -3,55 +3,49 @@ import {
   FooterContainer,
   FooterNav,
   FooterNavItem,
-  FooterSubMenuList,
-  FooterSubMenuItem,
   CopyrightText,
 } from "./Footer.styles";
 
+import { useAuth } from "../../context/AuthContext";
+
 const FOOTER_MENUS = [
   { id: "map", label: "지도", path: "/map" },
-  {
-    id: "pilgrim",
-    label: "순례길 목록",
-    path: "/pilgrim/fixed",
-    subMenus: [
-      { id: "pilgrim-fixed", label: "순례길 목록", path: "/pilgrim/fixed" },
-    ],
-  },
-  { id: "gimpoTop10", label: "김포 Top10", path: "/gimpoTop10" },
+  { id: "gimpoTop10", label: "TOP 10", path: "/gimpoTop10" },
+  { id: "plan", label: "계획모드", path: "/map?mode=j", requiresAuth: true },
+  { id: "recommend", label: "추천모드", path: "/map?mode=p", requiresAuth: true },
+  { id: "pilgrim", label: "순례길 목록", path: "/pilgrim/fixed" },
 ];
 
 function Footer() {
   const navigate = useNavigate();
+  const { status } = useAuth();
+  const isLoggedIn = status === "authenticated";
 
-  // 하위 메뉴 클릭 시 이벤트 버블링(상위 메뉴 클릭 이벤트) 방지
-  const handleSubMenuClick = (e, path) => {
-    e.stopPropagation();
-    navigate(path);
+  const handleMenuClick = (menu) => {
+    if (menu.requiresAuth && !isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+
+    if (menu.id === "plan") {
+      navigate("/map?mode=j", { state: { planView: "saved" } });
+      return;
+    }
+
+    if (menu.id === "map") {
+      navigate("/map", { state: { hideInitialTop10: true } });
+      return;
+    }
+
+    navigate(menu.path);
   };
 
   return (
     <FooterContainer>
       <FooterNav>
         {FOOTER_MENUS.map((menu) => (
-          <FooterNavItem key={menu.id} onClick={() => navigate(menu.path,
-            menu.path === "/map" ? { state: { hideInitialTop10: true } } : undefined,
-          )}>
+          <FooterNavItem key={menu.id} onClick={() => handleMenuClick(menu)}>
             <span>{menu.label}</span>
-
-            {/* 서브메뉴가 존재하는 경우 렌더링 */}
-            {menu.subMenus && (
-              <FooterSubMenuList>
-                {menu.subMenus.map((subMenu) => (
-                  <FooterSubMenuItem
-                    key={subMenu.id}
-                    onClick={(e) => handleSubMenuClick(e, subMenu.path)}
-                  >
-                    {subMenu.label}
-                  </FooterSubMenuItem>
-                ))}
-              </FooterSubMenuList>
-            )}
           </FooterNavItem>
         ))}
       </FooterNav>

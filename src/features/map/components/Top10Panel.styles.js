@@ -14,6 +14,25 @@ export const PanelContainer = styled.div`
   transition: transform 0.3s ease-in-out;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   overflow-y: hidden;
+
+  @media (max-width: 768px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100vw;
+    height: 45vh;
+    max-height: calc(100dvh - 56px);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 210;
+    transform: ${({ $isOpen }) =>
+      $isOpen ? "translateY(0)" : "translateY(110%)"};
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 12px));
+    box-sizing: border-box;
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.3s ease;
+  }
 `;
 
 export const Header = styled.div`
@@ -36,8 +55,36 @@ export const Header = styled.div`
     cursor: pointer;
     color: #666;
     padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     &:hover {
       color: #333;
+    }
+
+    .desktop-icon {
+      display: flex;
+      align-items: center;
+    }
+    .mobile-icon {
+      display: none;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .desktop-icon {
+        display: none;
+      }
+      .mobile-icon {
+        display: flex;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 8px 16px 12px;
+    h2 {
+      font-size: 18px;
     }
   }
 `;

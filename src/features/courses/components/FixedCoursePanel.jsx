@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   FiChevronRight,
   FiClock,
@@ -20,6 +20,7 @@ import {
   CourseList,
   CourseMeta,
   CourseName,
+  DragHandle,
   EmptyState,
   ErrorState,
   Header,
@@ -60,6 +61,66 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
   const listRef = useRef(null);
   const sentinelRef = useRef(null);
   const requestingNextPageRef = useRef(false);
+
+  // 모바일 바텀시트 드래그 리사이즈 (SearchPanel과 동일한 방식)
+  const [mobileHeight, setMobileHeight] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartYRef = useRef(null);
+  const dragStartHRef = useRef(null);
+  const panelRef = useRef(null);
+
+  const handleDragStart = (e) => {
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStartYRef.current = clientY;
+    dragStartHRef.current =
+      panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.4;
+    setIsDragging(true);
+  };
+
+  const handleDragMove = useCallback(
+    (e) => {
+      if (!isDragging || dragStartYRef.current === null) return;
+      // 터치 스크롤과 드래그 충돌 방지
+      if (e.cancelable) e.preventDefault();
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const deltaY = dragStartYRef.current - clientY;
+      const newHeight = Math.min(
+        window.innerHeight - 56,
+        Math.max(120, dragStartHRef.current + deltaY),
+      );
+      setMobileHeight(`${newHeight}px`);
+    },
+    [isDragging],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    dragStartYRef.current = null;
+  }, [isDragging]);
+
+  useEffect(() => {
+    if (!isDragging) return undefined;
+    const onMove = (e) => handleDragMove(e);
+    const onEnd = () => handleDragEnd();
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    // passive: false — preventDefault() 호출을 위해 필수
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
+
+  const [prevSelectedCourseNo, setPrevSelectedCourseNo] = useState(selectedCourseNo);
+  if (prevSelectedCourseNo !== selectedCourseNo) {
+    setPrevSelectedCourseNo(selectedCourseNo);
+    setMobileHeight(null);
+  }
 
   useEffect(() => {
     let isCancelled = false;
@@ -183,7 +244,17 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
   };
 
   return (
-    <PanelContainer aria-label="순례길 목록">
+    <PanelContainer
+      ref={panelRef}
+      $mobileHeight={mobileHeight}
+      $isDragging={isDragging}
+      aria-label="순례길 목록"
+    >
+      <DragHandle
+        onTouchStart={handleDragStart}
+        onMouseDown={handleDragStart}
+        aria-hidden="true"
+      />
       <Header>
         <HeaderText>
           <h2>

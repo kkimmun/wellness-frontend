@@ -1,7 +1,7 @@
 import { visibleMapPlaces } from "../utils/placeVisibility";
 import useIncrementalPlaces from "../hooks/useIncrementalPlaces";
 import PlaceImage from "../../../components/PlaceImage";
-import { FaChevronLeft } from "react-icons/fa";
+import { FaChevronLeft, FaChevronDown } from "react-icons/fa";
 import {
   PanelContainer,
   Header,
@@ -80,8 +80,9 @@ const Top10Panel = ({
   return (
     <PanelContainer $isOpen={isOpen}>
       <Header>
-        <button className="close-btn" onClick={onClose}>
-          <FaChevronLeft size={20} />
+        <button className="close-btn" onClick={onClose} aria-label={title + " 닫기"}>
+          <span className="desktop-icon"><FaChevronLeft size={20} /></span>
+          <span className="mobile-icon"><FaChevronDown size={18} /></span>
         </button>
         <h2>{title}</h2>
         <div style={{ width: 30 }} /> {/* 균형을 맞추기 위한 빈 공간 */}

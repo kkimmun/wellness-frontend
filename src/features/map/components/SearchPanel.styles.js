@@ -20,8 +20,29 @@ export const PanelContainer = styled.div`
   pointer-events: none;
 
   @media (max-width: 768px) {
-    width: 100%;
-    max-height: 65%;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    top: auto;
+    height: ${({ $mobileHeight, $hasResults }) =>
+      $mobileHeight || ($hasResults ? "40vh" : "auto")};
+    max-height: calc(100dvh - 56px);
+    background-color: ${theme.colors.bgWhite};
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 12px));
+    box-sizing: border-box;
+    z-index: 250;
+    pointer-events: ${({ $isVisible }) => ($isVisible ? "auto" : "none")};
+    visibility: ${({ $isVisible }) => ($isVisible ? "visible" : "hidden")};
+    transform: ${({ $isVisible }) =>
+      $isVisible ? "translateY(0)" : "translateY(110%)"};
+    transition: ${({ $isDragging }) =>
+      $isDragging
+        ? "none"
+        : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), height 0.2s ease, visibility 0.3s ease"};
   }
 `;
 
@@ -45,6 +66,16 @@ export const CompactSearchBarBox = styled.div`
   background: white;
   box-shadow: ${({ $isFloating }) => ($isFloating ? "0 4px 16px rgba(0, 0, 0, 0.12)" : "none")};
   pointer-events: auto;
+
+  @media (max-width: 768px) {
+    border-radius: 30px;
+    padding: 4px 6px 4px 16px;
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    box-shadow: none;
+    min-height: 44px;
+    box-sizing: border-box;
+  }
 `;
 
 export const CompactSearchInput = styled.input`
@@ -56,6 +87,25 @@ export const CompactSearchInput = styled.input`
   color: #333;
   background: transparent;
   &::placeholder { color: #a4b5be; }
+`;
+
+export const ClearButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  color: #94a3b8;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 50%;
+  transition: color 0.2s, background-color 0.2s;
+
+  &:hover {
+    color: #475569;
+    background-color: rgba(0, 0, 0, 0.05);
+  }
 `;
 
 export const CompactSearchButton = styled.button`
@@ -70,6 +120,109 @@ export const CompactSearchButton = styled.button`
   color: white;
   cursor: pointer;
   &:hover { background: #334155; }
+
+  @media (max-width: 768px) {
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+`;
+
+export const SearchBarBox = CompactSearchBarBox;
+export const SearchInput = CompactSearchInput;
+export const SearchButton = CompactSearchButton;
+
+export const DragHandle = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 6px 0 10px;
+    flex-shrink: 0;
+    cursor: grab;
+    touch-action: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    &::after {
+      content: "";
+      width: 36px;
+      height: 4px;
+      background-color: #cbd5e1;
+      border-radius: 2px;
+    }
+  }
+`;
+
+export const MobileFilterBar = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    flex-shrink: 0;
+    padding: 6px 0 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    select {
+      flex: 1;
+      min-width: 0;
+      padding: 5px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      background: #f1f5f9;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+
+      &:focus {
+        border-color: #90caf9;
+      }
+      &:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+    }
+
+    button {
+      flex-shrink: 0;
+      padding: 5px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      background: #f1f5f9;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      white-space: nowrap;
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+    }
+  }
 `;
 
 export const ResultListContainer = styled(ListContainer)`
@@ -141,60 +294,5 @@ export const LoadingSpinner = styled.div`
   text-align: center;
   color: #777;
   font-size: 13px;
-`;
-
-export const SearchBarBox = styled.div`
-  display: flex;
-  align-items: center;
-  background-color: ${theme.colors.bgWhite};
-  border: none; /* 테두리 제거 */
-  border-radius: 30px; /* 더 둥글게 (알약 형태) */
-  padding: 9px 9px 9px 24px; /* 1.5배 */
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12); /* 항상 고정된 부드러운 그림자 */
-
-  @media (max-width: 768px) {
-    padding: 6px 6px 6px 16px;
-  }
-`;
-
-export const SearchInput = styled.input`
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 21px; /* 14px * 1.5 */
-  color: ${theme.colors.textPrimary};
-  background: transparent;
-
-  &::placeholder {
-    color: ${theme.colors.textMuted};
-  }
-
-  @media (max-width: 768px) {
-    font-size: 16px;
-  }
-`;
-
-export const SearchButton = styled.button`
-  width: 54px; /* 36 * 1.5 */
-  height: 54px;
-  border-radius: 50%;
-  background-color: #475569;
-  color: ${theme.colors.bgWhite};
-  border: none;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  flex-shrink: 0;
-
-  &:hover {
-    background-color: #334155;
-  }
-
-  @media (max-width: 768px) {
-    width: 40px;
-    height: 40px;
-  }
 `;
 

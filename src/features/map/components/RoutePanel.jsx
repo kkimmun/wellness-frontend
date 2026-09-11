@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   FaBicycle,
   FaBus,
@@ -15,7 +15,7 @@ import {
 import { RouteAPI } from "../../../api/route";
 import {
   AddWaypointButton,
-  ClearPointButton,
+  DragHandle,
   EmptyState,
   FindRouteButton,
   IconButton,
@@ -26,6 +26,8 @@ import {
   OptionGrid,
   PointFields,
   PointInput,
+  PointInputWrapper,
+  PointClearButton,
   PointRow,
   RouteBody,
   RouteCard,
@@ -184,6 +186,72 @@ const RoutePanel = ({
   const routeControllerRef = useRef(null);
   const transitDetailControllerRef = useRef(null);
 
+  // ── 모바일 바텀시트 드래그 리사이즈 (기존 로직과 완전히 분리) ──────────────
+  const [mobileHeight, setMobileHeight] = useState(null); // null → CSS 기본값(40vh) 사용
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartYRef = useRef(null); // 터치 시작 Y 좌표
+  const dragStartHRef = useRef(null); // 터치 시작 시점의 패널 높이(px)
+  const panelRef = useRef(null); // RoutePanelContainer DOM 참조
+
+  const handleDragStart = (e) => {
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStartYRef.current = clientY;
+    dragStartHRef.current =
+      panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.4;
+    setIsDragging(true);
+  };
+
+  const handleDragMove = useCallback(
+    (e) => {
+      if (!isDragging || dragStartYRef.current === null) return;
+      if (e.cancelable) e.preventDefault();
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const deltaY = dragStartYRef.current - clientY; // 위로 올리면 +
+      const minAllowedH = Math.max(140, window.innerHeight * 0.25);
+      const newHeight = Math.min(
+        window.innerHeight - 56,
+        Math.max(minAllowedH, dragStartHRef.current + deltaY),
+      );
+      setMobileHeight(`${newHeight}px`);
+    },
+    [isDragging],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    dragStartYRef.current = null;
+    const currentH = parseFloat(mobileHeight) || window.innerHeight * 0.4;
+    const minAllowedH = Math.max(140, window.innerHeight * 0.25);
+    if (currentH <= minAllowedH + 10) {
+      setMobileHeight("25vh");
+    }
+  }, [isDragging, mobileHeight]);
+
+  useEffect(() => {
+    if (!isDragging) return undefined;
+    const onMove = (e) => handleDragMove(e);
+    const onEnd = () => handleDragEnd();
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
+
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (prevIsOpen !== isOpen) {
+    setPrevIsOpen(isOpen);
+    if (!isOpen) {
+      setMobileHeight(null);
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
   useEffect(
     () => () => {
       searchControllerRef.current?.abort();
@@ -650,16 +718,24 @@ const RoutePanel = ({
 
   return (
     <RoutePanelContainer
+      ref={panelRef}
       $isOpen={isOpen}
+      $mobileHeight={mobileHeight}
+      $isDragging={isDragging}
       aria-hidden={!isOpen}
       // 코드 리뷰 반영: 닫힌 패널의 입력창과 버튼이 키보드 Tab 순서에 포함되지 않도록 한다.
       inert={!isOpen}
     >
+      <DragHandle
+        onTouchStart={handleDragStart}
+        onMouseDown={handleDragStart}
+        aria-hidden="true"
+      />
       <RouteHeader>
         <h2>경로 찾기</h2>
-        {/* 길찾기 UX 개선: X는 단순 숨김이 아니라 전체 길찾기 종료를 의미한다. */}
-        <IconButton type="button" onClick={onClose} aria-label="길찾기 종료">
-          <FaTimes />
+        {/* 길찾기 UX 개선: 바텀시트를 아래로 접는 FaChevronDown 버튼 */}
+        <IconButton type="button" onClick={onClose} aria-label="경로 찾기 접기">
+          <FaChevronDown size={18} />
         </IconButton>
       </RouteHeader>
 
@@ -667,14 +743,26 @@ const RoutePanel = ({
         <PointFields>
           <PointRow $accent="#2196F3">
             <label htmlFor="route-origin">출발지</label>
-            <PointInput
-              id="route-origin"
-              value={originText}
-              placeholder="장소명 입력 후 Enter"
-              onFocus={() => setActiveTarget("origin")}
-              onChange={(event) => updatePointText("origin", event.target.value)}
-              onKeyDown={handlePointKeyDown}
-            />
+            <PointInputWrapper>
+              <PointInput
+                id="route-origin"
+                value={originText}
+                placeholder="장소명 입력 후 Enter"
+                onFocus={() => setActiveTarget("origin")}
+                onChange={(event) => updatePointText("origin", event.target.value)}
+                onKeyDown={handlePointKeyDown}
+              />
+              {originText.length > 0 && (
+                <PointClearButton
+                  type="button"
+                  title="출발지 지우기"
+                  aria-label="출발지 지우기"
+                  onClick={() => clearPoint("origin")}
+                >
+                  <FaTimes size={12} />
+                </PointClearButton>
+              )}
+            </PointInputWrapper>
             <LocationButton
               type="button"
               title="현재 위치를 출발지로 사용"
@@ -692,29 +780,32 @@ const RoutePanel = ({
             >
               <FaMapMarkerAlt />
             </MapPickButton>
-            <ClearPointButton
-              type="button"
-              disabled={!origin}
-              title="출발지 지우기"
-              aria-label="출발지 지우기"
-              onClick={() => clearPoint("origin")}
-            >
-              <FaTimes />
-            </ClearPointButton>
           </PointRow>
 
           <PointRow $accent="#FF7043" $last>
             <label htmlFor="route-destination">도착지</label>
-            <PointInput
-              id="route-destination"
-              value={destinationText}
-              placeholder="장소명 입력 후 Enter"
-              onFocus={() => setActiveTarget("destination")}
-              onChange={(event) =>
-                updatePointText("destination", event.target.value)
-              }
-              onKeyDown={handlePointKeyDown}
-            />
+            <PointInputWrapper>
+              <PointInput
+                id="route-destination"
+                value={destinationText}
+                placeholder="장소명 입력 후 Enter"
+                onFocus={() => setActiveTarget("destination")}
+                onChange={(event) =>
+                  updatePointText("destination", event.target.value)
+                }
+                onKeyDown={handlePointKeyDown}
+              />
+              {destinationText.length > 0 && (
+                <PointClearButton
+                  type="button"
+                  title="도착지 지우기"
+                  aria-label="도착지 지우기"
+                  onClick={() => clearPoint("destination")}
+                >
+                  <FaTimes size={12} />
+                </PointClearButton>
+              )}
+            </PointInputWrapper>
             <LocationButton
               type="button"
               title="현재 위치를 도착지로 사용"
@@ -732,15 +823,6 @@ const RoutePanel = ({
             >
               <FaMapMarkerAlt />
             </MapPickButton>
-            <ClearPointButton
-              type="button"
-              disabled={!destination}
-              title="도착지 지우기"
-              aria-label="도착지 지우기"
-              onClick={() => clearPoint("destination")}
-            >
-              <FaTimes />
-            </ClearPointButton>
           </PointRow>
         </PointFields>
 
