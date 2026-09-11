@@ -69,6 +69,8 @@ export default function FixedCourseDetail({ courseNo, pins, requestKey, onClose,
 
   return (
     <S.CourseCard aria-label="고정 코스 상세정보" aria-busy={detail.status === "loading"}>
+      {/* 모바일 바텀시트 드래그 핸들 */}
+      <S.DragHandle aria-hidden="true" />
       <S.BackRow><BackButton onClick={onClose} aria-label="순례길 목록으로 돌아가기" />순례길 목록으로</S.BackRow>
       <h1>고정 코스 상세보기</h1>
       {detail.status === "error" ? (

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   FaBicycle,
   FaBus,
@@ -16,6 +16,7 @@ import { RouteAPI } from "../../../api/route";
 import {
   AddWaypointButton,
   ClearPointButton,
+  DragHandle,
   EmptyState,
   FindRouteButton,
   IconButton,
@@ -183,6 +184,64 @@ const RoutePanel = ({
   const searchControllerRef = useRef(null);
   const routeControllerRef = useRef(null);
   const transitDetailControllerRef = useRef(null);
+
+  // ── 모바일 바텀시트 드래그 리사이즈 (기존 로직과 완전히 분리) ──────────────
+  const [mobileHeight, setMobileHeight] = useState(null); // null → CSS 기본값(52vh) 사용
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartYRef = useRef(null);   // 터치 시작 Y 좌표
+  const dragStartHRef = useRef(null);   // 터치 시작 시점의 패널 높이(px)
+  const panelRef = useRef(null);        // RoutePanelContainer DOM 참조
+
+  const handleDragStart = (e) => {
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStartYRef.current = clientY;
+    dragStartHRef.current = panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.52;
+    setIsDragging(true);
+  };
+
+  const handleDragMove = useCallback(
+    (e) => {
+      if (!isDragging || dragStartYRef.current === null) return;
+      if (e.cancelable) e.preventDefault();
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const deltaY = dragStartYRef.current - clientY; // 위로 올리면 +
+      const minAllowedH = Math.max(140, window.innerHeight * 0.25);
+      const newHeight = Math.min(
+        window.innerHeight * 0.92,
+        Math.max(minAllowedH, dragStartHRef.current + deltaY),
+      );
+      setMobileHeight(`${newHeight}px`);
+    },
+    [isDragging],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    dragStartYRef.current = null;
+    const currentH = parseFloat(mobileHeight) || window.innerHeight * 0.32;
+    const minAllowedH = Math.max(140, window.innerHeight * 0.25);
+    if (currentH <= minAllowedH + 10) {
+      setMobileHeight("25vh");
+    }
+  }, [isDragging, mobileHeight]);
+
+  useEffect(() => {
+    if (!isDragging) return undefined;
+    const onMove = (e) => handleDragMove(e);
+    const onEnd = () => handleDragEnd();
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
+  // ─────────────────────────────────────────────────────────────────────────────
 
   useEffect(
     () => () => {
@@ -650,11 +709,21 @@ const RoutePanel = ({
 
   return (
     <RoutePanelContainer
+      ref={panelRef}
       $isOpen={isOpen}
+      $mobileHeight={mobileHeight}
+      $isDragging={isDragging}
       aria-hidden={!isOpen}
       // 코드 리뷰 반영: 닫힌 패널의 입력창과 버튼이 키보드 Tab 순서에 포함되지 않도록 한다.
       inert={!isOpen}
     >
+      {/* 모바일 전용 드래그 핸들: 손가락으로 잡고 올리면 패널 높이가 늘어남 */}
+      <DragHandle
+        aria-hidden
+        onTouchStart={handleDragStart}
+        onMouseDown={handleDragStart}
+      />
+
       <RouteHeader>
         <h2>경로 찾기</h2>
         {/* 길찾기 UX 개선: X는 단순 숨김이 아니라 전체 길찾기 종료를 의미한다. */}

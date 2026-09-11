@@ -13,7 +13,9 @@ export const PanelContainer = styled.div`
   display: flex;
   flex-direction: column;
   transform: ${({ $isOpen }) => ($isOpen ? "translateX(0)" : "translateX(-100%)")}; /* 음수 100%로 변경 */
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  visibility: ${({ $isOpen }) => ($isOpen ? "visible" : "hidden")};
+  pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
   overflow-y: auto;
   font-family: 'Pretendard', sans-serif;
 

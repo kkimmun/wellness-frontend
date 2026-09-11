@@ -23,15 +23,16 @@ export const Modal = ({
   priority = 0,
 }) => {
   const containerRef = useRef(null);
+  const stackId = useId();
   const titleId = useId();
   const messageId = useId();
 
   const activeId = useSyncExternalStore(modalStack.subscribe, modalStack.getSnapshot, modalStack.getSnapshot);
-  const visible = isOpen && activeId === titleId;
+  const visible = isOpen && activeId === stackId;
 
   useLayoutEffect(() => {
-    if (isOpen) return modalStack.register(titleId, priority);
-  }, [isOpen, titleId, priority]);
+    if (isOpen) return modalStack.register(stackId, priority);
+  }, [isOpen, stackId, priority]);
 
   useEffect(() => {
     if (!visible) return;
@@ -56,7 +57,7 @@ export const Modal = ({
   };
 
   return createPortal(
-    <S.Overlay $visible={visible} aria-hidden={!visible} inert={!visible} onClick={handleOverlayClick}>
+    <S.Overlay $visible={visible} aria-hidden={!visible} onClick={handleOverlayClick}>
       {/* 모달 본체 클릭 시 이벤트 버블링 차단 */}
       <S.ModalContainer
         ref={containerRef}

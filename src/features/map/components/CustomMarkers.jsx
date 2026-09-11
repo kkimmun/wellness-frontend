@@ -278,7 +278,7 @@ export const RouteMarker = ({ onClick }) => (
   </RouteMarkerWrapper>
 );
 
-import TOP10_ICONS from "./Top10Icons";
+import TOP10_ICONS, { getTop10IconByPlaceNo } from "./Top10Icons";
 import { getTop10IconKeyByName } from "../utils/top10Marker";
 
 const Top10MarkerBody = styled.div`
@@ -292,8 +292,8 @@ const Top10MarkerBody = styled.div`
   filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.25)); /* 아이콘 자체에 그림자 추가 */
 `;
 
-export const Top10Marker = ({ placeName, onClick }) => {
-  const SvgIcon = TOP10_ICONS[getTop10IconKeyByName(placeName)] ?? null;
+export const Top10Marker = ({ placeName, placeNo, onClick }) => {
+  const SvgIcon = (placeName ? TOP10_ICONS[getTop10IconKeyByName(placeName)] : null) ?? (placeNo ? getTop10IconByPlaceNo(placeNo) : null);
   // 전용 아이콘이 없는 장소는 일반 마커로 표시하고 노란 배지를 만들지 않는다.
   if (!SvgIcon) return <GeneralMarker onClick={onClick} />;
 
