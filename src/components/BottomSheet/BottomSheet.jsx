@@ -61,7 +61,7 @@ export const BottomSheet = ({
     };
   }, [visible]);
 
-  if (!isOpen || !visible) return null;
+  if (!isOpen) return null;
 
   const handleOverlayClick = () => {
     if (onClose) onClose();

@@ -44,7 +44,7 @@ export const Modal = ({
     };
   }, [visible]);
 
-  if (!isOpen || !visible) return null;
+  if (!isOpen) return null;
 
   // onCancel이 있으면 Confirm(2버튼), 없으면 Alert(1버튼) 모드로 작동
   const isConfirmMode = Boolean(onCancel);
