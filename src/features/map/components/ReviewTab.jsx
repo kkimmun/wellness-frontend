@@ -246,7 +246,7 @@ const ReviewTab = ({ place }) => {
   return (
     <ReviewContainer>
       {/* 평점 요약 */}
-      <RatingSummaryBox>
+      <RatingSummaryBox $hasReviews={totalReviewCount > 0}>
         <div className="avg-rating">
           <FaStar className="star" />
           <span className="score">{Number(avgRating).toFixed(1)}</span>

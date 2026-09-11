@@ -78,7 +78,11 @@ const Top10Panel = ({
   const isLoading = hasProvidedPlaces ? placesLoading : loading;
 
   return (
-    <PanelContainer $isOpen={isOpen}>
+    <PanelContainer
+      $isOpen={isOpen}
+      aria-hidden={!isOpen}
+      inert={!isOpen}
+    >
       <Header>
         <button className="close-btn" onClick={onClose}>
           <FaChevronLeft size={20} />
