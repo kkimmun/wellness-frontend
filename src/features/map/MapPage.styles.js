@@ -461,6 +461,17 @@ export const OverlayCard = styled.div`
       .btn-plan {
         background-color: #46558A;
       }
+      .btn-bookmark {
+        background: transparent;
+        color: #777;
+        padding: 2px;
+        display: grid;
+        place-items: center;
+
+        &:hover {
+          background: #f1f3f5;
+        }
+      }
     }
   }
   .badge {
