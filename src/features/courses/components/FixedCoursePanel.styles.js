@@ -45,8 +45,8 @@ export const PanelContainer = styled.section`
     right: 0;
     top: auto;
     width: 100vw;
-    height: ${({ $mobileHeight }) => $mobileHeight || "auto"};
-    max-height: 85vh;
+    height: ${({ $mobileHeight }) => $mobileHeight || "40vh"};
+    max-height: calc(100dvh - 56px);
     overflow: hidden;
     border-radius: 20px 20px 0 0;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
