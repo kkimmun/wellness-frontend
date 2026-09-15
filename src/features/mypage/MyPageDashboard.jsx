@@ -7,6 +7,7 @@ import { deleteTravelPlan, TRAVEL_PLAN_KIND, TRAVEL_PLAN_STORAGE_KEY } from "../
 import { formatSavedDate, getMyTrips, getProfileImage, getTravelOwnerKey, getTripMapUrl } from "./myPageModel";
 import AccountActions from "./AccountActions";
 import ProfileEditor from "./ProfileEditor";
+import SensorSection from "./SensorSection";
 import * as S from "./MyPageDashboard.styles";
 
 // 계정이 바뀌면 선택 탭·삭제 확인 대상까지 함께 초기화한다.
@@ -66,6 +67,8 @@ function Dashboard({ user }) {
         {profileMessage && <p role="status">{profileMessage}</p>}
         <S.Account><h3>계정 관리</h3><AccountActions /></S.Account>
       </S.Profile>
+      <S.MainColumn>
+      <SensorSection />
       <S.Section aria-label="저장한 여행">
         <S.Tabs role="tablist" aria-label="여행 종류">
           {[TRAVEL_PLAN_KIND.PLAN, TRAVEL_PLAN_KIND.RECOMMENDATION].map((kind) => <button key={kind} id={`tab-${kind}`} role="tab" type="button"
@@ -88,6 +91,7 @@ function Dashboard({ user }) {
           </S.Trip>)}</S.TripList> : <S.Empty><FaRoute /><h3>아직 저장한 {isPlan ? "여행 계획이" : "추천 코스가"} 없어요.</h3><p>{isPlan ? "가고 싶은 장소를 연결하고 첫 계획을 저장해보세요." : "나에게 맞는 코스를 추천받고 저장해보세요."}</p></S.Empty>}
         </div>
       </S.Section>
+      </S.MainColumn>
     </S.Layout>
     {editing && <ProfileEditor user={user} onClose={() => setEditing(false)} onSaved={(message) => { setProfileMessage(message); setEditing(false); }} />}
     <Modal isOpen={Boolean(deleteTarget)} title="저장한 여행 삭제" message={`“${deleteTarget?.name || ""}”을 삭제하시겠습니까? 삭제한 여행은 복구할 수 없습니다.`}

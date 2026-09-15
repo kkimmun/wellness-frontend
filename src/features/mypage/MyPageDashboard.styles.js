@@ -21,6 +21,7 @@ export const Layout = styled.div`
   display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 28px; align-items: start;
   @media (max-width: 900px) { grid-template-columns: 1fr; }
 `;
+export const MainColumn = styled.div`display: grid; gap: 24px; min-width: 0;`;
 export const Profile = styled.aside`
   background: white; border: 1px solid #e2e9ed; border-radius: 20px; padding: 28px 22px;
   h2 { margin: 15px 0 8px; font-size: 21px; overflow-wrap: anywhere; }
