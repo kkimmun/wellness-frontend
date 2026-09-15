@@ -10,6 +10,8 @@ import {
 } from "../../../components/Input/Input.styles";
 import { DropdownSelect } from "../../../components/Select/Select.styles";
 import { AdminPlaceAPI } from "./api/adminPlaceApi";
+import { Modal } from "../../../components/Modal/Modal";
+import { usePlaceImageDelete } from "./usePlaceImageDelete";
 import { PLACE_TYPE_GROUPS } from "./placeTypeOptions";
 import {
   FormHeader,
@@ -227,6 +229,10 @@ const AdminPlaceForm = () => {
   const [fieldError, setFieldError] = useState("");
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const imageDelete = usePlaceImageDelete(placeNo, (imgNo) => {
+    setCurrentImages((images) => images.filter((image) => image.imgNo !== imgNo));
+  });
+  const busy = submitting || imageDelete.pending;
 
   useEffect(() => {
     if (mode !== "edit") return;
@@ -385,6 +391,7 @@ const AdminPlaceForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (busy) return;
     setFormError("");
 
     if (!form.placeName.trim()) {
@@ -588,7 +595,7 @@ const AdminPlaceForm = () => {
                           <button
                             type="button"
                             onClick={() => moveCurrentImage(index, -1)}
-                            disabled={submitting || index === 0}
+                            disabled={busy || index === 0}
                             aria-label={`${img.originalName ?? "기존 이미지"} 앞으로 이동`}
                           >
                             ▲
@@ -597,11 +604,17 @@ const AdminPlaceForm = () => {
                             type="button"
                             onClick={() => moveCurrentImage(index, 1)}
                             disabled={
-                              submitting || index === currentImages.length - 1
+                              busy || index === currentImages.length - 1
                             }
                             aria-label={`${img.originalName ?? "기존 이미지"} 뒤로 이동`}
                           >
                             ▼
+                          </button>
+                          <button type="button"
+                            onClick={() => imageDelete.requestDelete(img)}
+                            disabled={busy || img.imgNo == null}
+                            aria-label={`${img.originalName ?? "기존 이미지"} 삭제`}>
+                            삭제
                           </button>
                         </PreviewControls>
                       </PreviewCard>
@@ -613,7 +626,7 @@ const AdminPlaceForm = () => {
               )}
               <CurrentImageNote>
                 화살표로 기존 이미지 순서를 변경할 수 있습니다. 새 이미지는 기존
-                이미지 뒤에 추가됩니다.
+                이미지 뒤에 추가됩니다. 이미지 삭제는 수정 완료와 별개로 즉시 반영됩니다.
               </CurrentImageNote>
             </>
           )}
@@ -634,7 +647,7 @@ const AdminPlaceForm = () => {
                       <button
                         type="button"
                         onClick={() => moveFile(index, -1)}
-                        disabled={submitting || index === 0}
+                        disabled={busy || index === 0}
                         aria-label="앞으로 이동"
                       >
                         ▲
@@ -642,7 +655,7 @@ const AdminPlaceForm = () => {
                       <button
                         type="button"
                         onClick={() => moveFile(index, 1)}
-                        disabled={submitting || index === previews.length - 1}
+                        disabled={busy || index === previews.length - 1}
                         aria-label="뒤로 이동"
                       >
                         ▼
@@ -650,7 +663,7 @@ const AdminPlaceForm = () => {
                       <button
                         type="button"
                         onClick={() => removeFile(index)}
-                        disabled={submitting}
+                        disabled={busy}
                         aria-label="제거"
                       >
                         ✕
@@ -678,7 +691,7 @@ const AdminPlaceForm = () => {
                   imageName={image.originalName ?? "기존 이미지"}
                   order={index + 1}
                   value={image.licenseForm}
-                  disabled={submitting}
+                  disabled={busy}
                   onToggle={(checked) =>
                     updateCurrentImageLicense(index, "enabled", checked)
                   }
@@ -696,7 +709,7 @@ const AdminPlaceForm = () => {
                   imageName={preview.file.name}
                   order={currentImages.length + index + 1}
                   value={fileLicenses[index] ?? createLicenseForm()}
-                  disabled={submitting}
+                  disabled={busy}
                   onToggle={(checked) =>
                     updateFileLicense(index, "enabled", checked)
                   }
@@ -709,14 +722,18 @@ const AdminPlaceForm = () => {
           )}
         </Field>
 
+        {imageDelete.message && <p role="status">{imageDelete.message}</p>}
         {formError && <FormError>{formError}</FormError>}
 
         <Actions>
-          <PrimaryButton type="submit" disabled={submitting}>
+          <PrimaryButton type="submit" disabled={busy}>
             {submitting ? "저장 중…" : mode === "add" ? "등록" : "수정 완료"}
           </PrimaryButton>
         </Actions>
       </Form>
+      <Modal {...imageDelete.modalProps}>
+        {imageDelete.error && <p role="alert">{imageDelete.error}</p>}
+      </Modal>
     </div>
   );
 };

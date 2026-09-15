@@ -12,12 +12,17 @@ import {
   ActionIcons,
   RatingInfo,
   TabMenu,
+  ImageLicenseCard,
 } from "./DetailPanel.styles";
 import ReviewTab from "./ReviewTab";
 import ImageSlider from "./ImageSlider";
+import { getDefaultPlaceImage, DEFAULT_IMAGE_LICENSE } from "../../../utils/placeImage";
 import BasicInfoTab from "./BasicInfoTab";
 
+
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useToast } from "../../../context/ToastContext";
 
 const DetailPanel = ({
   place,
@@ -27,6 +32,8 @@ const DetailPanel = ({
   onBookmark,
   // 길찾기 기능 연동: 기본정보 탭의 경로찾기 동작을 MapPage까지 전달
   onFindRoute,
+  // 계획 모드에서는 같은 상세 패널의 기본 동작을 "계획에 추가"로 재사용한다.
+  primaryActionLabel = "경로찾기",
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,26 +41,70 @@ const DetailPanel = ({
   // 장소 상세 개선: MapPage가 조회해 합친 상세 데이터를 사용해 동일 API의 중복 요청을 막는다.
   const displayPlace = place;
   // S3 장소 이미지 연동: 상세 API가 없거나 실패해도 지도 핀에 포함된 대표 이미지를 표시한다.
-  const displayImages =
-    displayPlace?.placeImages ||
-    displayPlace?.images ||
-    (displayPlace?.imageUrl ? [displayPlace.imageUrl] : []);
+  const registeredImages = displayPlace?.placeImages?.length
+    ? displayPlace.placeImages : displayPlace?.images || [];
+  // 목록과 같은 API 대표 이미지: 장소 사진 → 리뷰 사진 → 기본 이미지.
+  const displayImages = registeredImages.length
+    ? registeredImages
+    : displayPlace?.imageUrl
+      ? [{ imageUrl: displayPlace.imageUrl }]
+      : [{ imageUrl: getDefaultPlaceImage(displayPlace), license: DEFAULT_IMAGE_LICENSE }];
+  const [activeImageState, setActiveImageState] = useState({
+    placeNo: null,
+    index: 0,
+  });
+  // 장소가 바뀌면 렌더 단계에서 첫 이미지로 전환해 effect의 연쇄 렌더를 피한다.
+  const activeImageIndex =
+    activeImageState.placeNo === displayPlace?.placeNo
+      ? activeImageState.index
+      : 0;
+  const activeImage = displayImages[activeImageIndex];
+  const activeLicense =
+    activeImage && typeof activeImage !== "string"
+      ? activeImage.license
+      : null;
   const activeTab = location.pathname.endsWith("/review") ? "리뷰" : "기본정보";
 
   const handleTabClick = (tab) => {
     if (!displayPlace?.placeNo) return;
     const basePath = location.pathname.startsWith("/gimpoTop10") ? "/gimpoTop10" : "/place";
     if (tab === "리뷰") {
-
-      navigate(`${basePath}/${displayPlace.placeNo}/review`);
+      navigate(`${basePath}/${displayPlace.placeNo}/review`, { replace: true, state: location.state });
     } else {
-      navigate(`${basePath}/${displayPlace.placeNo}`);
+      navigate(`${basePath}/${displayPlace.placeNo}`, { replace: true, state: location.state });
+    }
+  };
 
+  const { success, error } = useToast();
+
+  const handleShare = async () => {
+    try {
+      const currentUrl = window.location.href;
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(currentUrl);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = currentUrl;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      success("링크가 클립보드에 복사되었습니다.");
+    } catch {
+      error("링크 복사에 실패했습니다.");
     }
   };
 
   return (
-    <PanelContainer $isOpen={isOpen}>
+    <PanelContainer
+      $isOpen={isOpen}
+      aria-hidden={!isOpen}
+      inert={!isOpen ? "" : undefined}
+    >
       <TopHeader>
         <TitleGroup>
           <button className="back-btn" onClick={onClose} aria-label={location.state?.courseBackground ? "보던 음식점 목록으로 돌아가기" : "지도 화면으로 돌아가기"}>
@@ -63,7 +114,13 @@ const DetailPanel = ({
         </TitleGroup>
 
         <ActionIcons>
-          <button className="icon-circle">
+          <button
+            type="button"
+            className="icon-circle"
+            onClick={handleShare}
+            aria-label="장소 링크 복사"
+            title="링크 복사"
+          >
             <FaShareAlt size={16} />
           </button>
           <button className="icon-circle" onClick={onBookmark}>
@@ -89,6 +146,11 @@ const DetailPanel = ({
       <ImageSlider
         key={displayPlace?.placeNo}
         placeImages={displayImages}
+        place={displayPlace}
+        imgIndex={activeImageIndex}
+        onImageChange={(index) =>
+          setActiveImageState({ placeNo: displayPlace?.placeNo, index })
+        }
       />
 
       <TabMenu>
@@ -107,9 +169,45 @@ const DetailPanel = ({
       </TabMenu>
       
       {activeTab === "기본정보" && (
-        <BasicInfoTab place={displayPlace} onFindRoute={onFindRoute} />
+        <BasicInfoTab
+          place={displayPlace}
+          onFindRoute={onFindRoute}
+          actionLabel={primaryActionLabel}
+        />
       )}
       {activeTab === "리뷰" && <ReviewTab place={displayPlace} />}
+
+      {activeLicense && (
+        <ImageLicenseCard aria-label="현재 사진 출처 및 라이선스">
+          <div className="source-line">
+            <strong>사진 출처</strong>
+            {activeLicense.sourcePageUrl ? (
+              <a
+                href={activeLicense.sourcePageUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                {activeLicense.sourceName}
+              </a>
+            ) : (
+              <span>{activeLicense.sourceName}</span>
+            )}
+            <span aria-hidden="true">·</span>
+            {activeLicense.licenseUrl ? (
+              <a
+                href={activeLicense.licenseUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                {activeLicense.licenseCode}
+              </a>
+            ) : (
+              <span>{activeLicense.licenseCode}</span>
+            )}
+          </div>
+          <small>{activeLicense.attributionText}</small>
+        </ImageLicenseCard>
+      )}
     </PanelContainer>
   );
 };

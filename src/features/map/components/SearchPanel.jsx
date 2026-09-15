@@ -1,302 +1,281 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { FaSearch, FaStar, FaPhoneAlt } from "react-icons/fa";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { FaSearch, FaStar, FaTimes } from "react-icons/fa";
 import { BsBookmark, BsBookmarkFill } from "react-icons/bs";
 import {
   PanelContainer,
+  DragHandle,
   SearchHeader,
-  SearchBarBox,
-  SearchInput,
-  SearchButton,
+  CompactSearchBarBox as SearchBarBox,
+  CompactSearchInput as SearchInput,
+  CompactSearchButton as SearchButton,
+  ClearButton,
   ResultListContainer,
-  ListCard,
   CardHeader,
-  TitleGroup,
-  PlaceTitle,
   ReviewInfo,
   BookmarkBtn,
-  AddressRow,
   CardFooter,
-  PhoneText,
   ActionButtons,
   LoadingSpinner,
+  MobileFilterBar,
 } from "./SearchPanel.styles";
+import PlaceImage from "../../../components/PlaceImage";
+import { Top10Card, ImageWrapper, InfoWrapper } from "./Top10Panel.styles";
+import useIncrementalPlaces from "../hooks/useIncrementalPlaces";
+import { filterDbPlaces } from "../utils/placeSearch";
 
 const SearchPanel = ({
   pins,
   onPlaceSelect,
   bookmarks,
   toggleBookmark,
+  hydrateBookmarkStatus,
   isVisible,
+  showFilteredResults = false,
+  filtersLoading = false,
   onSearchResults,
-  // 길찾기 기능 연동: 검색 결과를 출발지/도착지로 전달하는 콜백
   onSetOrigin,
   onSetDestination,
+  mobileFilterContent,
 }) => {
   const [keyword, setKeyword] = useState("");
-  const [displayedResults, setDisplayedResults] = useState([]);
-  // 코드 리뷰 반영: 현재 페이지를 직접 사용해 함수형 setter 안에서 검색 상태를 다시 갱신하지 않도록 한다.
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false); // 처음 진입 시 검색 전 상태 
-  const [lastSearchedKeyword, setLastSearchedKeyword] = useState(""); // 추가: 마지막으로 실제 검색을 수행한 키워드
+  const [lastSearchedKeyword, setLastSearchedKeyword] = useState("");
+  const hasSearched = Boolean(lastSearchedKeyword.trim());
 
-  const observerTarget = useRef(null);
+  // 모바일 바텀시트 드래그 리사이즈
+  const [mobileHeight, setMobileHeight] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartYRef = useRef(null);
+  const dragStartHRef = useRef(null);
+  const panelRef = useRef(null);
 
-  // 기존 코드 개선: 핀 변경 시 최신 목록으로 검색하도록 함수 의존성을 명확히 고정한다.
-  const executeSearch = useCallback(
-    (searchKeyword, currentPage = 1) => {
-      setIsSearching(true);
-      setPage(currentPage); // 항상 전달받은 페이지로 상태 동기화
-
-      // 빈 검색어 처리: 아무것도 안 나오게 (hasSearched = false로 설정하여 드롭다운 숨김)
-      if (!searchKeyword || !searchKeyword.trim()) {
-        setDisplayedResults([]);
-        setHasMore(false);
-        setIsSearching(false);
-        setHasSearched(false);
-        if (onSearchResults) onSearchResults(pins); // 빈 배열 대신 전체 원본 pins 복원
-        return;
-      }
-
-      setHasSearched(true);
-      setLastSearchedKeyword(searchKeyword);
-
-      // 검색 시 문자열 처리 (공백 제거 및 대소문자 무시)
-      const searchStr = searchKeyword.replace(/\s+/g, "").toLowerCase();
-
-      // 1. 로컬(DB) 데이터 검색
-      const filteredLocal = pins.filter((p) => {
-        const placeName = (p.placeName || "").replace(/\s+/g, "").toLowerCase();
-        const addr = (p.addr || "").replace(/\s+/g, "").toLowerCase();
-        return placeName.includes(searchStr) || addr.includes(searchStr);
-      });
-
-      // 2. 카카오 장소 검색 API 호출
-      if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
-        const ps = new window.kakao.maps.services.Places();
-        ps.keywordSearch(searchKeyword, (data, status, pagination) => {
-          let externalPlaces = [];
-          if (status === window.kakao.maps.services.Status.OK) {
-            externalPlaces = data.map((p) => ({
-              placeNo: `kakao_${p.id}`,
-              placeName: p.place_name,
-              addr: p.road_address_name || p.address_name,
-              addrDetail: p.road_address_name ? p.address_name : "",
-              phone: p.phone,
-              xAxis: parseFloat(p.x), // 경도(x)
-              yAxis: parseFloat(p.y), // 위도(y)
-              reviewCount: 0,
-              avgRating: 0.0,
-              isExternal: true, // 외부 장소 식별 플래그
-            }));
-          }
-
-          setDisplayedResults((prev) => {
-            const newResults = currentPage === 1
-              ? [...filteredLocal, ...externalPlaces]
-              : [...prev, ...externalPlaces];
-
-            if (onSearchResults) {
-              onSearchResults(newResults);
-            }
-            return newResults;
-          });
-
-          setHasMore(pagination && pagination.hasNextPage);
-          setIsSearching(false);
-        }, { page: currentPage, size: 15 });
-      } else {
-        // 카카오 API 로드 실패 시 로컬만 처리
-        setDisplayedResults((prev) => {
-          const newResults = currentPage === 1 ? filteredLocal : [...prev, ...filteredLocal];
-          if (onSearchResults) {
-            onSearchResults(newResults);
-          }
-          return newResults;
-        });
-        setHasMore(false);
-        setIsSearching(false);
-      }
-    },
-    [pins, onSearchResults],
-  );
-
-  useEffect(() => {
-    // DB 장소 필터 연동: 필터 결과가 0건이어도 이전 검색 결과가 남지 않게 빈 배열까지 재검색한다.
-    if (hasSearched) {
-      // 기존 코드 개선: effect 본문에서 동기 setState가 발생하지 않도록 다음 작업으로 예약한다.
-      const timeoutId = window.setTimeout(
-        () => executeSearch(lastSearchedKeyword, 1),
-        0,
-      );
-      return () => window.clearTimeout(timeoutId);
-    }
-    return undefined;
-  }, [pins, lastSearchedKeyword, hasSearched, executeSearch]);
-
-  const handleObserver = useCallback(
-    (entries) => {
-      const target = entries[0];
-      if (target.isIntersecting && hasMore && !isSearching) {
-        const nextPage = page + 1;
-        executeSearch(lastSearchedKeyword, nextPage);
-      }
-    },
-    [page, hasMore, isSearching, lastSearchedKeyword, executeSearch],
-  );
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(handleObserver, {
-      root: null,
-      rootMargin: "20px",
-      threshold: 1.0,
-    });
-
-    // 기존 코드 개선: 정리 시점에도 같은 DOM을 해제하도록 ref 값을 고정한다.
-    const currentTarget = observerTarget.current;
-    if (currentTarget) {
-      observer.observe(currentTarget);
-    }
-
-    return () => {
-      if (currentTarget) observer.unobserve(currentTarget);
-    };
-  }, [handleObserver]);
-
-  const handleSearchClick = () => {
-    executeSearch(keyword, 1);
+  const handleDragStart = (e) => {
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStartYRef.current = clientY;
+    dragStartHRef.current =
+      panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.4;
+    setIsDragging(true);
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleSearchClick();
+  const handleDragMove = useCallback(
+    (e) => {
+      if (!isDragging || dragStartYRef.current === null) return;
+      if (e.cancelable) e.preventDefault();
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const deltaY = dragStartYRef.current - clientY;
+      const newHeight = Math.min(
+        window.innerHeight - 56,
+        Math.max(120, dragStartHRef.current + deltaY)
+      );
+      setMobileHeight(`${newHeight}px`);
+    },
+    [isDragging]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    dragStartYRef.current = null;
+  }, [isDragging]);
+
+  useEffect(() => {
+    if (isDragging) {
+      const onMove = (e) => handleDragMove(e);
+      const onEnd = () => handleDragEnd();
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onEnd);
+      window.addEventListener("touchmove", onMove, { passive: false });
+      window.addEventListener("touchend", onEnd);
+
+      return () => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onEnd);
+        window.removeEventListener("touchmove", onMove);
+        window.removeEventListener("touchend", onEnd);
+      };
     }
+  }, [isDragging, handleDragMove, handleDragEnd]);
+
+  const [prevIsVisible, setPrevIsVisible] = useState(isVisible);
+  if (prevIsVisible !== isVisible) {
+    setPrevIsVisible(isVisible);
+    if (!isVisible) {
+      setMobileHeight(null);
+    }
+  }
+
+  // 목록과 지도 모두 같은 검색 결과를 사용한다.
+  const matchingPlaces = useMemo(
+    () => (hasSearched ? filterDbPlaces(pins, lastSearchedKeyword) : pins),
+    [pins, hasSearched, lastSearchedKeyword]
+  );
+
+  useEffect(() => {
+    onSearchResults?.(matchingPlaces);
+  }, [matchingPlaces, onSearchResults]);
+
+  const { listRef, onScroll, visiblePlaces: resultsToRender, hasMore } =
+    useIncrementalPlaces(matchingPlaces, lastSearchedKeyword);
+  const resultsLoading = filtersLoading;
+
+  // 목록 API는 로그인 사용자별 북마크 여부를 내려주지 않으므로,
+  // 화면에 실제로 보이는 카드에 한해 북마크 상태 API로 값을 채운다.
+  useEffect(() => {
+    if (!hydrateBookmarkStatus) return;
+    resultsToRender.forEach((place) => {
+      if (!place.isExternal) hydrateBookmarkStatus(place.placeNo);
+    });
+  }, [resultsToRender, hydrateBookmarkStatus]);
+
+  const handleSearchClick = () => setLastSearchedKeyword(keyword.trim());
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" && !event.nativeEvent.isComposing) handleSearchClick();
   };
 
   return (
-    <PanelContainer $isVisible={isVisible}>
-      <SearchHeader>
-        <SearchBarBox>
+    <PanelContainer
+      ref={panelRef}
+      $isVisible={isVisible}
+      $hasResults={hasSearched || showFilteredResults}
+      $mobileHeight={mobileHeight}
+      $isDragging={isDragging}
+      aria-hidden={!isVisible}
+      inert={!isVisible ? "" : undefined}
+    >
+      <DragHandle
+        onTouchStart={handleDragStart}
+        onMouseDown={handleDragStart}
+        aria-hidden="true"
+      />
+      <SearchHeader $hasResults={hasSearched || showFilteredResults}>
+        <SearchBarBox $isFloating={!hasSearched && !showFilteredResults}>
           <SearchInput
             type="text"
+            aria-label="장소 검색"
             placeholder="검색어를 입력해주세요"
             value={keyword}
             onChange={(e) => {
               const val = e.target.value;
               setKeyword(val);
               if (!val.trim()) {
-                executeSearch("", 1);
+                setLastSearchedKeyword("");
               }
             }}
             onKeyDown={handleKeyDown}
           />
-          <SearchButton onClick={handleSearchClick}>
-            <FaSearch size={21} />
+          {keyword.length > 0 && (
+            <ClearButton
+              type="button"
+              aria-label="검색어 지우기"
+              onClick={() => {
+                setKeyword("");
+                setLastSearchedKeyword("");
+              }}
+            >
+              <FaTimes size={14} />
+            </ClearButton>
+          )}
+          <SearchButton aria-label="검색" onClick={handleSearchClick}>
+            <FaSearch size={18} />
           </SearchButton>
         </SearchBarBox>
       </SearchHeader>
 
-      {hasSearched && (
-        <ResultListContainer>
-          {displayedResults.map((place) => {
-            const isBookmarked = bookmarks[place.placeNo];
-            return (
-              <ListCard key={place.placeNo} onClick={() => onPlaceSelect(place)}>
-                <CardHeader>
-                  <TitleGroup>
-                    <PlaceTitle>{place.placeName}</PlaceTitle>
-                    {!place.isExternal &&
-                    (Number.isFinite(place.reviewCount) ||
-                      Number.isFinite(place.avgRating)) && (
+      {mobileFilterContent && (
+        <MobileFilterBar>{mobileFilterContent}</MobileFilterBar>
+      )}
+
+      {(hasSearched || showFilteredResults) && (
+        <ResultListContainer
+          ref={listRef}
+          onScroll={onScroll}
+          role="region"
+          aria-label="장소 목록"
+          tabIndex={0}
+        >
+          {filtersLoading && <LoadingSpinner>장소를 불러오는 중입니다...</LoadingSpinner>}
+          {!filtersLoading &&
+            resultsToRender.map((place) => {
+              const isBookmarked = bookmarks[place.placeNo] ?? Boolean(place.bookmarked);
+              return (
+                <Top10Card key={place.placeNo} onClick={() => onPlaceSelect(place)}>
+                  <ImageWrapper>
+                    <PlaceImage
+                      src={place.imageUrl || place.imgUrl}
+                      place={place}
+                      alt={place.placeName}
+                    />
+                  </ImageWrapper>
+                  <InfoWrapper style={{ minWidth: 0 }}>
+                    <CardHeader>
+                      <div className="title">{place.placeName}</div>
+                      {!place.isExternal && (
+                        <BookmarkBtn
+                          aria-label={isBookmarked ? "북마크 해제" : "북마크 추가"}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleBookmark(e, place.placeNo);
+                          }}
+                        >
+                          {isBookmarked ? (
+                            <BsBookmarkFill size={16} color="#C9A227" />
+                          ) : (
+                            <BsBookmark size={16} />
+                          )}
+                        </BookmarkBtn>
+                      )}
+                    </CardHeader>
+                    <div className="address">{place.address || place.addr}</div>
+                    {place.addrDetail && <div className="address">{place.addrDetail}</div>}
+                    {!place.isExternal && (
                       <ReviewInfo>
                         {Number.isFinite(place.reviewCount) && (
-                          <span className="review-text">
-                            리뷰 {place.reviewCount}
-                          </span>
+                          <span>리뷰 {place.reviewCount}</span>
                         )}
                         {Number.isFinite(place.avgRating) && (
-                          <>
-                            <FaStar size={15} />
-                            <span className="rating-text">
-                              {place.avgRating.toFixed(1)}
-                            </span>
-                          </>
+                          <span>
+                            <FaStar size={11} /> {place.avgRating.toFixed(1)}
+                          </span>
                         )}
                       </ReviewInfo>
                     )}
-                  </TitleGroup>
-                  {!place.isExternal && (
-                    <BookmarkBtn onClick={(e) => toggleBookmark(e, place.placeNo)}>
-                      {isBookmarked ? (
-                        <BsBookmarkFill
-                          size={21}
-                          color="#C9A227"
-                        />
-                      ) : (
-                        <BsBookmark size={21} />
-                      )}
-                    </BookmarkBtn>
-                  )}
-                </CardHeader>
+                    <CardFooter>
+                      <ActionButtons>
+                        <button
+                          className="btn-start"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSetOrigin(place);
+                          }}
+                        >
+                          출발
+                        </button>
+                        <button
+                          className="btn-end"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSetDestination(place);
+                          }}
+                        >
+                          도착
+                        </button>
+                      </ActionButtons>
+                    </CardFooter>
+                  </InfoWrapper>
+                </Top10Card>
+              );
+            })}
 
-                <AddressRow>
-                  <div className="addr-item">
-                    <span className="addr-label">도로명</span>
-                    <span className="addr-value">{place.addr}</span>
-                  </div>
-                  {place.addrDetail && (
-                    <div className="addr-item">
-                      <span className="addr-label">지번</span>
-                      <span className="addr-value">{place.addrDetail}</span>
-                    </div>
-                  )}
-                </AddressRow>
-
-                <CardFooter>
-                  <PhoneText>
-                    <FaPhoneAlt />
-                    {place.phone || "번호없음"}
-                  </PhoneText>
-                  <ActionButtons>
-                    <button
-                      className="btn-start"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // 길찾기 기능 연동: 기존 임시 alert 대신 선택 장소를 출발지로 설정
-                        onSetOrigin(place);
-                      }}
-                    >
-                      출발
-                    </button>
-                    <button
-                      className="btn-end"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // 길찾기 기능 연동: 기존 임시 alert 대신 선택 장소를 도착지로 설정
-                        onSetDestination(place);
-                      }}
-                    >
-                      도착
-                    </button>
-                  </ActionButtons>
-                </CardFooter>
-              </ListCard>
-            );
-          })}
-
-          {hasMore && (
-            <LoadingSpinner ref={observerTarget}>
-              {isSearching ? "검색 중..." : "스크롤을 내려 더보기"}
-            </LoadingSpinner>
+          {hasMore && !filtersLoading && (
+            <LoadingSpinner>스크롤을 내려 더보기</LoadingSpinner>
           )}
-          {!hasMore && displayedResults.length > 0 && (
+          {!hasMore && resultsToRender.length > 0 && !resultsLoading && (
             <LoadingSpinner style={{ color: "#CCC" }}>
               마지막 결과입니다.
             </LoadingSpinner>
           )}
-          {displayedResults.length === 0 && !isSearching && (
-            <LoadingSpinner>검색 결과가 없습니다.</LoadingSpinner>
+          {resultsToRender.length === 0 && !resultsLoading && (
+            <LoadingSpinner>선택한 조건에 해당하는 장소가 없습니다.</LoadingSpinner>
           )}
         </ResultListContainer>
       )}

@@ -89,9 +89,13 @@ export const AdminPlaceAPI = {
   },
 
   /**
-   * 명소 삭제 (del_yn = Y)
-   * @param {number[]} placeNos
+   * 등록 이미지 1장 삭제 (장소 정보는 유지)
    */
+  deletePlaceImage: async (placeNo, imgNo) => {
+    return api.delete(`/admin/places/${placeNo}/images/${imgNo}`);
+  },
+
+  /** 명소 삭제 (del_yn = Y), placeNos: 장소 번호 배열 */
   deletePlaces: async (placeNos) => {
     const body = await api.delete("/admin/places", { data: { placeNos } });
     return body;

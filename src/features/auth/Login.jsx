@@ -70,7 +70,6 @@ const Login = () => {
     try {
       setIsLoading(true);
       await AuthAPI.login(payload);
-      // 로그인 성공 시 전역 상태 업데이트 후 이동
       await checkAuth();
       navigate("/");
     } catch (err) {

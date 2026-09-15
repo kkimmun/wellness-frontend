@@ -3,7 +3,8 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 import MainLayout from "./components/Layout/MainLayout";
 import AuthLayout from "./components/Layout/AuthLayout";
 import AdminLayout from "./components/Layout/AdminLayout";
-import { PublicRoute, AdminRoute } from "./components/Layout/AuthGuard";
+import { PublicRoute, PrivateRoute, AdminRoute } from "./components/Layout/AuthGuard";
+import MyPageDashboard from "./features/mypage/MyPageDashboard";
 import SignUp from "./features/auth/SignUp";
 import EmailRequest from "./features/auth/EmailRequest";
 import EmailVerify from "./features/auth/EmailVerify";
@@ -48,6 +49,7 @@ function App() {
       {/* 401 공통 모달 렌더링 */}
       <Modal
         isOpen={isSessionExpired}
+        priority={100}
         title="세션 만료"
         message="로그인이 만료되었습니다. 다시 로그인해주세요."
         onConfirm={handleModalConfirm}
@@ -69,10 +71,16 @@ function App() {
 
         {/* 메인 서비스 화면 */}
         <Route element={<MainLayout />}>
+          <Route element={<PrivateRoute />}>
+            <Route path="/mypage" element={<MyPageDashboard />} />
+          </Route>
           <Route path="/map" element={<MapPage />} />
           <Route path="/pilgrim/create" element={<MapPage />} />
           <Route path="/pilgrim/fixed" element={<MapPage />} />
-          <Route path="/pilgrim/fixed/mine/:userCourseId" element={<MapPage />} />
+          <Route
+            path="/pilgrim/fixed/mine/:userCourseId"
+            element={<MapPage />}
+          />
           <Route path="/pilgrim/fixed/:courseNo" element={<MapPage />} />
           <Route path="/place/:placeNo" element={<MapPage />} />
           <Route path="/place/:placeNo/review" element={<MapPage />} />
@@ -86,12 +94,24 @@ function App() {
           <Route element={<AdminLayout />}>
             <Route path="/admin/courses" element={<AdminCourse />} />
             <Route path="/admin/courses/add" element={<AdminCourseForm />} />
-            <Route path="/admin/courses/edit/:courseNo" element={<AdminCourseForm />} />
-            <Route path="/admin/courses/:courseNo/edit" element={<AdminCourseForm />} />
+            <Route
+              path="/admin/courses/edit/:courseNo"
+              element={<AdminCourseForm />}
+            />
+            <Route
+              path="/admin/courses/:courseNo/edit"
+              element={<AdminCourseForm />}
+            />
             <Route path="/admin/places" element={<AdminPlace />} />
             <Route path="/admin/places/add" element={<AdminPlaceForm />} />
-            <Route path="/admin/places/edit/:placeNo" element={<AdminPlaceForm />} />
-            <Route path="/admin/places/:placeNo" element={<AdminPlaceDetail />} />
+            <Route
+              path="/admin/places/edit/:placeNo"
+              element={<AdminPlaceForm />}
+            />
+            <Route
+              path="/admin/places/:placeNo"
+              element={<AdminPlaceDetail />}
+            />
           </Route>
         </Route>
       </Routes>

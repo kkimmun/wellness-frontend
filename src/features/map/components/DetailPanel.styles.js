@@ -13,7 +13,9 @@ export const PanelContainer = styled.div`
   display: flex;
   flex-direction: column;
   transform: ${({ $isOpen }) => ($isOpen ? "translateX(0)" : "translateX(-100%)")}; /* 음수 100%로 변경 */
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  visibility: ${({ $isOpen }) => ($isOpen ? "visible" : "hidden")};
+  pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
   overflow-y: auto;
   font-family: 'Pretendard', sans-serif;
 
@@ -22,6 +24,12 @@ export const PanelContainer = styled.div`
     display: none;
   }
   scrollbar-width: none;
+
+  @media (max-width: 768px) {
+    width: 100vw;
+    z-index: 300;
+    box-shadow: none;
+  }
 `;
 
 export const TopHeader = styled.div`
@@ -30,6 +38,10 @@ export const TopHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+
+  @media (max-width: 768px) {
+    padding: 16px 16px 12px;
+  }
 `;
 
 export const TitleGroup = styled.div`
@@ -53,6 +65,10 @@ export const TitleGroup = styled.div`
     font-size: 22px;
     font-weight: 800;
     color: #000;
+
+    @media (max-width: 768px) {
+      font-size: 18px;
+    }
   }
 `;
 
@@ -83,6 +99,10 @@ export const RatingInfo = styled.div`
   font-size: 13px;
   color: #999;
 
+  @media (max-width: 768px) {
+    padding: 0 16px 14px;
+  }
+
   .rating-box {
     display: flex;
     align-items: center;
@@ -108,6 +128,11 @@ export const ImageCarousel = styled.div`
   align-items: center;
   margin-bottom: 24px;
   user-select: none;
+
+  @media (max-width: 768px) {
+    height: 210px;
+    margin-bottom: 16px;
+  }
 `;
 
 export const CarouselItem = styled.div`
@@ -125,6 +150,14 @@ export const CarouselItem = styled.div`
   transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
   cursor: pointer;
 
+  @media (max-width: 768px) {
+    width: 270px;
+    height: 180px;
+    margin-top: -90px;
+    margin-left: -135px;
+    border-radius: 12px;
+  }
+
   &.active {
     transform: translateX(0) scale(1);
     z-index: 3;
@@ -136,12 +169,20 @@ export const CarouselItem = styled.div`
     transform: translateX(-150px) scale(0.85);
     z-index: 2;
     opacity: 0.5;
+
+    @media (max-width: 768px) {
+      transform: translateX(-110px) scale(0.85);
+    }
   }
 
   &.next {
     transform: translateX(150px) scale(0.85);
     z-index: 2;
     opacity: 0.5;
+
+    @media (max-width: 768px) {
+      transform: translateX(110px) scale(0.85);
+    }
   }
 
   &.hidden {
@@ -156,11 +197,54 @@ export const CarouselItem = styled.div`
   }
 `;
 
+export const ImageLicenseCard = styled.aside`
+  flex-shrink: 0;
+  margin: 0 24px 20px;
+  padding-top: 12px;
+  border-top: 1px solid #e3e8ee;
+  color: #7b8794;
+  font-size: 11px;
+  line-height: 1.5;
+
+  @media (max-width: 768px) {
+    margin: 0 16px 16px;
+  }
+
+  .source-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+
+    strong {
+      color: #5f6b78;
+    }
+  }
+
+  a {
+    color: #1677c8;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  small {
+    display: block;
+    margin-top: 3px;
+    color: #8a95a1;
+    font-size: 10px;
+    overflow-wrap: anywhere;
+  }
+`;
+
 export const TabMenu = styled.div`
   flex-shrink: 0;
   display: flex;
   border-bottom: 1px solid #EEE;
   margin-bottom: 24px;
+
+  @media (max-width: 768px) {
+    margin-bottom: 16px;
+  }
 
   .tab {
     flex: 1;
@@ -171,6 +255,11 @@ export const TabMenu = styled.div`
     color: #999;
     cursor: pointer;
     position: relative;
+
+    @media (max-width: 768px) {
+      padding: 12px 0;
+      font-size: 15px;
+    }
 
     &.active {
       color: #2196F3;
@@ -194,6 +283,11 @@ export const InfoSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
+
+  @media (max-width: 768px) {
+    padding: 0 16px;
+    gap: 18px;
+  }
 `;
 
 export const InfoRow = styled.div`
@@ -202,6 +296,10 @@ export const InfoRow = styled.div`
   gap: 16px;
   font-size: 14px;
 
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+
   .label-group {
     display: flex;
     align-items: center;
@@ -209,6 +307,7 @@ export const InfoRow = styled.div`
     font-weight: 700;
     width: 80px;
     color: #000;
+    flex-shrink: 0;
     
     svg {
       color: #555;
@@ -248,6 +347,13 @@ export const BottomArea = styled.div`
   justify-content: space-between;
   align-items: flex-end;
   margin-top: auto;
+
+  @media (max-width: 768px) {
+    padding: 24px 16px calc(16px + env(safe-area-inset-bottom, 12px));
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
   
   .tags {
     display: flex;
@@ -275,5 +381,11 @@ export const BottomArea = styled.div`
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+
+    @media (max-width: 768px) {
+      width: 100%;
+      height: 48px;
+      font-size: 15px;
+    }
   }
 `;

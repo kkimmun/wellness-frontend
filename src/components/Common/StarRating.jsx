@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { RatingContainer, StarIcon } from "./StarRating.styles";
 
 export default function StarRating({ rating = 0, onRatingChange }) {

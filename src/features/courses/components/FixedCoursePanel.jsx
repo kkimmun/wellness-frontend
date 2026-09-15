@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FiChevronRight,
   FiClock,
@@ -10,9 +10,9 @@ import {
 import { CourseAPI } from "../../../api/course";
 import { getCourseRoute, readUserCourses } from "../utils/userCourseStorage";
 import CourseCover from "./CourseCover";
+import { Modal } from "../../../components/Modal/Modal";
 import {
   CloseButton,
-  CourseChoiceDialog,
   CourseChoiceActions,
   CourseCard,
   CourseDescription,
@@ -20,6 +20,7 @@ import {
   CourseList,
   CourseMeta,
   CourseName,
+  DragHandle,
   EmptyState,
   ErrorState,
   Header,
@@ -46,7 +47,7 @@ const formatEstimatedTime = (minutes) => {
 
 const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCourseSelect, onCreateCourse, showUserCourses = false }) => {
   const [userCourses, setUserCourses] = useState(readUserCourses);
-  const choiceDialogRef = useRef(null);
+  const [choiceOpen, setChoiceOpen] = useState(false);
   const [userCoursesOpen] = useState(showUserCourses);
   const latestOrigin = userCourses[0]?.stops[0];
   const latestDestination = userCourses[0]?.stops.at(-1);
@@ -61,6 +62,65 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
   const sentinelRef = useRef(null);
   const requestingNextPageRef = useRef(false);
 
+  // 모바일 바텀시트 드래그 리사이즈 (SearchPanel과 동일한 방식)
+  const [mobileHeight, setMobileHeight] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartYRef = useRef(null);
+  const dragStartHRef = useRef(null);
+  const panelRef = useRef(null);
+
+  const handleDragStart = (e) => {
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStartYRef.current = clientY;
+    dragStartHRef.current =
+      panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.4;
+    setIsDragging(true);
+  };
+
+  const handleDragMove = useCallback(
+    (e) => {
+      if (!isDragging || dragStartYRef.current === null) return;
+      // 터치 스크롤과 드래그 충돌 방지
+      if (e.cancelable) e.preventDefault();
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const deltaY = dragStartYRef.current - clientY;
+      const newHeight = Math.min(
+        window.innerHeight - 56,
+        Math.max(120, dragStartHRef.current + deltaY),
+      );
+      setMobileHeight(`${newHeight}px`);
+    },
+    [isDragging],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    dragStartYRef.current = null;
+  }, [isDragging]);
+
+  useEffect(() => {
+    if (!isDragging) return undefined;
+    const onMove = (e) => handleDragMove(e);
+    const onEnd = () => handleDragEnd();
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    // passive: false — preventDefault() 호출을 위해 필수
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
+
+  const [prevSelectedCourseNo, setPrevSelectedCourseNo] = useState(selectedCourseNo);
+  if (prevSelectedCourseNo !== selectedCourseNo) {
+    setPrevSelectedCourseNo(selectedCourseNo);
+    setMobileHeight(null);
+  }
   useEffect(() => {
     let isCancelled = false;
 
@@ -155,11 +215,11 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
       onCreateCourse();
       return;
     }
-    choiceDialogRef.current.showModal();
+    setChoiceOpen(true);
   };
 
   const handleViewUserCourses = () => {
-    choiceDialogRef.current.close();
+    setChoiceOpen(false);
     const savedCourse = readUserCourses()[0];
     if (savedCourse) {
       onUserCourseSelect(savedCourse);
@@ -169,7 +229,7 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
   };
 
   const handleCreateUserCourse = () => {
-    choiceDialogRef.current.close();
+    setChoiceOpen(false);
     onCreateCourse();
   };
 
@@ -183,7 +243,17 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
   };
 
   return (
-    <PanelContainer aria-label="순례길 목록">
+    <PanelContainer
+      ref={panelRef}
+      $mobileHeight={mobileHeight}
+      $isDragging={isDragging}
+      aria-label="순례길 목록"
+    >
+      <DragHandle
+        onTouchStart={handleDragStart}
+        onMouseDown={handleDragStart}
+        aria-hidden="true"
+      />
       <Header>
         <HeaderText>
           <h2>
@@ -208,10 +278,10 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
             aria-haspopup="dialog"
             onClick={handleUserCourseClick}
           >
-            <CourseCover src={latestDestination?.imageUrl} name={latestDestination?.placeName} number={0} />
+            <CourseCover src={latestDestination?.imageUrl} place={latestDestination} name={latestDestination?.placeName} number={0} />
             <CourseInfo>
-              <CourseName>내가 만드는 순례자의 길</CourseName>
-              <CourseDescription>나만의 순례길을 만들거나 저장된 순례길을 만나보세요.</CourseDescription>
+              <CourseName>내가 만드는 순례길</CourseName>
+              <CourseDescription>나만의 순례길을 만들어보세요.</CourseDescription>
               <CourseMeta>
                 <RouteInfo>
                   <FiMapPin aria-hidden="true" />
@@ -234,7 +304,7 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
                   return (
                     <li key={course.id}>
                       <CourseCard type="button" onClick={() => onUserCourseSelect(course)}>
-                        <CourseCover src={destination.imageUrl} name={destination.placeName} number={index + 1} tone={index % 5} />
+                        <CourseCover src={destination.imageUrl} place={destination} name={destination.placeName} number={index + 1} tone={index % 5} />
                         <CourseInfo>
                           <CourseName>{course.courseName}</CourseName>
                           <CourseDescription>{course.description}</CourseDescription>
@@ -297,7 +367,7 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
                   $selected={isSelected}
                   aria-current={isSelected ? "true" : undefined}
                 >
-                  <CourseCover src={course.endPlaceImg || course.endPlace?.imageUrl} name={course.endPlace?.placeName} number={index + 1} tone={index % 5} courseNo={course.courseNo} />
+                  <CourseCover src={course.endPlaceImg || course.endPlace?.imageUrl} place={course.endPlace} name={course.endPlace?.placeName} number={index + 1} tone={index % 5} courseNo={course.courseNo} />
                   <CourseInfo>
                     <CourseName>{course.courseName}</CourseName>
                     <CourseDescription>{course.description}</CourseDescription>
@@ -333,21 +403,14 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
         </>
       )}
       </CourseList>
-      <CourseChoiceDialog ref={choiceDialogRef} aria-labelledby="course-choice-title" aria-describedby="course-choice-description">
-        <Header>
-          <HeaderText>
-            <h2 id="course-choice-title">순례자의 길이 이미 존재합니다.</h2>
-          </HeaderText>
-          <CloseButton type="button" onClick={() => choiceDialogRef.current.close()} aria-label="선택창 닫기">
-            <FiX aria-hidden="true" />
-          </CloseButton>
-        </Header>
-        <p id="course-choice-description">기존 순례자의 길을 보거나 새로운 순례자의 길을 제작해 보세요.</p>
+      <Modal isOpen={choiceOpen} title="순례자의 길이 이미 존재합니다."
+        message="기존 순례자의 길을 보거나 새로운 순례자의 길을 제작해 보세요."
+        showClose onCancel={() => setChoiceOpen(false)}>
         <CourseChoiceActions>
           <RetryButton type="button" onClick={handleViewUserCourses}>기존 순례자의 길 보기</RetryButton>
           <RetryButton type="button" onClick={handleCreateUserCourse}>새로 제작하기</RetryButton>
         </CourseChoiceActions>
-      </CourseChoiceDialog>
+      </Modal>
     </PanelContainer>
   );
 };

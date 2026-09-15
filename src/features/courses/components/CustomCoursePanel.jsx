@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { FiCheck, FiCompass, FiX } from "react-icons/fi";
-import { FaLocationArrow, FaSearch } from "react-icons/fa";
+import { FaLocationArrow, FaMapMarkerAlt, FaTimes } from "react-icons/fa";
 import { CourseAPI } from "../../../api/course";
 import { PlaceAPI } from "../../../api/place";
 import { createUserCourse } from "../utils/userCourseStorage";
+import { startCoursePreview } from "../utils/coursePreview";
 import { RouteAPI } from "../../../api/route";
 import CoursePlaceOption from "./CoursePlaceOption";
 import {
@@ -18,10 +19,6 @@ import {
   Header,
   IconButton,
   InlineSpinner,
-  OriginLocationButton,
-  OriginSearchBar,
-  OriginSearchButton,
-  OriginSearchInput,
   PanelBody,
   PanelContainer,
   PanelTitle,
@@ -32,6 +29,7 @@ import {
   TagOption,
 } from "./CustomCoursePanel.styles";
 import {
+  PointFields, PointRow, PointInput, LocationButton, MapPickButton, ClearPointButton,
   InlineState,
   SearchResultButton,
   SearchResults,
@@ -77,10 +75,12 @@ const toWaypoint = (candidate) => {
       candidate?.addr || place?.addr || candidate?.address || place?.address,
     tags: candidate?.tags || place?.tags || [],
     distance: candidate?.distance,
+    xAxis: place?.X_AXIS ?? place?.xAxis,
+    yAxis: place?.Y_AXIS ?? place?.yAxis,
   };
 };
 
-const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
+const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginPick, onCancelOriginPick, isOriginPickMode = false }) => {
   const [origin, setOrigin] = useState(null);
   const [originText, setOriginText] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -101,6 +101,23 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
   const searchControllerRef = useRef(null);
   const recommendationControllerRef = useRef(null);
   const creationControllerRef = useRef(null);
+  const previewControllerRef = useRef(null);
+  const [previewMessage, setPreviewMessage] = useState("");
+  const destination = destinations.find((place) => String(place.placeNo) === destinationNo);
+
+  useEffect(() => {
+    const preview = startCoursePreview({
+      origin,
+      destination,
+      waypointPlaceNos: selectedWaypoints,
+      places: recommendations || [],
+      findRoute: CourseAPI.getRecommendedRoute,
+      onRoute: onCourseBuilt,
+      onMessage: setPreviewMessage,
+    });
+    previewControllerRef.current = preview;
+    return () => preview.abort();
+  }, [origin, destination, selectedWaypoints, recommendations, onCourseBuilt]);
 
   useEffect(
     () => () => {
@@ -147,6 +164,8 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
     return () => controller.abort();
   }, []);
 
+  useEffect(() => () => onCancelOriginPick?.(), [onCancelOriginPick]);
+
   const clearGeneratedData = () => {
     recommendationControllerRef.current?.abort();
     creationControllerRef.current?.abort();
@@ -187,7 +206,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
     setSearchMessage("출발지를 검색하고 있습니다.");
 
     try {
-      const results = await RouteAPI.searchPlaces(query, controller.signal);
+      const results = await RouteAPI.searchOriginPlaces(query, controller.signal);
       if (controller.signal.aborted) return;
       const safeResults = Array.isArray(results) ? results : [];
       setSearchResults(safeResults);
@@ -387,6 +406,8 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
     }
 
     const coordinates = originCoordinates();
+    previewControllerRef.current?.abort();
+    setPreviewMessage("");
     const controller = new AbortController();
     creationControllerRef.current?.abort();
     creationControllerRef.current = controller;
@@ -443,7 +464,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
   };
 
   return (
-    <PanelContainer aria-label="순례자의 길 제작">
+    <PanelContainer aria-label="순례자의 길 제작" $isPicking={isOriginPickMode} aria-hidden={isOriginPickMode} inert={isOriginPickMode}>
       <Header>
         <PanelTitle>
           <FiCompass aria-hidden="true" />
@@ -468,39 +489,38 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
               performOriginSearch();
             }}
           >
-            <OriginSearchBar>
-              <OriginSearchInput
-                id="course-origin"
-                aria-label="출발지"
-                value={originText}
-                placeholder="검색어를 입력해주세요"
-                autoComplete="off"
-                enterKeyHint="search"
-                aria-describedby="course-origin-help"
-                onChange={(event) => updateOriginText(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && event.nativeEvent.isComposing) {
-                    event.preventDefault();
-                  }
-                }}
-              />
-              <OriginSearchButton
-                type="submit"
-                aria-label="출발지 검색"
-                title="검색"
-              >
-                <FaSearch size={18} aria-hidden="true" />
-              </OriginSearchButton>
-            </OriginSearchBar>
+            <PointFields>
+              <PointRow $accent="#2196F3" $last>
+                <label htmlFor="course-origin">출발지</label>
+                <PointInput
+                  id="course-origin"
+                  value={originText}
+                  placeholder="장소명 입력 후 Enter"
+                  autoComplete="off"
+                  enterKeyHint="search"
+                  aria-describedby="course-origin-help"
+                  onChange={(event) => updateOriginText(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault();
+                  }}
+                />
+                <LocationButton type="button" title="현재 위치를 출발지로 사용" aria-label="현재 위치를 출발지로 사용" onClick={useCurrentLocation}>
+                  <FaLocationArrow />
+                </LocationButton>
+                <MapPickButton type="button" title="지도에서 출발지 선택" aria-label="지도에서 출발지 선택" onClick={() => {
+                  searchControllerRef.current?.abort();
+                  setSearchState("idle");
+                  setSearchResults([]);
+                  onRequestOriginPick?.(selectOrigin);
+                }}>
+                  <FaMapMarkerAlt />
+                </MapPickButton>
+                <ClearPointButton type="button" title="출발지 지우기" aria-label="출발지 지우기" disabled={!origin} onClick={() => updateOriginText("")}>
+                  <FaTimes />
+                </ClearPointButton>
+              </PointRow>
+            </PointFields>
           </form>
-          <OriginLocationButton
-            type="button"
-            onClick={useCurrentLocation}
-            aria-label="현재 위치를 출발지로 사용"
-          >
-            <FaLocationArrow aria-hidden="true" />
-            현재 위치를 출발지로
-          </OriginLocationButton>
           <FieldMessage id="course-origin-help">
             검색 결과에서 출발지를 선택해주세요.
           </FieldMessage>
@@ -593,6 +613,12 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
             </CheckList>
           )}
         </Section>
+
+        {previewMessage && (
+          <FieldMessage role="status" aria-live="polite">
+            {previewMessage}
+          </FieldMessage>
+        )}
 
         <Section>
           <SectionHeading>
@@ -694,7 +720,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated }) => {
           >
             {creationState === "loading" ? (
               <>
-                <InlineSpinner /> 로딩중 ...
+                <InlineSpinner /> 코스 설명 생성중...
               </>
             ) : (
               "순례길 코스 제작"

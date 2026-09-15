@@ -61,7 +61,11 @@ export const NavItem = styled.li`
   cursor: pointer;
   width: 100%;
   text-align: center;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.35;
+  padding: 0 8px;
+  box-sizing: border-box;
   color: ${({ $active }) =>
     $active ? theme.colors.textPrimary : theme.colors.textMuted};
   font-weight: ${({ $active }) => ($active ? "700" : "400")};
@@ -77,6 +81,9 @@ export const UserIconWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  @media (max-width: 1024px) {
+    display: ${({ $desktop }) => ($desktop ? "none" : "flex")};
+  }
 `;
 
 export const DesktopUserIconArea = styled.div`

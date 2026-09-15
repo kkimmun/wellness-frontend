@@ -7,6 +7,8 @@ const spin = keyframes`
 `;
 
 export const PanelContainer = styled.aside`
+  visibility: ${({ $isPicking }) => ($isPicking ? "hidden" : "visible")};
+  pointer-events: ${({ $isPicking }) => ($isPicking ? "none" : "auto")};
   position: absolute;
   inset: 0 auto 0 0;
   z-index: 240;
@@ -106,6 +108,11 @@ export const OriginSearchBar = styled(SearchBarBox)`
   border: 1px solid #e5e7eb;
   border-radius: 28px;
   box-shadow: none;
+
+  &:focus-within {
+    border-color: #475569;
+    box-shadow: 0 0 0 2px rgba(71, 85, 105, 0.18);
+  }
 `;
 
 export const OriginSearchButton = styled(SearchButton)`
@@ -118,9 +125,7 @@ export const OriginSearchInput = styled(SearchInput)`
   font-size: 18px;
 
   &:focus-visible {
-    outline: 2px solid #475569;
-    outline-offset: 4px;
-    border-radius: 4px;
+    outline: none;
   }
 `;
 

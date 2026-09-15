@@ -1,75 +1,24 @@
-import { useState } from "react";
 import { ImageCarousel, CarouselItem } from "./DetailPanel.styles";
+import PlaceImage from "../../../components/PlaceImage";
 
-const ImageSlider = ({ placeImages }) => {
-  const [imgIndex, setImgIndex] = useState(0);
-
-  // DB 지도 핀 연동: 이미지가 없을 때 목업 이미지를 만들지 않고 빈 상태를 표시한다.
-  // 장소 상세 개선: 상세 API가 IMG_ORDER 순서로 준 이미지 전체를 순환 표시한다.
-  const images = placeImages?.length > 0 ? placeImages : [null];
-
-  const renderBoxStyle = (item) => {
-    if (item?.imageUrl) {
-      return { backgroundImage: `url(${item.imageUrl})` };
-    }
-    if (!item) {
-      return {
-        backgroundColor: "#F8F9FA",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      };
-    }
-    if (typeof item === "string") {
-      return { backgroundImage: `url(${item})` };
-    }
-    return {
-      backgroundColor: item.bg,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    };
-  };
-
-  const renderBoxContent = (item) => {
-    if (!item) {
-      return <span style={{ color: "#999" }}>등록된 이미지가 없습니다.</span>;
-    }
-    if (typeof item !== "string" && !item.imageUrl) {
-      return (
-        <span style={{ color: "#fff", fontSize: "24px", fontWeight: "bold" }}>
-          {item.text}
-        </span>
-      );
-    }
-    return null;
-  };
-
+const ImageSlider = ({ placeImages, place, imgIndex, onImageChange }) => {
+  const images = placeImages?.length ? placeImages : [null];
+  const activeIndex = Math.min(imgIndex, images.length - 1);
   const getCarouselClass = (idx) => {
-    if (idx === imgIndex) return "active";
-    if (idx === (imgIndex - 1 + images.length) % images.length) return "prev";
-    if (idx === (imgIndex + 1) % images.length) return "next";
+    if (idx === activeIndex) return "active";
+    if (idx === (activeIndex - 1 + images.length) % images.length) return "prev";
+    if (idx === (activeIndex + 1) % images.length) return "next";
     return "hidden";
   };
-
-  return (
-    <ImageCarousel>
-      {images.map((item, idx) => (
-        <CarouselItem
-          key={idx}
-          className={getCarouselClass(idx)}
-          style={renderBoxStyle(item)}
-          onClick={() => {
-            if (getCarouselClass(idx) !== "hidden") {
-              setImgIndex(idx);
-            }
-          }}
-        >
-          {renderBoxContent(item)}
-        </CarouselItem>
-      ))}
-    </ImageCarousel>
-  );
+  return <ImageCarousel>
+    {images.map((item, idx) => <CarouselItem
+      key={item?.imgNo ?? idx} className={getCarouselClass(idx)}
+      onClick={() => { if (getCarouselClass(idx) !== "hidden") onImageChange(idx); }}>
+      <PlaceImage src={typeof item === "string" ? item : item?.imageUrl} place={place}
+        alt={`${place?.placeName || "장소"} 이미지`}
+        style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
+    </CarouselItem>)}
+  </ImageCarousel>;
 };
 
 export default ImageSlider;

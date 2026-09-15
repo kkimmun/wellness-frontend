@@ -1,4 +1,5 @@
-import React from "react";
+import { resolvePlaceImage } from "../../utils/enhancedPlaceImages";
+
 import { TagBadge } from "../Badge/Badge.styles";
 import {
   SpotCardContainer,
@@ -20,7 +21,7 @@ export default function SpotCard({
 }) {
   return (
     <SpotCardContainer onClick={onClick}>
-      <SpotImage $src={imageUrl} />
+      <SpotImage $src={resolvePlaceImage(imageUrl)} />
       <SpotInfo>
         <SpotHeader>
           <SpotTitle>{title}</SpotTitle>
@@ -40,3 +41,4 @@ export default function SpotCard({
     </SpotCardContainer>
   );
 }
+

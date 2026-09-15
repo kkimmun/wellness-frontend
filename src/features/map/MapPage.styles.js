@@ -93,9 +93,7 @@ export const RouteReopenButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    left: ${({ $isOpen }) => ($isOpen ? "calc(min(100%, 540px) - 30px)" : "16px")};
-    width: 48px;
-    height: 48px;
+    display: none;
   }
 `;
 
@@ -122,7 +120,21 @@ export const MapPickNotice = styled.div`
     color: #81d4fa;
     font-weight: 700;
   }
+
+  @media (max-width: 768px) {
+    /* 검색창이 있던 자리(top: 12px)로 올림 — 바텀시트와 겹치지 않음 */
+    top: 12px;
+    left: 12px;
+    transform: none;  /* 가운데 정렬 대신 좌측 고정 */
+    right: 12px;
+    justify-content: center;
+    font-size: 12px;
+    padding: 10px 14px;
+    white-space: nowrap;
+    border-radius: 14px;
+  }
 `;
+
 
 export const MapPinToolbar = styled.div`
   position: absolute;
@@ -137,6 +149,18 @@ export const MapPinToolbar = styled.div`
   border-radius: ${theme.radius.lg};
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+
+  /* 모바일: FloatingTags 제거 후 상단 우측 배치, 바텀시트(z-index: 250) 아래에 위치 */
+  @media (max-width: 768px) {
+    top: 76px;
+    right: 12px;
+    left: auto;
+    z-index: 50;
+    flex-direction: row;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 20px;
+  }
 `;
 
 export const MapPinCreateButton = styled.button`
@@ -180,20 +204,46 @@ export const MapPinCreateButton = styled.button`
   &:hover {
     background: ${({ $color }) => `${$color}18`};
   }
+
+  /* 모바일: 핀 아이콘 숨기고 텍스트만 pill 버튼 */
+  @media (max-width: 768px) {
+    flex-direction: row;
+    width: auto;
+    padding: 5px 12px;
+    border-radius: 20px;
+    gap: 0;
+    background: ${({ $active, $color }) => ($active ? `${$color}18` : "transparent")};
+    border: 1px solid ${({ $color }) => $color}44;
+
+    span {
+      display: none;
+    }
+
+    small {
+      font-size: 12px;
+      font-weight: 700;
+      color: ${({ $color }) => $color};
+    }
+  }
 `;
 
 export const FloatingTags = styled.div`
   position: absolute;
-  top: 24px;
-  left: 580px; /* SearchPanel(너비 540px + left 24px + 간격) 우측에 배치 */
+  top: 16px;
+  left: 416px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   z-index: 10;
+  pointer-events: none; /* 컨테이너 자체는 터치 통과 → 지도 드래그 허용 */
   
   @media (max-width: 1024px) {
     top: 16px;
-    left: 350px;
+    left: 416px;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
   }
 `;
 
@@ -202,37 +252,49 @@ export const FloatingTags = styled.div`
 export const TagList = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px; /* 8 * 1.5 */
-  overflow: hidden; 
+  gap: 8px;
+  overflow: hidden;
+  pointer-events: auto; /* FloatingTags의 none을 자식에서 다시 활성화 */
   
-  /* 부드러운 슬라이딩 및 페이드 효과 */
-  max-width: ${({ $isOpen }) => ($isOpen ? "750px" : "0px")}; /* 500 * 1.5 */
+  max-width: ${({ $isOpen }) => ($isOpen ? "750px" : "0px")};
   opacity: ${({ $isOpen }) => ($isOpen ? "1" : "0")};
-  transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out;
+  transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out;
   
-  /* 스크롤바 숨기기 (모바일 대응) */
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  &::-webkit-scrollbar { display: none; }
   scrollbar-width: none;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    max-width: none;
+    width: 100%;
+    /* 모바일: 열림/닫힘을 display로 확실하게 제어 */
+    display: ${({ $isOpen }) => ($isOpen ? "flex" : "none")};
+    opacity: 1;
+  }
 `;
 
 /* DB 장소 필터 연동: 타입과 태그의 실제 DB 값을 선택하는 공통 셀렉트다. */
 export const FilterSelect = styled.select`
   min-width: 170px;
+  height: 50px;
+  box-sizing: border-box;
+  flex-shrink: 0;
   background-color: white;
-  border: 1px solid
+  border: 2px solid
     ${({ $isActive }) =>
-      $isActive ? theme.colors.primaryHover : theme.colors.borderLight};
-  border-radius: ${theme.radius.pill};
-  padding: 12px 38px 12px 18px;
+      $isActive ? theme.colors.primaryHover : theme.colors.primary};
+  border-radius: 8px;
+  padding: 0 12px;
   font-size: ${theme.fontSize.md};
-  font-weight: 700;
+  font-weight: 600;
   color: ${theme.colors.textPrimary};
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   cursor: pointer;
   white-space: nowrap;
   outline: none;
+  background-color: ${({ $isActive }) => ($isActive ? "#eef9fd" : "white")};
 
   &:hover,
   &:focus {
@@ -243,22 +305,33 @@ export const FilterSelect = styled.select`
     cursor: wait;
     opacity: 0.65;
   }
+
+  @media (max-width: 768px) {
+    min-width: 0;
+    width: 100%;             /* FloatingTags max-width 안에서 꽉 채움 */
+    padding: 7px 28px 7px 12px;
+    font-size: 12px;
+    border-radius: 10px;
+  }
 `;
 
 /* DB 장소 필터 연동: 선택한 타입·태그 조건을 해제하고 전체 핀으로 복원한다. */
 export const FilterResetButton = styled.button`
   min-width: 88px;
-  padding: 12px 18px;
-  border: 1px solid
+  height: 50px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  padding: 0 14px;
+  border: 2px solid
     ${({ $isActive }) =>
-      $isActive ? theme.colors.primaryHover : theme.colors.borderLight};
-  border-radius: ${theme.radius.pill};
+      $isActive ? theme.colors.primaryHover : theme.colors.primary};
+  border-radius: 8px;
   background: ${theme.colors.bgWhite};
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   color: ${({ $isActive }) =>
     $isActive ? theme.colors.textPrimary : theme.colors.textSecondary};
   font-size: ${theme.fontSize.md};
-  font-weight: 700;
+  font-weight: 600;
 
   &:hover:not(:disabled) {
     border-color: ${theme.colors.primaryHover};
@@ -269,31 +342,67 @@ export const FilterResetButton = styled.button`
     cursor: default;
     opacity: 0.5;
   }
+
+  @media (max-width: 768px) {
+    min-width: 0;
+    width: 100%;             /* FloatingTags max-width 안에서 꽉 채움 */
+    padding: 7px 12px;
+    font-size: 12px;
+    border-radius: 10px;
+    text-align: center;
+  }
 `;
 
 export const ToggleButton = styled.button`
-  width: 60px; /* 40 * 1.5 */
-  height: 60px; /* 40 * 1.5 */
-  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
   background-color: ${theme.colors.bgWhite};
   color: ${theme.colors.textSecondary};
-  border: none;
+  border: 2px solid ${theme.colors.primary};
+  box-sizing: border-box;
   padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
+  pointer-events: auto; /* FloatingTags의 none을 자식에서 다시 활성화 */
 
   svg {
-    transform: translateX(1.5px); /* 아이콘 살짝 조정 */
+    transform: translateX(1.5px);
+  }
+
+  /* 모바일 pill에서만 보이는 텍스트 레이블 - 데스크톱에서는 숨김 */
+  .toggle-label {
+    display: none;
   }
 
   &:hover {
     background-color: #F5F5F5;
     color: ${theme.colors.textPrimary};
+  }
+
+  @media (max-width: 768px) {
+    width: auto;
+    height: auto;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    gap: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+    svg {
+      transform: none;
+      font-size: 11px;
+    }
+
+    .toggle-label {
+      display: inline; /* 모바일 pill에서만 "필터" / "접기" 텍스트 표시 */
+    }
   }
 `;
 
@@ -306,7 +415,7 @@ export const OverlayCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: 260px; /* 고정 너비로 변경하여 크기를 통일하고 간격을 확보 */
+  width: 260px;
   position: relative;
   /* 마커 크기(24px)를 고려하여 꼬리가 핀을 정확히 가리키도록 여백 조정 */
   margin-bottom: 22px; 
@@ -347,6 +456,21 @@ export const OverlayCard = styled.div`
       }
       .btn-end {
         background-color: #FF5722; /* 주황색 도착 버튼 */
+      }
+      /* 계획 모드 연동: 장소 요약에서 경로찾기 대신 계획에 바로 추가한다. */
+      .btn-plan {
+        background-color: #46558A;
+      }
+      .btn-bookmark {
+        background: transparent;
+        color: #777;
+        padding: 2px;
+        display: grid;
+        place-items: center;
+
+        &:hover {
+          background: #f1f3f5;
+        }
       }
     }
   }
@@ -422,6 +546,42 @@ export const OverlayCard = styled.div`
       text-overflow: ellipsis;
     }
   }
+
+  /* ── 모바일: 카드 전체를 확실하게 축소 ── */
+  @media (max-width: 768px) {
+    width: 170px !important;
+    padding: 7px 8px !important;
+    gap: 4px !important;
+    margin-bottom: 36px !important;
+
+    .header-row .action-buttons {
+      gap: 3px;
+      button {
+        padding: 2px 5px !important;
+        font-size: 9px !important;
+        border-radius: 3px;
+        line-height: 1.4;
+      }
+    }
+
+    .sub-row {
+      font-size: 9px !important;
+      gap: 5px;
+      margin-top: 0;
+    }
+
+    .badge {
+      font-size: 8px !important;
+      padding: 1px 4px !important;
+    }
+
+    .addr-row {
+      font-size: 9px !important;
+      gap: 2px;
+      margin-top: 2px !important;
+      .addr-label { min-width: 28px; }
+    }
+  }
 `;
 
 export const OverlayTitle = styled.div`
@@ -433,4 +593,106 @@ export const OverlayTitle = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 150px;
+
+  @media (max-width: 768px) {
+    font-size: 12px !important;
+    max-width: 90px;
+  }
+`;
+
+export const OverlapMarkerContainer = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+`;
+
+export const OverlapCountBadge = styled.span`
+  position: absolute;
+  top: -9px;
+  right: -13px;
+  z-index: 20;
+  display: grid;
+  min-width: 23px;
+  height: 23px;
+  padding: 0 6px;
+  place-items: center;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+`;
+
+export const OverlapNavigation = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid #eef1f4;
+
+  button {
+    display: grid;
+    width: 28px;
+    height: 24px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid #dbe2e8;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #344054;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+      border-color: #62c4e8;
+      background: #eefaff;
+      color: #1689b5;
+    }
+  }
+
+  span {
+    min-width: 42px;
+    color: #667085;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+  }
+`;
+
+export const TagFilterPopover = styled.div`
+  pointer-events: auto;
+  position: absolute;
+  top: 60px;
+  left: 0;
+  width: min(360px, calc(100vw - 32px));
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 16px;
+  box-sizing: border-box;
+  border: 2px solid ${theme.colors.primary};
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  header button { padding: 4px 8px; color: #666; }
+  .tag-options { display: flex; flex-wrap: wrap; gap: 8px; }
+`;
+
+export const TagFilterChip = styled.button`
+  padding: 8px 12px;
+  border: 1px solid ${({ $active }) => ($active ? theme.colors.primaryHover : theme.colors.borderLight)};
+  border-radius: 8px;
+  background: ${({ $active }) => ($active ? "#eef9fd" : "white")};
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  &:disabled { opacity: 0.65; cursor: wait; }
+  &:focus-visible { outline: 2px solid ${theme.colors.primaryHover}; outline-offset: 2px; }
 `;

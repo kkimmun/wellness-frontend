@@ -37,21 +37,33 @@ const GlobalStyles = createGlobalStyle`
     box-sizing: border-box;
   }
 
-  /* 1-2. React 루트 및 바디 여백 초기화 */
-  html,
-  body,
+  /* 1-2. React 루트 및 바디 여백 초기화 및 모바일 뷰포트 보정 */
+  html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+    font-family: ${theme.fontFamily.base};
+    line-height: ${theme.lineHeight.normal};
+    color: ${theme.colors.textPrimary};
+    background-color: ${theme.colors.bgWhite};
+  }
+
   #root {
     margin: 0;
     padding: 0;
+    height: 100%;
   }
-
-  /* 2. 바디 기본 세팅 */
-body {
-  font-family: ${theme.fontFamily.base};
-  line-height: ${theme.lineHeight.normal};
-  color: ${theme.colors.textPrimary};
-  background-color: ${theme.colors.bgWhite};
-}
 
 
   /* 3. 폼 요소 폰트 상속 및 기본 스타일 초기화 */

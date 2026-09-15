@@ -14,11 +14,12 @@ import * as S from "./AdminCourseForm.styles";
 const EMPTY_FORM = { courseName: "", description: "", stops: [null, null, null, null, null] };
 const STOP_LABELS = ["출발지", "중간 관광지 1", "중간 관광지 2", "중간 관광지 3", "도착지"];
 
-function PlaceField({ index, place, onSearch, onClear }) {
+function PlaceField({ index, place, onSearch, onClear, onDescriptionChange }) {
   const label = STOP_LABELS[index];
   const required = index === 0 || index === 4;
   return <S.FormRow>
     <label htmlFor={`course-stop-${index}`}>{label}{required && <S.Required aria-hidden="true">*</S.Required>}</label>
+    <div>
     <S.PlaceControls>
       <SearchInputWrapper>
         <S.PlaceInput id={`course-stop-${index}`} readOnly aria-required={required} aria-haspopup="dialog" placeholder="장소 선택" value={place?.placeName || ""} onClick={onSearch} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSearch(); } }} />
@@ -28,6 +29,11 @@ function PlaceField({ index, place, onSearch, onClear }) {
       <S.SelectedPlace>{place ? `장소 번호 ${place.placeNo}` : "선택된 장소 없음"}</S.SelectedPlace>
       {place && <TableActionButton type="button" aria-label={`${label} 선택 해제`} onClick={onClear}>선택 해제</TableActionButton>}
     </S.PlaceControls>
+    {place && !required && <div>
+      <S.Hint as="label" htmlFor={`course-stop-description-${index}`} style={{ display: "block", margin: "12px 0 8px" }}>{label} 방문 이유</S.Hint>
+      <BaseTextarea id={`course-stop-description-${index}`} rows={3} placeholder="이 코스에서 이 장소를 방문해야 하는 이유를 입력해주세요." value={place.waypointDescription || ""} onChange={(event) => onDescriptionChange(event.target.value)} />
+    </div>}
+    </div>
   </S.FormRow>;
 }
 
@@ -54,13 +60,16 @@ function CourseFormContent({ courseNo }) {
         if (controller.signal.aborted) return;
         if (!Array.isArray(pins)) throw new Error("명소 목록을 확인할 수 없습니다.");
         if (!detail) throw new Error("코스를 찾을 수 없습니다.");
-        if ((detail.waypointPlaceNos || []).length > 3) throw new Error("중간 관광지가 3개를 초과하여 수정할 수 없습니다.");
-        const waypointIds = detail.waypointPlaceNos || [];
+        const waypointIds = detail.waypointPlaceNos || (detail.waypoints || []).map((waypoint) => waypoint.placeNo);
+        if (waypointIds.length > 3) throw new Error("중간 관광지가 3개를 초과하여 수정할 수 없습니다.");
         const ids = [detail.startPlaceNo, waypointIds[0], waypointIds[1], waypointIds[2], detail.endPlaceNo];
         setForm({
           courseName: detail.courseName || "",
           description: detail.description || "",
-          stops: ids.map((id) => id ? pins.find((pin) => pin.placeNo === id) || { placeNo: id, placeName: `기존 장소 #${id}` } : null),
+          stops: ids.map((id) => id ? {
+            ...(pins.find((pin) => pin.placeNo === id) || { placeNo: id, placeName: `기존 장소 #${id}` }),
+            waypointDescription: (detail.waypoints || []).find((waypoint) => waypoint.placeNo === id)?.waypointDescription || "",
+          } : null),
         });
         setLoadState("ready");
       })
@@ -80,7 +89,14 @@ function CourseFormContent({ courseNo }) {
   const updatePlace = (index, place) => {
     if (saveLock.current) return;
     setError("");
-    setForm((current) => ({ ...current, stops: current.stops.map((stop, order) => order === index ? place : stop) }));
+    setForm((current) => ({ ...current, stops: current.stops.map((stop, order) => order === index
+      ? place ? { ...place, waypointDescription: stop?.placeNo === place.placeNo ? stop.waypointDescription || "" : "" } : null
+      : stop) }));
+  };
+  const updatePlaceDescription = (index, value) => {
+    if (saveLock.current) return;
+    setError("");
+    setForm((current) => ({ ...current, stops: current.stops.map((stop, order) => order === index && stop ? { ...stop, waypointDescription: value } : stop) }));
   };
   const submit = async (event) => {
     event.preventDefault();
@@ -90,6 +106,7 @@ function CourseFormContent({ courseNo }) {
       description: form.description.trim(),
       startPlaceNo: form.stops[0]?.placeNo,
       waypointPlaceNos: form.stops.slice(1, 4).filter(Boolean).map((place) => place.placeNo),
+      waypoints: form.stops.slice(1, 4).filter(Boolean).map((place) => ({ placeNo: place.placeNo, waypointDescription: (place.waypointDescription || "").trim() })),
       endPlaceNo: form.stops[4]?.placeNo,
     };
     if (!payload.courseName || !payload.description) { setError("코스명과 설명을 입력해주세요."); return; }
@@ -125,8 +142,8 @@ function CourseFormContent({ courseNo }) {
           </S.Section>
           <S.Section aria-labelledby="route-config-title">
             <S.SectionTitle id="route-config-title">코스 경로 설정</S.SectionTitle>
-            <S.Hint>출발지와 도착지를 선택하고, 중간 관광지는 방문 순서대로 최대 3곳까지 선택해주세요.</S.Hint>
-            {STOP_LABELS.map((label, index) => <PlaceField key={label} index={index} place={form.stops[index]} onSearch={() => setPickerIndex(index)} onClear={() => updatePlace(index, null)} />)}
+            <S.Hint>출발지와 도착지를 선택하고, 중간 관광지는 최대 3곳까지 선택해주세요. 중간 관광지를 선택하면 방문 이유를 입력할 수 있습니다.</S.Hint>
+            {STOP_LABELS.map((label, index) => <PlaceField key={label} index={index} place={form.stops[index]} onSearch={() => setPickerIndex(index)} onClear={() => updatePlace(index, null)} onDescriptionChange={(value) => updatePlaceDescription(index, value)} />)}
           </S.Section>
           {error && <FormError role="alert">{error}</FormError>}
           <S.FormActions><SecondaryButton type="button" onClick={() => navigate(returnTo)}>취소</SecondaryButton><PrimaryButton type="submit">{saving ? "저장 중…" : courseNo ? "수정 저장" : "등록"}</PrimaryButton></S.FormActions>

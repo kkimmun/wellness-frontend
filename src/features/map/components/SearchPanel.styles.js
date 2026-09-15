@@ -1,268 +1,306 @@
 import styled from "styled-components";
 import { theme } from "../../../styles/theme";
+import { ListContainer } from "./Top10Panel.styles";
 
 export const PanelContainer = styled.div`
   position: absolute;
-  top: 24px;
-  left: 24px;
-  width: 540px; /* 360 * 1.5 */
-  max-height: 80vh; /* 조금 더 늘림 */
+  top: 0;
+  left: 0;
+  width: min(400px, 100%);
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px; /* 검색창과 목록창 사이 간격 */
   z-index: 10;
-  
-  /* 상세보기 열릴 때 왼쪽으로 밀려나며 사라지도록 추가 */
+  background: ${({ $hasResults }) => ($hasResults ? "white" : "transparent")};
+  box-shadow: ${({ $hasResults }) => ($hasResults ? "2px 0 10px rgba(0, 0, 0, 0.1)" : "none")};
   transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
   transform: ${({ $isVisible }) => ($isVisible ? "translateX(0)" : "translateX(-150%)")};
-  opacity: ${({ $isVisible }) => ($isVisible ? "1" : "0")};
-  pointer-events: ${({ $isVisible }) => ($isVisible ? "auto" : "none")};
+  opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
+  visibility: ${({ $isVisible }) => ($isVisible ? "visible" : "hidden")};
+  pointer-events: none;
 
-  @media (max-width: 1024px) {
-    top: 16px;
-    left: 16px;
-    width: 480px;
-    max-height: 80vh;
-  }
-
+  /* 모바일: 하단 일체형 바텀시트 */
   @media (max-width: 768px) {
-    top: 12px;
-    left: 12px;
-    width: calc(100vw - 24px); /* 화면 폭 꽉 차게 */
-    max-height: 50vh; /* 모바일에서는 지도를 봐야 하므로 높이도 제한 */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    top: auto;
+    height: ${({ $mobileHeight, $hasResults }) =>
+      $mobileHeight || ($hasResults ? "40vh" : "auto")};
+    max-height: calc(100dvh - 56px);
+    background-color: ${theme.colors.bgWhite};
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 12px));
+    box-sizing: border-box;
+    z-index: 250;
+    pointer-events: ${({ $isVisible }) => ($isVisible ? "auto" : "none")};
+    visibility: ${({ $isVisible }) => ($isVisible ? "visible" : "hidden")};
+    transform: ${({ $isVisible }) =>
+      $isVisible ? "translateY(0)" : "translateY(110%)"};
+    transition: ${({ $isDragging }) =>
+      $isDragging
+        ? "none"
+        : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), height 0.2s ease, visibility 0.3s ease"};
   }
 `;
 
 export const SearchHeader = styled.div`
-  /* 기존 패딩 제거하고 자체적인 크기만 갖도록 함 */
   width: 100%;
-`;
-
-export const SearchBarBox = styled.div`
-  display: flex;
-  align-items: center;
-  background-color: ${theme.colors.bgWhite};
-  border: none; /* 테두리 제거 */
-  border-radius: 30px; /* 더 둥글게 (알약 형태) */
-  padding: 9px 9px 9px 24px; /* 1.5배 */
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12); /* 항상 고정된 부드러운 그림자 */
+  flex-shrink: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  background: ${({ $hasResults }) => ($hasResults ? "white" : "transparent")};
+  border-bottom: 1px solid ${({ $hasResults }) => ($hasResults ? "#eee" : "transparent")};
+  pointer-events: ${({ $hasResults }) => ($hasResults ? "auto" : "none")};
 
   @media (max-width: 768px) {
-    padding: 6px 6px 6px 16px;
+    padding: 4px 0;
+    background: transparent;
+    border-bottom: none;
   }
 `;
 
-export const SearchInput = styled.input`
+export const CompactSearchBarBox = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 5px 5px 12px;
+  border: 2px solid #87ceeb;
+  border-radius: 8px;
+  background: white;
+  box-shadow: ${({ $isFloating }) => ($isFloating ? "0 4px 16px rgba(0, 0, 0, 0.12)" : "none")};
+  pointer-events: auto;
+
+  @media (max-width: 768px) {
+    border-radius: 30px;
+    padding: 4px 6px 4px 16px;
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    box-shadow: none;
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+`;
+
+export const CompactSearchInput = styled.input`
   flex: 1;
+  min-width: 0;
   border: none;
   outline: none;
-  font-size: 21px; /* 14px * 1.5 */
-  color: ${theme.colors.textPrimary};
+  font-size: 16px;
+  color: #333;
   background: transparent;
-
-  &::placeholder {
-    color: ${theme.colors.textMuted};
-  }
-
-  @media (max-width: 768px) {
-    font-size: 16px;
-  }
+  &::placeholder { color: #a4b5be; }
 `;
 
-export const SearchButton = styled.button`
-  width: 54px; /* 36 * 1.5 */
-  height: 54px;
-  border-radius: 50%;
-  background-color: #475569;
-  color: ${theme.colors.bgWhite};
-  border: none;
+export const ClearButton = styled.button`
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  color: #94a3b8;
   cursor: pointer;
-  transition: background-color 0.2s;
   flex-shrink: 0;
+  border-radius: 50%;
+  transition: color 0.2s, background-color 0.2s;
 
   &:hover {
-    background-color: #334155;
+    color: #475569;
+    background-color: rgba(0, 0, 0, 0.05);
   }
+`;
+
+export const CompactSearchButton = styled.button`
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 6px;
+  background: #475569;
+  color: white;
+  cursor: pointer;
+  &:hover { background: #334155; }
 
   @media (max-width: 768px) {
-    width: 40px;
-    height: 40px;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 `;
 
-export const ResultListContainer = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  background-color: ${theme.colors.bgWhite};
-  border-radius: 24px;
-  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
-  padding: 24px; /* 16 * 1.5 */
-  display: flex;
-  flex-direction: column;
-  gap: 24px; /* 16 * 1.5 */
-  
-  /* 스크롤바 커스텀 */
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: #CCC;
-    border-radius: 4px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
+export const SearchBarBox = CompactSearchBarBox;
+export const SearchInput = CompactSearchInput;
+export const SearchButton = CompactSearchButton;
+
+export const DragHandle = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 6px 0 10px;
+    flex-shrink: 0;
+    cursor: grab;
+    touch-action: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    &::after {
+      content: "";
+      width: 36px;
+      height: 4px;
+      background-color: #cbd5e1;
+      border-radius: 2px;
+    }
   }
 `;
 
-export const ListCard = styled.div`
-  background: white;
-  border: 2px solid ${theme.colors.borderLight};
-  border-radius: 18px; /* 12 * 1.5 */
-  padding: 24px; /* 16 * 1.5 */
-  display: flex;
-  flex-direction: column;
-  gap: 12px; /* 8 * 1.5 */
-  cursor: pointer;
-  transition: all 0.2s ease;
+export const MobileFilterBar = styled.div`
+  display: none;
 
-  &:hover {
-    border-color: ${theme.colors.primary};
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    flex-shrink: 0;
+    padding: 6px 0 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    select {
+      flex: 1;
+      min-width: 0;
+      padding: 5px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      background: #f1f5f9;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+
+      &:focus {
+        border-color: #90caf9;
+      }
+      &:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+    }
+
+    button {
+      flex-shrink: 0;
+      padding: 5px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      background: #f1f5f9;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      white-space: nowrap;
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+    }
+  }
+`;
+
+export const ResultListContainer = styled(ListContainer)`
+  min-height: 0;
+  pointer-events: auto;
+  overscroll-behavior: contain;
+
+  @media (max-width: 768px) {
+    margin-top: 8px;
+    padding: 4px 0 0 0;
   }
 `;
 
 export const CardHeader = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 8px;
+  .title { overflow-wrap: anywhere; }
 `;
 
-export const TitleGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-export const PlaceTitle = styled.h3`
-  font-size: 24px; /* 16 * 1.5 */
-  font-weight: 800;
-  color: ${theme.colors.textPrimary};
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 260px; /* 넉넉하게 */
+export const BookmarkBtn = styled.button`
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #777;
+  cursor: pointer;
+  &:hover { background: #f1f3f5; }
 `;
 
 export const ReviewInfo = styled.div`
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 16px; /* 11 * 1.5 */
-  
-  .review-text {
-    color: ${theme.colors.bgDim};
-  }
-  .rating-text {
-    color: ${theme.colors.textPrimary};
-    font-weight: 700;
-  }
-  svg {
-    color: #FFB300;
-    margin-bottom: 2px;
-  }
-`;
-
-export const BookmarkBtn = styled.button`
-  background: white;
-  border: 2px solid ${theme.colors.borderLight}; /* 1px -> 2px */
-  border-radius: 6px;
-  width: 36px; /* 24 * 1.5 */
-  height: 36px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: ${theme.colors.textSecondary};
-  cursor: pointer;
-  
-  &:hover {
-    background: ${theme.colors.bgLight};
-  }
-`;
-
-export const AddressRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 16px; /* 11 * 1.5 */
-  margin-top: 6px;
-
-  .addr-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    min-width: 0;
-  }
-  .addr-label {
-    color: ${theme.colors.bgDim};
-    min-width: 50px; /* 35 * 1.5 */
-  }
-  .addr-value {
-    color: ${theme.colors.textPrimary};
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-  }
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  color: #777;
+  font-size: 12px;
+  svg { color: #ffb300; }
 `;
 
 export const CardFooter = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-top: 6px;
-`;
-
-export const PhoneText = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 16px; /* 11 * 1.5 */
-  color: ${theme.colors.textSecondary};
-  
-  svg {
-    font-size: 14px;
-  }
+  justify-content: flex-end;
+  margin-top: 8px;
 `;
 
 export const ActionButtons = styled.div`
   display: flex;
   gap: 6px;
-
   button {
-    padding: 6px 15px; /* 4, 10 * 1.5 */
-    border-radius: 6px;
+    padding: 4px 10px;
     border: none;
-    font-size: 16px; /* 11 * 1.5 */
+    border-radius: 4px;
+    font-size: 12px;
     font-weight: 600;
     color: white;
     cursor: pointer;
   }
-  .btn-start {
-    background-color: #2196F3;
-  }
-  .btn-end {
-    background-color: #FF7043;
-  }
+  .btn-start { background: #2196f3; }
+  .btn-end { background: #ff7043; }
 `;
 
 export const LoadingSpinner = styled.div`
-  padding: 30px;
+  padding: 20px;
   text-align: center;
-  color: ${theme.colors.bgDim};
-  font-size: 20px; /* 13 * 1.5 */
+  color: #777;
+  font-size: 13px;
 `;

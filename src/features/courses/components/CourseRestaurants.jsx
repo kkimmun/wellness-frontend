@@ -74,7 +74,7 @@ export default function CourseRestaurants({ origin, destination, routeOption, id
             {current.restaurants.map(({ place, distance }) => (
               <li key={place.placeNo}>
               <S.RestaurantCard type="button" onClick={() => onRestaurantSelect?.(place)} aria-label={place.placeName + " 상세정보 보기"}>
-                <S.RestaurantPhoto><CoursePhoto src={place.imageUrl} name={place.placeName} /></S.RestaurantPhoto>
+                <S.RestaurantPhoto><CoursePhoto src={place.imageUrl} place={place} name={place.placeName} /></S.RestaurantPhoto>
                 <S.RestaurantInfo>
                   <h4>{place.placeName}</h4>
                   <S.RestaurantDistance>경로에서 약 {Math.round(distance)}m</S.RestaurantDistance>

@@ -16,11 +16,11 @@ const thumbnailTones = [
 
 export const PanelContainer = styled.section`
   position: absolute;
-  top: 112px;
+  top: ${theme.spacing.lg};
   left: ${theme.spacing.lg};
   z-index: 11;
   width: 540px;
-  max-height: calc(100% - 136px);
+  max-height: calc(100% - 48px);
   display: flex;
   flex-direction: column;
   padding: ${theme.spacing.lg};
@@ -30,11 +30,62 @@ export const PanelContainer = styled.section`
   box-shadow: 0 8px 32px rgba(15, 23, 42, 0.16);
 
   @media (max-width: ${theme.breakpoints.md}) {
-    top: 104px;
+    top: ${theme.spacing.md};
     left: ${theme.spacing.md};
     width: min(480px, calc(100% - 32px));
-    max-height: calc(100% - 120px);
+    max-height: calc(100% - 32px);
     padding: ${theme.spacing.md};
+  }
+
+  /* 모바일: 하단 바텀시트 */
+  @media (max-width: 768px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100vw;
+    height: ${({ $mobileHeight }) => $mobileHeight || "40vh"};
+    max-height: calc(100dvh - 56px);
+    overflow: hidden;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    padding: 0 16px calc(12px + env(safe-area-inset-bottom, 12px));
+    box-sizing: border-box;
+    z-index: 200;
+    transition: ${({ $isDragging }) =>
+      $isDragging ? "none" : "height 0.2s ease"};
+  }
+`;
+
+/* 모바일에서만 표시되는 드래그 핸들 */
+export const DragHandle = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: calc(100% + 32px); /* 좌우 padding 보정 */
+    margin: 0 -16px;
+    padding: 10px 0 12px;
+    flex-shrink: 0;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    &::after {
+      content: "";
+      width: 40px;
+      height: 4px;
+      background-color: #cbd5e1;
+      border-radius: 2px;
+    }
   }
 `;
 
@@ -44,6 +95,11 @@ export const Header = styled.div`
   justify-content: space-between;
   gap: ${theme.spacing.md};
   margin-bottom: ${theme.spacing.md};
+
+  @media (max-width: 768px) {
+    padding-top: 4px;
+    flex-shrink: 0;
+  }
 `;
 
 export const HeaderText = styled.div`
@@ -108,6 +164,11 @@ export const CourseList = styled.ol`
   &::-webkit-scrollbar-thumb {
     background: ${theme.colors.borderLight};
     border-radius: ${theme.radius.pill};
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 0 8px 0;
+    -webkit-overflow-scrolling: touch;
   }
 `;
 
@@ -364,29 +425,6 @@ export const UserCourseHint = styled.div`
   background: ${theme.colors.bgLight};
   border-radius: ${theme.radius.md};
   font-size: ${theme.fontSize.sm};
-`;
-
-export const CourseChoiceDialog = styled.dialog`
-  width: min(440px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  padding: ${theme.spacing.lg};
-  border: 0;
-  border-radius: ${theme.radius.lg};
-  background: ${theme.colors.bgWhite};
-  color: ${theme.colors.textPrimary};
-  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.2);
-
-  &::backdrop {
-    background: ${theme.colors.bgDim};
-  }
-
-  > p {
-    color: ${theme.colors.textSecondary};
-    font-size: ${theme.fontSize.sm};
-    line-height: 1.6;
-    word-break: keep-all;
-  }
 `;
 
 export const CourseChoiceActions = styled.div`
