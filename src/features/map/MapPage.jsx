@@ -2433,7 +2433,7 @@ const MapPage = () => {
                 }}
                 yAnchor={1}
                 clickable={true}
-                zIndex={20}
+                zIndex={100}
               >
                 <div style={{ marginBottom: "28px" }}>
                   <OverlayCard>
@@ -2548,7 +2548,7 @@ const MapPage = () => {
                 position={{ lat: top10Overlay.yAxis, lng: top10Overlay.xAxis }}
                 yAnchor={1}
                 clickable={true}
-                zIndex={20}
+                zIndex={100}
               >
                 <div style={{ marginBottom: "28px" }}>
                   <OverlayCard>
