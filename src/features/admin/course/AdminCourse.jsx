@@ -97,15 +97,14 @@ export default function AdminCourse() {
         setNotice({ title: "상태 변경 완료", message: "활성 상태가 변경되었습니다." });
         setSelected(new Set());
       } else {
-        // 명세에 일괄 삭제 API가 없으므로 단건 API로 각각 요청하고 실패한 항목을 유지한다.
-        const results = await Promise.allSettled(confirmation.ids.map(AdminCourseAPI.deleteCourse));
-        const failed = confirmation.ids.filter((_, index) => results[index].status === "rejected");
-        setSelected(new Set(failed));
-        const deleted = confirmation.ids.length - failed.length;
-        const reason = results.find((result) => result.status === "rejected")?.reason?.message;
-        setNotice(failed.length
-          ? { title: "삭제 결과 확인", message: `${deleted}건 삭제, ${failed.length}건 삭제 실패. ${reason || "실패한 코스를 다시 선택해 시도해주세요."}` }
-          : { title: "삭제 완료", message: confirmation.ids.length === 1 ? "코스가 삭제되었습니다." : `${deleted}건의 코스가 삭제되었습니다.` });
+        await AdminCourseAPI.deleteCourses(confirmation.ids);
+        setSelected(new Set());
+        setNotice({
+          title: "삭제 완료",
+          message: confirmation.ids.length === 1
+            ? "코스가 삭제되었습니다."
+            : `${confirmation.ids.length}건의 코스가 삭제되었습니다.`,
+        });
       }
       setRevision((value) => value + 1);
     } catch (error) {

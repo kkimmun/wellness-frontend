@@ -19,5 +19,6 @@ export const AdminCourseAPI = {
   createCourse: (payload) => api.post("/admin/courses", payload),
   updateCourse: (courseNo, payload) => api.put(`/admin/courses/${courseNo}`, payload),
   deleteCourse: (courseNo) => api.delete(`/admin/courses/${courseNo}`),
+  deleteCourses: (courseNos) => api.delete("/admin/courses", { data: { courseNos } }),
   updateStatus: (courseNo, active) => api.patch(`/admin/courses/${courseNo}/status`, { active }),
 };
