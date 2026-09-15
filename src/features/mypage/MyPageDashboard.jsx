@@ -18,7 +18,6 @@ export default function MyPageDashboard() {
 
 function Dashboard({ user }) {
   const ownerKey = getTravelOwnerKey(user);
-  const [tab, setTab] = useState(TRAVEL_PLAN_KIND.PLAN);
   const [trips, setTrips] = useState(() => getMyTrips(user));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [error, setError] = useState("");
@@ -26,9 +25,7 @@ function Dashboard({ user }) {
   const [editing, setEditing] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const profileImage = getProfileImage(user);
-  const isPlan = tab === TRAVEL_PLAN_KIND.PLAN;
-  const visibleTrips = trips.filter((trip) => trip.kind === tab);
-  const title = isPlan ? "나의 여행 계획" : "나의 추천 코스";
+  const visibleTrips = trips.filter((trip) => trip.kind === TRAVEL_PLAN_KIND.PLAN);
 
   useEffect(() => {
     const refresh = () => setTrips(getMyTrips(user));
@@ -70,26 +67,14 @@ function Dashboard({ user }) {
       <S.MainColumn>
       <SensorSection />
       <S.Section aria-label="저장한 여행">
-        <S.Tabs role="tablist" aria-label="여행 종류">
-          {[TRAVEL_PLAN_KIND.PLAN, TRAVEL_PLAN_KIND.RECOMMENDATION].map((kind) => <button key={kind} id={`tab-${kind}`} role="tab" type="button"
-            aria-selected={tab === kind} aria-controls={`panel-${kind}`} tabIndex={tab === kind ? 0 : -1}
-            onKeyDown={(event) => {
-              if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-              event.preventDefault();
-              const next = event.key === "Home" ? TRAVEL_PLAN_KIND.PLAN : event.key === "End" ? TRAVEL_PLAN_KIND.RECOMMENDATION : kind === TRAVEL_PLAN_KIND.PLAN ? TRAVEL_PLAN_KIND.RECOMMENDATION : TRAVEL_PLAN_KIND.PLAN;
-              setTab(next); document.getElementById(`tab-${next}`)?.focus();
-            }} onClick={() => setTab(kind)}>{kind === TRAVEL_PLAN_KIND.PLAN ? "나의 여행 계획" : "나의 추천 코스"}<span>{trips.filter((trip) => trip.kind === kind).length}</span></button>)}
-        </S.Tabs>
-        <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} tabIndex={0}>
-          <S.SectionHeading><div><h2>{title}</h2><p>{isPlan ? "직접 골라 연결한 나만의 여행입니다." : "마음에 들어 저장한 추천 코스입니다."}</p></div><Link to={isPlan ? "/map?mode=j" : "/map?mode=p"}>{isPlan ? "+ 계획 만들기" : "+ 추천받기"}</Link></S.SectionHeading>
-          <S.Notice>현재 계정으로 이 브라우저에 저장한 여행만 표시됩니다. 다른 기기와 동기화되지 않으며, 브라우저 데이터를 삭제하면 사라질 수 있습니다.</S.Notice>
-          {visibleTrips.length ? <S.TripList>{visibleTrips.map((trip) => <S.Trip key={trip.id}>
-            <h3>{trip.name}</h3><time>{formatSavedDate(trip.updatedAt || trip.createdAt)} 저장 · {trip.places.length}개 장소</time>
-            <S.Origin><FaMapMarkerAlt />출발: {trip.origin.placeName || trip.origin.address || "지도에서 선택한 위치"}</S.Origin>
-            <ol>{trip.places.map((place, index) => <li key={`${place.placeNo}-${index}`}>{place.placeName || `장소 ${place.placeNo}`}</li>)}</ol>
-            <S.Actions><Link to={getTripMapUrl(trip)} aria-label={`${trip.name} 지도에서 보기`}>지도에서 코스 보기 →</Link><button type="button" aria-label={`${trip.name} 삭제`} onClick={() => { setError(""); setDeleteTarget(trip); }}>삭제</button></S.Actions>
-          </S.Trip>)}</S.TripList> : <S.Empty><FaRoute /><h3>아직 저장한 {isPlan ? "여행 계획이" : "추천 코스가"} 없어요.</h3><p>{isPlan ? "가고 싶은 장소를 연결하고 첫 계획을 저장해보세요." : "나에게 맞는 코스를 추천받고 저장해보세요."}</p></S.Empty>}
-        </div>
+        <S.SectionHeading><div><h2>나의 여행 계획</h2><p>직접 골라 연결한 나만의 여행입니다.</p></div><Link to="/map?mode=j">+ 계획 만들기</Link></S.SectionHeading>
+        <S.Notice>현재 계정으로 이 브라우저에 저장한 여행만 표시됩니다. 다른 기기와 동기화되지 않으며, 브라우저 데이터를 삭제하면 사라질 수 있습니다.</S.Notice>
+        {visibleTrips.length ? <S.TripList>{visibleTrips.map((trip) => <S.Trip key={trip.id}>
+          <h3>{trip.name}</h3><time>{formatSavedDate(trip.updatedAt || trip.createdAt)} 저장 · {trip.places.length}개 장소</time>
+          <S.Origin><FaMapMarkerAlt />출발: {trip.origin.placeName || trip.origin.address || "지도에서 선택한 위치"}</S.Origin>
+          <ol>{trip.places.map((place, index) => <li key={`${place.placeNo}-${index}`}>{place.placeName || `장소 ${place.placeNo}`}</li>)}</ol>
+          <S.Actions><Link to={getTripMapUrl(trip)} aria-label={`${trip.name} 지도에서 보기`}>지도에서 코스 보기 →</Link><button type="button" aria-label={`${trip.name} 삭제`} onClick={() => { setError(""); setDeleteTarget(trip); }}>삭제</button></S.Actions>
+        </S.Trip>)}</S.TripList> : <S.Empty><FaRoute /><h3>아직 저장한 여행 계획이 없어요.</h3><p>가고 싶은 장소를 연결하고 첫 계획을 저장해보세요.</p></S.Empty>}
       </S.Section>
       </S.MainColumn>
     </S.Layout>

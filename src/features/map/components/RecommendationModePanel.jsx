@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FaChevronLeft,
-  FaList,
   FaLocationArrow,
   FaMapMarkerAlt,
   FaRedo,
   FaRoute,
   FaSave,
-  FaTrash,
 } from "react-icons/fa";
 import { FiX, FiHelpCircle } from "react-icons/fi";
 import { CourseRecommendationAPI } from "../../../api/courseRecommendation";
@@ -18,22 +16,14 @@ import {
 } from "../utils/recommendationSessionStorage";
 import * as S from "./RecommendationModePanel.styles";
 
-const VIEW = {
-  RECOMMEND: "recommend",
-  SAVED: "saved",
-};
-
 const RecommendationModePanel = ({
   isOpen,
-  initialView = VIEW.RECOMMEND,
   origin,
   originStatus,
   placeOptions,
   placeOptionsStatus,
   tagOptions,
   course,
-  savedCourses = [],
-  activePlanId,
   onClose,
   onOpen,
   onRequestCurrentLocation,
@@ -41,10 +31,7 @@ const RecommendationModePanel = ({
   onCourseChange,
   onPreviewPlace,
   onSaveCourse,
-  onOpenSavedCourse,
-  onDeleteSavedCourse,
 }) => {
-  const [view, setView] = useState(initialView || VIEW.RECOMMEND);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const [placeCount, setPlaceCount] = useState(5);
   const [preferredPlaceNos, setPreferredPlaceNos] = useState(["", ""]);
@@ -105,21 +92,6 @@ const RecommendationModePanel = ({
     resetResult();
     setPreferredPlaceNos(["", ""]);
     onRequestOriginPick();
-  };
-
-  const openSavedCourse = (savedCourse) => {
-    requestControllerRef.current?.abort();
-    requestControllerRef.current = null;
-    setRequestState("idle");
-    setSaveState("idle");
-    setMessage("브라우저에 저장된 코스를 불러왔습니다.");
-    setView(VIEW.RECOMMEND);
-    onOpenSavedCourse(savedCourse);
-  };
-
-  const deleteSavedCourse = (savedCourse) => {
-    onDeleteSavedCourse(savedCourse.id);
-    setMessage(`"${savedCourse.name}" 계획을 삭제했습니다.`);
   };
 
   const changePreferredPlace = (index, value) => {
@@ -220,9 +192,7 @@ const RecommendationModePanel = ({
       setMessage("추천 코스를 저장하지 못했습니다.");
       return;
     }
-
-    setSaveState("success");
-    setMessage("추천 코스와 시작 위치를 브라우저에 저장했습니다.");
+    // 저장에 성공하면 상위(MapPage)에서 곧바로 계획 모드로 이동시키므로 별도 안내는 필요 없다.
   };
 
   return (
@@ -231,7 +201,7 @@ const RecommendationModePanel = ({
         <S.Header>
           <div>
             <small>추천 모드</small>
-            <h2>{view === VIEW.SAVED ? "저장된 계획" : "맞춤 코스 추천"}</h2>
+            <h2>맞춤 코스 추천</h2>
           </div>
           <div className="header-actions" style={{ display: 'flex', gap: '8px' }}>
             <button 
@@ -267,26 +237,7 @@ const RecommendationModePanel = ({
           </div>
         )}
 
-        <S.PanelNav aria-label="추천 모드 메뉴">
-          <button
-            type="button"
-            className={view === VIEW.RECOMMEND ? "active" : ""}
-            onClick={() => setView(VIEW.RECOMMEND)}
-          >
-            <FaRoute /> 코스 추천
-          </button>
-          <button
-            type="button"
-            className={view === VIEW.SAVED ? "active" : ""}
-            onClick={() => setView(VIEW.SAVED)}
-          >
-            <FaList /> 저장 목록 {savedCourses.length}
-          </button>
-        </S.PanelNav>
-
         <S.Body>
-          {view === VIEW.RECOMMEND && (
-            <>
           <S.OriginCard>
             <FaMapMarkerAlt />
             <div>
@@ -442,53 +393,6 @@ const RecommendationModePanel = ({
                 <FaSave /> {saveState === "loading" ? "저장 중" : "추천 코스 저장"}
               </S.SavePlanButton>
             </S.CourseSection>
-          )}
-            </>
-          )}
-
-          {view === VIEW.SAVED && (
-            <>
-              <S.SavedViewHeader>
-                <span>브라우저를 닫아도 저장된 계획은 유지됩니다.</span>
-                <button type="button" onClick={() => setView(VIEW.RECOMMEND)}>
-                  새 추천
-                </button>
-              </S.SavedViewHeader>
-              <S.SavedCourseSection>
-                {savedCourses.length === 0 ? (
-                  <S.SavedCourseEmpty>저장된 계획이 없습니다.</S.SavedCourseEmpty>
-                ) : (
-                  savedCourses.map((savedCourse) => (
-                    <S.SavedCourseCard
-                      key={savedCourse.id}
-                      $active={activePlanId === savedCourse.id}
-                    >
-                      <button
-                        className="saved-info"
-                        type="button"
-                        onClick={() => openSavedCourse(savedCourse)}
-                      >
-                        <strong>{savedCourse.name}</strong>
-                        <span>{savedCourse.places.length}개 장소</span>
-                        <small>
-                          {new Date(
-                            savedCourse.updatedAt ?? savedCourse.createdAt,
-                          ).toLocaleDateString("ko-KR")}
-                        </small>
-                      </button>
-                      <button
-                        className="delete"
-                        type="button"
-                        aria-label={`${savedCourse.name} 계획 삭제`}
-                        onClick={() => deleteSavedCourse(savedCourse)}
-                      >
-                        <FaTrash />
-                      </button>
-                    </S.SavedCourseCard>
-                  ))
-                )}
-              </S.SavedCourseSection>
-            </>
           )}
         </S.Body>
       </S.Panel>
