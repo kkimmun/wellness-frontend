@@ -73,7 +73,7 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     dragStartYRef.current = clientY;
     dragStartHRef.current =
-      panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.5;
+      panelRef.current?.getBoundingClientRect().height ?? window.innerHeight * 0.4;
     setIsDragging(true);
   };
 
@@ -85,7 +85,7 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const deltaY = dragStartYRef.current - clientY;
       const newHeight = Math.min(
-        window.innerHeight * 0.85,
+        window.innerHeight - 56,
         Math.max(120, dragStartHRef.current + deltaY),
       );
       setMobileHeight(`${newHeight}px`);
@@ -116,6 +116,11 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
     };
   }, [isDragging, handleDragMove, handleDragEnd]);
 
+  const [prevSelectedCourseNo, setPrevSelectedCourseNo] = useState(selectedCourseNo);
+  if (prevSelectedCourseNo !== selectedCourseNo) {
+    setPrevSelectedCourseNo(selectedCourseNo);
+    setMobileHeight(null);
+  }
   useEffect(() => {
     let isCancelled = false;
 
@@ -240,15 +245,14 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
   return (
     <PanelContainer
       ref={panelRef}
-      aria-label="순례길 목록"
       $mobileHeight={mobileHeight}
       $isDragging={isDragging}
+      aria-label="순례길 목록"
     >
-      {/* 모바일 바텀시트 드래그 핸들 */}
       <DragHandle
-        aria-hidden="true"
-        onMouseDown={handleDragStart}
         onTouchStart={handleDragStart}
+        onMouseDown={handleDragStart}
+        aria-hidden="true"
       />
       <Header>
         <HeaderText>

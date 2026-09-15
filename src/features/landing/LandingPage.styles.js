@@ -255,13 +255,16 @@ export const HeaderAuthA = styled.div`
     padding: 4px;
 
     @media (max-width: 768px) {
-      display: block; /* 모바일에서만 햄버거 표시 */
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 
   .btn-ghost, .btn-text {
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 8px 16px;
     border: none;
@@ -317,9 +320,13 @@ export const MobileMenu = styled.div`
 
     button {
       width: 100%;
+      display: inline-flex;
+      align-items: center;
       justify-content: center;
+      gap: 8px;
       padding: 12px !important;
       font-size: 1rem !important;
+      border-radius: 8px;
     }
   }
 `;

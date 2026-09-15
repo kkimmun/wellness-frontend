@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 import { ProfilePopoverCard, Title, ProfileSection, ProfileImage, NameRow, ActionButton } from "./MyPage.styles";
 import { useAuth } from "../../context/AuthContext";
-import AccountActions from "./AccountActions";
 import { getProfileImage } from "./myPageModel";
 
 // 헤더의 빠른 메뉴. 실제 회원정보와 여행 목록은 별도의 마이페이지에서 확인한다.
@@ -22,6 +21,5 @@ export default function MyPage({ onClose }) {
     <ActionButton type="button" onClick={() => open("/mypage")}>마이페이지</ActionButton>
     <ActionButton type="button" onClick={() => open("/map?mode=j", { planView: "saved" })}>나의 여행 계획</ActionButton>
     <ActionButton type="button" onClick={() => open("/map?mode=p", { recommendationView: "saved" })}>나의 추천 코스</ActionButton>
-    <AccountActions onClose={onClose} />
   </ProfilePopoverCard>;
 }

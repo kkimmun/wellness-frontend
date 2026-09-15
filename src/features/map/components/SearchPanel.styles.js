@@ -27,8 +27,9 @@ export const PanelContainer = styled.div`
     right: 0;
     width: 100vw;
     top: auto;
-    height: ${({ $mobileHeight }) => $mobileHeight || "auto"};
-    max-height: 85vh;
+    height: ${({ $mobileHeight, $hasResults }) =>
+      $mobileHeight || ($hasResults ? "40vh" : "auto")};
+    max-height: calc(100dvh - 56px);
     background-color: ${theme.colors.bgWhite};
     border-radius: 20px 20px 0 0;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
@@ -75,10 +76,12 @@ export const CompactSearchBarBox = styled.div`
 
   @media (max-width: 768px) {
     border-radius: 30px;
-    padding: 6px 6px 6px 16px;
+    padding: 4px 6px 4px 16px;
     background-color: #f1f5f9;
     border: 1px solid #e2e8f0;
     box-shadow: none;
+    min-height: 44px;
+    box-sizing: border-box;
   }
 `;
 
@@ -91,6 +94,25 @@ export const CompactSearchInput = styled.input`
   color: #333;
   background: transparent;
   &::placeholder { color: #a4b5be; }
+`;
+
+export const ClearButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  color: #94a3b8;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 50%;
+  transition: color 0.2s, background-color 0.2s;
+
+  &:hover {
+    color: #475569;
+    background-color: rgba(0, 0, 0, 0.05);
+  }
 `;
 
 export const CompactSearchButton = styled.button`
@@ -110,6 +132,9 @@ export const CompactSearchButton = styled.button`
     border-radius: 50%;
     width: 34px;
     height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 `;
 

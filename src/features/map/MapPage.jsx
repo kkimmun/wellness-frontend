@@ -2,6 +2,7 @@ import { isVisibleMapPlace, visibleMapPlaces } from "./utils/placeVisibility";
 import { useState, useEffect, useMemo, useRef, useCallback, useSyncExternalStore } from "react";
 import { getSavedTrip } from "../mypage/myPageModel";
 import { FaChevronRight } from "react-icons/fa";
+import { BsBookmark, BsBookmarkFill } from "react-icons/bs";
 import {
   Map,
   MapMarker,
@@ -372,6 +373,7 @@ const MapPage = () => {
   const [recommendationNearbyState, setRecommendationNearbyState] = useState("idle");
 
   const [top10OverlayState, setTop10Overlay] = useState(null); // { ...place, xAxis, yAxis }
+  const [isInitialTop10Dismissed, setIsInitialTop10Dismissed] = useState(false);
   const requestCourseOriginPick = useCallback((onSelected) => {
     courseOriginPickRef.current = onSelected;
     setTop10Overlay(null);
@@ -445,6 +447,31 @@ const MapPage = () => {
       setIsAlertModalOpen(true);
     }
   };
+
+  // 장소 목록 API가 북마크 여부를 내려주지 않으므로, 특정 장소를 열어볼 때
+  // 상세 조회용 북마크 상태 API(GET /places/{placeNo}/bookmarks)로 실제 값을 채워
+  // 새로고침이나 화면 재진입 후에도 북마크 표시가 유지되도록 한다.
+  const hydratedBookmarkPlacesRef = useRef(new Set());
+  const hydrateBookmarkStatus = useCallback((targetPlaceNo) => {
+    if (status !== "authenticated") return;
+    if (targetPlaceNo == null) return;
+    if (hydratedBookmarkPlacesRef.current.has(targetPlaceNo)) return;
+    hydratedBookmarkPlacesRef.current.add(targetPlaceNo);
+
+    BookmarkAPI.getStatus(targetPlaceNo)
+      .then((data) => {
+        if (typeof data?.bookmarked !== "boolean") return;
+        setBookmarks((prev) =>
+          prev[targetPlaceNo] !== undefined
+            ? prev
+            : { ...prev, [targetPlaceNo]: data.bookmarked },
+        );
+      })
+      .catch(() => {
+        // 실패 시 다음 조회에서 다시 시도할 수 있도록 캐시에서 제거한다.
+        hydratedBookmarkPlacesRef.current.delete(targetPlaceNo);
+      });
+  }, [status]);
 
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_MAP_KEY,
@@ -604,8 +631,8 @@ const MapPage = () => {
   const isInitialMapTop10 =
     location.pathname === "/map" &&
     !mapMode &&
+    !isInitialTop10Dismissed &&
     !location.state?.hideInitialTop10 &&
-    dismissedTop10Entry !== location.key &&
     !isRouteOpen &&
     !routeOrigin &&
     !routeDestination &&
@@ -616,6 +643,11 @@ const MapPage = () => {
     !top10PlaceNos.has(String(resolvedTop10Overlay?.placeNo))
       ? null
       : resolvedTop10Overlay;
+
+  useEffect(() => {
+    if (top10Overlay?.isExternal) return;
+    hydrateBookmarkStatus(top10Overlay?.placeNo);
+  }, [top10Overlay?.placeNo, top10Overlay?.isExternal, hydrateBookmarkStatus]);
 
   useEffect(() => {
     if (
@@ -1175,6 +1207,10 @@ const MapPage = () => {
   const isDetailOpen = Boolean(placeNo && selectedPlace);
   const mapDetailPlace = isTravelMode ? planDetailPlace : selectedPlace;
 
+  useEffect(() => {
+    hydrateBookmarkStatus(mapDetailPlace?.placeNo);
+  }, [mapDetailPlace?.placeNo, hydrateBookmarkStatus]);
+
   // 기존 코드 개선: effect에서는 URL 상태를 다시 저장하지 않고 지도 이동만 수행한다.
   useEffect(() => {
     if (!placeNo || pins.length === 0) return;
@@ -1227,7 +1263,19 @@ const MapPage = () => {
     }
   };
 
+  const [prevPlaceNo, setPrevPlaceNo] = useState(placeNo);
+  if (prevPlaceNo !== placeNo) {
+    setPrevPlaceNo(placeNo);
+    if (!placeNo) {
+      setTop10Overlay(null);
+      setTop10OverlayDetail(null);
+    }
+  }
+
   const handlePlaceSelect = (place) => {
+    setIsInitialTop10Dismissed(true);
+    setTop10Overlay(null);
+    setTop10OverlayDetail(null);
     if (!placeNo && mapRef.current) {
       const center = mapRef.current.getCenter();
       detailReturnViewRef.current = { lat: center.getLat(), lng: center.getLng(), level: mapRef.current.getLevel() };
@@ -1239,6 +1287,9 @@ const MapPage = () => {
   };
 
   const returnFromPlaceDetail = () => {
+    setTop10Overlay(null);
+    setTop10OverlayDetail(null);
+    setIsInitialTop10Dismissed(true);
     if (location.state?.returnToMapHistory) {
       navigate(-1);
     } else {
@@ -1847,6 +1898,7 @@ const MapPage = () => {
         filtersLoading={isFilterLoading}
         bookmarks={bookmarks}
         toggleBookmark={toggleBookmark}
+        hydrateBookmarkStatus={hydrateBookmarkStatus}
         isVisible={
           !isTravelMode && !isDetailOpen && !hasRouteSession && !isCourseView
         }
@@ -2038,7 +2090,7 @@ const MapPage = () => {
       {/* 길찾기 기능 연동: 지도 위 독립 패널에서 입력·검색·결과 선택을 처리한다. */}
       <RoutePanel
         key={`route-input-${routeInputRevision}`}
-        isOpen={showRoutePanel}
+        isOpen={isRouteOpen && !isCourseView && !isTravelMode && !isTop10Screen}
         initialOrigin={routeOrigin}
         initialDestination={routeDestination}
         onClose={endRoute}
@@ -2049,7 +2101,7 @@ const MapPage = () => {
       />
 
       {/* 길찾기 패널 표시 전환: 경로 상태는 유지하고 패널만 접거나 다시 연다. */}
-      {showRouteToggle && (
+      {!isTravelMode && !isCourseView && !isTop10Screen && hasRouteSession && (
         <RouteReopenButton
           type="button"
           $isOpen={isRouteOpen}
@@ -2389,6 +2441,25 @@ const MapPage = () => {
                     <div className="header-row">
                       <OverlayTitle>{selectedPlace.placeName}</OverlayTitle>
                       <div className="action-buttons">
+                        <button
+                          type="button"
+                          className="btn-bookmark"
+                          aria-label={
+                            (bookmarks[selectedPlace.placeNo] ?? Boolean(selectedPlace.bookmarked))
+                              ? "북마크 해제"
+                              : "북마크 추가"
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleBookmark(e, selectedPlace.placeNo);
+                          }}
+                        >
+                          {(bookmarks[selectedPlace.placeNo] ?? Boolean(selectedPlace.bookmarked)) ? (
+                            <BsBookmarkFill size={13} color="#C9A227" />
+                          ) : (
+                            <BsBookmark size={13} />
+                          )}
+                        </button>
                         {isPlanMode ? (
                           <button
                             className="btn-plan"
@@ -2511,6 +2582,27 @@ const MapPage = () => {
                     <div className="header-row">
                       <OverlayTitle>{top10Overlay.placeName}</OverlayTitle>
                       <div className="action-buttons">
+                        {!top10Overlay.isExternal && (
+                          <button
+                            type="button"
+                            className="btn-bookmark"
+                            aria-label={
+                              (bookmarks[top10Overlay.placeNo] ?? Boolean(top10Overlay.bookmarked))
+                                ? "북마크 해제"
+                                : "북마크 추가"
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleBookmark(e, top10Overlay.placeNo);
+                            }}
+                          >
+                            {(bookmarks[top10Overlay.placeNo] ?? Boolean(top10Overlay.bookmarked)) ? (
+                              <BsBookmarkFill size={13} color="#C9A227" />
+                            ) : (
+                              <BsBookmark size={13} />
+                            )}
+                          </button>
+                        )}
                         {isPlanMode ? (
                           <button
                             className="btn-plan"
@@ -2662,9 +2754,12 @@ const MapPage = () => {
         places={isInitialMapTop10 ? visibleMapPins : undefined}
         placesLoading={pinsState === "loading"}
         onPlacesLoaded={setTop10Places}
+        bookmarks={bookmarks}
+        toggleBookmark={toggleBookmark}
+        hydrateBookmarkStatus={hydrateBookmarkStatus}
         onClose={() => {
           setTop10Overlay(null);
-          setDismissedTop10Entry(location.key);
+          setIsInitialTop10Dismissed(true);
           if (isTop10Route) {
             navigate("/map", { state: { hideInitialTop10: true } });
           }
