@@ -390,7 +390,7 @@ const RecommendationModePanel = ({
                 disabled={saveState === "loading"}
                 onClick={() => void saveCourse()}
               >
-                <FaSave /> {saveState === "loading" ? "저장 중" : "추천 코스 저장"}
+                <FaSave /> {saveState === "loading" ? "저장 중" : "계획모드로 이동하기"}
               </S.SavePlanButton>
             </S.CourseSection>
           )}
