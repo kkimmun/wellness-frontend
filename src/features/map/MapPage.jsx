@@ -1052,11 +1052,7 @@ const MapPage = () => {
       placeNo: Number(place.placeNo),
       placeOrder: index + 1,
     }));
-    const savedAt = new Date();
-    const planName = `추천 코스 ${savedAt.toLocaleDateString("ko-KR")} ${savedAt.toLocaleTimeString("ko-KR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    })}`;
+    const planName = "추천모드 저장";
 
     let planNo;
     try {
