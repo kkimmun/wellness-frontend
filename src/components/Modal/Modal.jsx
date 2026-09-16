@@ -13,6 +13,7 @@ export const Modal = ({
   showClose = false,    // 우측 상단 X 버튼 표시 여부
   onConfirm,
   onCancel,
+  onClose,
   confirmText = "확인",
   cancelText = "취소",
   confirmVariant = "primary", // "primary" | "danger" | "secondary"
@@ -48,11 +49,12 @@ export const Modal = ({
 
   // onCancel이 있으면 Confirm(2버튼), 없으면 Alert(1버튼) 모드로 작동
   const isConfirmMode = Boolean(onCancel);
+  const dismissHandler = onClose || onCancel;
 
-  // 오버레이 클릭 시 닫힘 처리: Confirm 모드일 때만 동작하도록 방어 로직 추가
+  // 취소 또는 별도 닫기 동작을 전달한 모달만 오버레이로 닫을 수 있다.
   const handleOverlayClick = () => {
-    if (isConfirmMode && !pending) {
-      onCancel();
+    if (dismissHandler && !pending) {
+      dismissHandler();
     }
   };
 
@@ -73,7 +75,7 @@ export const Modal = ({
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             event.stopPropagation();
-            if (isConfirmMode && !pending) onCancel();
+            if (dismissHandler && !pending) dismissHandler();
           }
           if (event.key !== "Tab") return;
           const focusable = [...event.currentTarget.querySelectorAll("button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex='0']")];
@@ -88,7 +90,7 @@ export const Modal = ({
         }}
       >
         {showClose && (
-          <S.CloseButton type="button" aria-label="닫기" disabled={pending} onClick={isConfirmMode ? onCancel : onConfirm}>
+          <S.CloseButton type="button" aria-label="닫기" disabled={pending} onClick={dismissHandler || onConfirm}>
             <FiX />
           </S.CloseButton>
         )}

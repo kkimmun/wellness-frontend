@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   LoginContainer,
   Card,
@@ -26,6 +26,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { checkAuth } = useAuth();
   // 헷갈림을 방지하기 위해 payload로 변수명 변경 및 백엔드 명세 키값 적용
   const [payload, setPayload] = useState({
@@ -71,7 +72,17 @@ const Login = () => {
       setIsLoading(true);
       await AuthAPI.login(payload);
       await checkAuth();
-      navigate("/");
+      const requestedReturnTo = location.state?.returnTo;
+      const returnTo =
+        typeof requestedReturnTo === "string" &&
+        requestedReturnTo.startsWith("/") &&
+        !requestedReturnTo.startsWith("//")
+          ? requestedReturnTo
+          : "/";
+      navigate(returnTo, {
+        replace: true,
+        state: location.state?.returnState,
+      });
     } catch (err) {
       setLoginError(err.message || "아이디 또는 비밀번호가 일치하지 않습니다.");
     } finally {

@@ -20,6 +20,7 @@ import {
 } from "./Header.styles";
 import MyPage from "../../features/mypage/MyPage";
 import { getProfileImage } from "../../features/mypage/myPageModel";
+import LoginRequiredModal from "../Modal/LoginRequiredModal";
 
 import { useAuth } from "../../context/AuthContext";
 
@@ -27,6 +28,7 @@ const Header = () => {
   const { status, user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [loginTarget, setLoginTarget] = useState(null);
   const profileImg = status === "authenticated" ? getProfileImage(user) : null;
   const desktopDropdownRef = useRef(null);
   const mobileDropdownRef = useRef(null);
@@ -90,12 +92,27 @@ const Header = () => {
     !isRecommendationModeActive;
 
   const openSavedTravelPlans = () => {
+    if (status === "loading") return;
+    if (!isLoggedIn) {
+      setLoginTarget({
+        path: "/map?mode=j",
+        state: { planView: "saved" },
+      });
+      setMobileOpen(false);
+      return;
+    }
     navigate("/map?mode=j", { state: { planView: "saved" } });
     setMobileOpen(false);
     setProfileOpen(false);
   };
 
   const openRecommendationMode = () => {
+    if (status === "loading") return;
+    if (!isLoggedIn) {
+      setLoginTarget({ path: "/map?mode=p" });
+      setMobileOpen(false);
+      return;
+    }
     handleNavigate("/map?mode=p");
   };
 
@@ -128,22 +145,18 @@ const Header = () => {
           >
             TOP 10
           </NavItem>
-          {isLoggedIn && (
-            <NavItem
-              $active={isTravelPlanActive}
-              onClick={openSavedTravelPlans}
-            >
-              계획모드
-            </NavItem>
-          )}
-          {isLoggedIn && (
-            <NavItem
-              $active={isRecommendationModeActive}
-              onClick={openRecommendationMode}
-            >
-              추천모드
-            </NavItem>
-          )}
+          <NavItem
+            $active={isTravelPlanActive}
+            onClick={openSavedTravelPlans}
+          >
+            계획모드
+          </NavItem>
+          <NavItem
+            $active={isRecommendationModeActive}
+            onClick={openRecommendationMode}
+          >
+            추천모드
+          </NavItem>
           <NavItem
             $active={isPilgrimActive}
             onClick={() => handleNavigate("/pilgrim/fixed")}
@@ -229,22 +242,18 @@ const Header = () => {
           >
             TOP 10
           </MobileNavItem>
-          {isLoggedIn && (
-            <MobileNavItem
-              $active={isTravelPlanActive}
-              onClick={openSavedTravelPlans}
-            >
-              계획모드
-            </MobileNavItem>
-          )}
-          {isLoggedIn && (
-            <MobileNavItem
-              $active={isRecommendationModeActive}
-              onClick={openRecommendationMode}
-            >
-              추천모드
-            </MobileNavItem>
-          )}
+          <MobileNavItem
+            $active={isTravelPlanActive}
+            onClick={openSavedTravelPlans}
+          >
+            계획모드
+          </MobileNavItem>
+          <MobileNavItem
+            $active={isRecommendationModeActive}
+            onClick={openRecommendationMode}
+          >
+            추천모드
+          </MobileNavItem>
           <MobileNavItem
             $active={isPilgrimActive}
             onClick={() => handleNavigate("/pilgrim/fixed")}
@@ -253,6 +262,12 @@ const Header = () => {
           </MobileNavItem>
         </MobileNavList>
       </MobileDrawer>
+      <LoginRequiredModal
+        isOpen={Boolean(loginTarget)}
+        returnTo={loginTarget?.path}
+        returnState={loginTarget?.state}
+        onClose={() => setLoginTarget(null)}
+      />
     </>
   );
 };

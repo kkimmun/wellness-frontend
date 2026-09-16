@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FooterContainer,
@@ -7,6 +8,7 @@ import {
 } from "./Footer.styles";
 
 import { useAuth } from "../../context/AuthContext";
+import LoginRequiredModal from "../Modal/LoginRequiredModal";
 
 const FOOTER_MENUS = [
   { id: "map", label: "지도", path: "/map" },
@@ -20,10 +22,15 @@ function Footer() {
   const navigate = useNavigate();
   const { status } = useAuth();
   const isLoggedIn = status === "authenticated";
+  const [loginTarget, setLoginTarget] = useState(null);
 
   const handleMenuClick = (menu) => {
+    if (menu.requiresAuth && status === "loading") return;
     if (menu.requiresAuth && !isLoggedIn) {
-      navigate("/login");
+      setLoginTarget({
+        path: menu.path,
+        state: menu.id === "plan" ? { planView: "saved" } : undefined,
+      });
       return;
     }
 
@@ -41,18 +48,26 @@ function Footer() {
   };
 
   return (
-    <FooterContainer>
-      <FooterNav>
-        {FOOTER_MENUS.map((menu) => (
-          <FooterNavItem key={menu.id} onClick={() => handleMenuClick(menu)}>
-            <span>{menu.label}</span>
-          </FooterNavItem>
-        ))}
-      </FooterNav>
-      <CopyrightText>
-        Design with love &copy; 웰니스와 깃커밋 2026.08.19. All rights reserved.
-      </CopyrightText>
-    </FooterContainer>
+    <>
+      <FooterContainer>
+        <FooterNav>
+          {FOOTER_MENUS.map((menu) => (
+            <FooterNavItem key={menu.id} onClick={() => handleMenuClick(menu)}>
+              <span>{menu.label}</span>
+            </FooterNavItem>
+          ))}
+        </FooterNav>
+        <CopyrightText>
+          Design with love &copy; 웰니스와 깃커밋 2026.08.19. All rights reserved.
+        </CopyrightText>
+      </FooterContainer>
+      <LoginRequiredModal
+        isOpen={Boolean(loginTarget)}
+        returnTo={loginTarget?.path}
+        returnState={loginTarget?.state}
+        onClose={() => setLoginTarget(null)}
+      />
+    </>
   );
 }
 

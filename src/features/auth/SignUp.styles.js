@@ -76,10 +76,25 @@ export const InputGroup = styled.div`
   gap: ${theme.spacing.sm};
 
   label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: ${theme.fontSize.sm};
     font-weight: 500;
     color: ${theme.colors.textSecondary};
   }
+`;
+
+export const RequiredNotice = styled.p`
+  margin: -${theme.spacing.md} 0 ${theme.spacing.lg};
+  color: ${theme.colors.textSecondary};
+  font-size: ${theme.fontSize.xs};
+  text-align: right;
+`;
+
+export const RequiredMark = styled.span`
+  color: ${theme.colors.error || "#ff4d4f"};
+  font-weight: 700;
 `;
 
 export const ErrorMessage = styled.span`
