@@ -29,6 +29,7 @@ import RoutePolylineLayer from "./components/RoutePolylineLayer";
 import PlanModePanel from "./components/PlanModePanel";
 import RecommendationModePanel from "./components/RecommendationModePanel";
 import Top10Panel from "./components/Top10Panel";
+import GimpoBoundary from "./components/GimpoBoundary";
 import {
   Top10Marker,
   GeneralMarker,
@@ -2259,6 +2260,7 @@ const MapPage = () => {
             onZoomChanged={handleMapZoomChanged}
             onClick={handleMapClick}
           >
+            <GimpoBoundary />
             {isCourseMapView
               ? visibleMapPins.map((pin, index) => {
                   const lat = Number(pin.Y_AXIS ?? pin.yAxis);
