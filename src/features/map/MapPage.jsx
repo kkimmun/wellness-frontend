@@ -42,6 +42,7 @@ import {
 } from "./components/CustomMarkers";
 import { getInitialTop10PinIndex, isTop10Place } from "./utils/top10Marker";
 import { Modal } from "../../components/Modal/Modal";
+import LoginRequiredModal from "../../components/Modal/LoginRequiredModal";
 import { modalStack } from "../../components/Modal/modalStack";
 import { FiAlertCircle } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
@@ -332,6 +333,7 @@ const MapPage = () => {
   const [bookmarks, setBookmarks] = useState({}); // { placeNo: boolean } 북마크 상태 공유용
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+  const [loginReturnTo, setLoginReturnTo] = useState(null);
   // 길찾기 기능 연동: 패널의 출발지·도착지와 지도에 표시할 선택 경로를 관리한다.
   const [isRouteOpen, setIsRouteOpen] = useState(false);
   const [routeOrigin, setRouteOrigin] = useState(null);
@@ -426,8 +428,7 @@ const MapPage = () => {
     if (e) e.stopPropagation();
     if (placeNo == null) return;
     if (status === "unauthenticated") {
-      setAlertMessage("로그인 후 이용해주세요.");
-      setIsAlertModalOpen(true);
+      setLoginReturnTo(`${location.pathname}${location.search}`);
       return;
     }
 
@@ -655,9 +656,21 @@ const MapPage = () => {
       (isPlanModeRequested || isRecommendationModeRequested) &&
       status === "unauthenticated"
     ) {
-      navigate("/login", { replace: true });
+      navigate("/login", {
+        replace: true,
+        state: {
+          returnTo: `${location.pathname}${location.search}`,
+        },
+      });
     }
-  }, [isPlanModeRequested, isRecommendationModeRequested, navigate, status]);
+  }, [
+    isPlanModeRequested,
+    isRecommendationModeRequested,
+    location.pathname,
+    location.search,
+    navigate,
+    status,
+  ]);
 
   const moveMapToPlanPoint = useCallback((point) => {
     if (!point || !mapRef.current || !window.kakao?.maps) return;
@@ -2768,6 +2781,11 @@ const MapPage = () => {
         showClose={true}
         message={alertMessage}
         onConfirm={() => setIsAlertModalOpen(false)}
+      />
+      <LoginRequiredModal
+        isOpen={Boolean(loginReturnTo)}
+        returnTo={loginReturnTo}
+        onClose={() => setLoginReturnTo(null)}
       />
     </MapContainer>
   );

@@ -3,9 +3,9 @@ import Footer from "../../components/Layout/Footer";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaMapMarkedAlt } from "react-icons/fa";
-import { FiAlertCircle, FiLogIn, FiMenu, FiX } from "react-icons/fi";
+import { FiLogIn, FiMenu, FiX } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
-import { Modal } from "../../components/Modal/Modal";
+import LoginRequiredModal from "../../components/Modal/LoginRequiredModal";
 import gwLogo from "../../assets/GWLoGo2.svg";
 import {
   LandingContainer,
@@ -18,7 +18,7 @@ import {
 const LandingPage = () => {
   const navigate = useNavigate();
   const { status, logout } = useAuth();
-  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [loginReturnTo, setLoginReturnTo] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -33,8 +33,9 @@ const LandingPage = () => {
 
 
   const handleModeClick = (mode) => {
+    if (status === "loading") return;
     if (status === "unauthenticated") {
-      setIsAlertModalOpen(true);
+      setLoginReturnTo(`/map?mode=${mode}`);
     } else {
       navigate(`/map?mode=${mode}`);
     }
@@ -43,7 +44,7 @@ const LandingPage = () => {
   return (
     <LandingContainer>
       <Header>
-        <LogoGroup>
+        <LogoGroup as="button" type="button" aria-label="메인 화면으로 이동" onClick={() => navigate("/")}>
           <img src={gwLogo} alt="Gimpo Wellness Logo" style={{ height: "45px" }} />
           <span className="logo-text">Gimpo Wellness</span>
         </LogoGroup>
@@ -111,14 +112,10 @@ const LandingPage = () => {
       <WelcomeContent onModeClick={handleModeClick} />
       <Footer />
 
-      {/* 비회원 클릭 시 로그인 안내 모달 */}
-      <Modal
-        isOpen={isAlertModalOpen}
-        icon={FiAlertCircle}
-        iconColor="primary"
-        showClose={true}
-        message="로그인 후 이용해주세요."
-        onConfirm={() => setIsAlertModalOpen(false)}
+      <LoginRequiredModal
+        isOpen={Boolean(loginReturnTo)}
+        returnTo={loginReturnTo}
+        onClose={() => setLoginReturnTo(null)}
       />
 
     </LandingContainer>

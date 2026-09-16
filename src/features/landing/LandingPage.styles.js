@@ -30,6 +30,11 @@ export const LogoGroup = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
   
   .logo-text {
     font-size: 24px;

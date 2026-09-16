@@ -9,6 +9,8 @@ import {
   InputGrid,
   InputGroup,
   ErrorMessage,
+  RequiredNotice,
+  RequiredMark,
 } from "./SignUp.styles";
 import { BackButton } from "../../components/Button/BackButton";
 import { PrimaryButton } from "../../components/Button/Button.styles";
@@ -112,54 +114,76 @@ const SignUp = () => {
 
         {/* 로그인 링크는 EmailRequest로 이동됨 */}
 
+        <RequiredNotice>
+          <RequiredMark aria-hidden="true">*</RequiredMark> 필수 입력 항목
+        </RequiredNotice>
+
         {signupError && <ErrorMessage style={{ textAlign: "center", marginBottom: "1rem" }}>{signupError}</ErrorMessage>}
 
         <Form onSubmit={handleSubmit} noValidate>
           <InputGrid>
             <InputGroup>
-              <label>닉네임</label>
+              <label htmlFor="signup-member-name">
+                닉네임 <RequiredMark aria-hidden="true">*</RequiredMark>
+              </label>
               <BaseInput
+                id="signup-member-name"
                 name="memberName"
                 value={payload.memberName}
                 onChange={handleChange}
                 placeholder="공백 없이 2~12자 입력"
                 $hasError={!!memberNameError}
+                required
+                aria-required="true"
               />
               {memberNameError && <ErrorMessage>{memberNameError}</ErrorMessage>}
             </InputGroup>
 
             <InputGroup>
-              <label>이메일</label>
+              <label htmlFor="signup-member-id">
+                이메일 <RequiredMark aria-hidden="true">*</RequiredMark>
+              </label>
               <BaseInput
+                id="signup-member-id"
                 name="memberId"
                 type="email"
                 value={payload.memberId}
                 readOnly
                 placeholder="인증된 이메일 없음"
+                required
+                aria-required="true"
               />
             </InputGroup>
 
             <InputGroup>
-              <label>비밀번호</label>
+              <label htmlFor="signup-member-password">
+                비밀번호 <RequiredMark aria-hidden="true">*</RequiredMark>
+              </label>
               <PasswordInput
+                id="signup-member-password"
                 name="memberPwd"
                 value={payload.memberPwd}
                 onChange={handleChange}
                 placeholder="영문, 숫자 포함 6~15자"
                 hasError={!!memberPwdError}
                 required
+                aria-required="true"
               />
             </InputGroup>
 
             <InputGroup>
-              <label>비밀번호 확인</label>
+              <label htmlFor="signup-member-password-confirm">
+                비밀번호 확인 <RequiredMark aria-hidden="true">*</RequiredMark>
+              </label>
               <PasswordInput
+                id="signup-member-password-confirm"
                 name="memberPwdConfirm"
                 value={payload.memberPwdConfirm}
                 onChange={handleChange}
                 placeholder="비밀번호 다시 입력"
                 hasError={!!memberPwdError}
                 required
+                aria-required="true"
               />
               {memberPwdError && <ErrorMessage>{memberPwdError}</ErrorMessage>}
             </InputGroup>
