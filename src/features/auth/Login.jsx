@@ -21,6 +21,7 @@ import { PasswordInput } from "../../components/Input/PasswordInput";
 import { AuthAPI } from "../../api/auth";
 
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -28,6 +29,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { checkAuth } = useAuth();
+  const { info } = useToast();
   // 헷갈림을 방지하기 위해 payload로 변수명 변경 및 백엔드 명세 키값 적용
   const [payload, setPayload] = useState({
     memberId: "",
@@ -141,7 +143,7 @@ const Login = () => {
         <CardBottom>
           <GoogleLoginButton
             type="button"
-            onClick={() => AuthAPI.loginWithGoogle()}
+            onClick={() => info("현재 개발중입니다.")}
           >
             <img
               src="https://developers.google.com/identity/images/g-logo.png"
