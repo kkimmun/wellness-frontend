@@ -52,6 +52,7 @@ const PlanModePanel = ({
   const [selectedType, setSelectedType] = useState(null);
   const [requestState, setRequestState] = useState("idle");
   const [message, setMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [planName, setPlanName] = useState(initialPlanName);
   const [previousInitialPlanName, setPreviousInitialPlanName] = useState(initialPlanName);
   const requestControllerRef = useRef(null);
@@ -154,17 +155,24 @@ const PlanModePanel = ({
     }
   };
 
-  const savePlan = () => {
-    const saved = onSavePlan(planName);
-    if (!saved) return;
-    setPlanName("");
-    setMessage("계획을 브라우저에 저장했습니다.");
-    setView(VIEW.SAVED);
+  const savePlan = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const saved = await onSavePlan(planName);
+      if (!saved) return;
+      setPlanName("");
+      setMessage("계획을 저장했습니다.");
+      setView(VIEW.SAVED);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // 계획 모드: 저장 목록에서 계획을 선택하면 지도 상태를 복원하고 계획 내용을 즉시 보여준다.
-  const openSavedPlan = (plan) => {
-    onOpenSavedPlan(plan);
+  const openSavedPlan = async (plan) => {
+    const restored = await onOpenSavedPlan(plan);
+    if (!restored) return;
     setPlanName(plan.name || "");
     setMessage("");
     setView(VIEW.PLAN);
@@ -427,9 +435,9 @@ const PlanModePanel = ({
                   />
                   <button
                     type="submit"
-                    disabled={!planName.trim() || places.length === 0}
+                    disabled={isSaving || !planName.trim() || places.length === 0}
                   >
-                    <FaSave /> 저장
+                    <FaSave /> {isSaving ? "저장 중..." : "저장"}
                   </button>
                 </div>
               </S.SaveForm>
@@ -440,7 +448,7 @@ const PlanModePanel = ({
           {view === VIEW.SAVED && (
             <>
               <S.SavedHeader>
-                <span>브라우저를 닫아도 저장된 계획은 유지됩니다.</span>
+                <span>계정에 저장된 계획은 다른 기기에서도 확인할 수 있습니다.</span>
                 <button type="button" onClick={startNewPlan}>
                   새 계획
                 </button>
@@ -454,7 +462,7 @@ const PlanModePanel = ({
                       onClick={() => openSavedPlan(plan)}
                     >
                       <strong>{plan.name}</strong>
-                      <span>{plan.places.length}개 장소</span>
+                      <span>{plan.placeCount ?? plan.places?.length ?? 0}개 장소</span>
                       <small>
                         {new Date(plan.createdAt).toLocaleDateString("ko-KR")}
                       </small>
