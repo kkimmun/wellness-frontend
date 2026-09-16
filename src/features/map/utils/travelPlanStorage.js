@@ -119,6 +119,8 @@ export const saveTravelPlan = (
     updatedAt: savedAt,
     origin: normalizedOrigin,
     places: normalizedPlaces,
+    // 백엔드 /api/plans 에 동기화된 뒤 채워지는 서버 측 식별자 (updateTravelPlanBackendId 참고).
+    planNo: existingPlan?.planNo ?? null,
   };
   const plans = existingPlan
     ? currentPlans.map((current) =>
@@ -132,6 +134,21 @@ export const saveTravelPlan = (
     JSON.stringify({ version: 1, plans }),
   );
   return plan;
+};
+
+// 계획을 로컬에 즉시 저장한 뒤, 백그라운드로 /api/plans 동기화가 끝나면
+// 발급받은 planNo를 기존 로컬 기록에 붙여 다음 수정 시 addPlaces 대신 editPlaces를 쓰게 한다.
+export const updateTravelPlanBackendId = (ownerKey, planId, planNo, storage) => {
+  const target = storage ?? window.localStorage;
+  const plans = readCollection(target).map((plan) =>
+    plan?.id === planId && plan?.ownerKey === ownerKey
+      ? { ...plan, planNo }
+      : plan,
+  );
+  target.setItem(
+    TRAVEL_PLAN_STORAGE_KEY,
+    JSON.stringify({ version: 1, plans }),
+  );
 };
 
 export const deleteTravelPlan = (ownerKey, planId, storage) => {

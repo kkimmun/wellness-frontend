@@ -41,14 +41,6 @@ export const Section = styled.section`
   min-width: 0; background: white; border: 1px solid #e2e9ed; border-radius: 20px; padding: 26px;
   @media (max-width: 600px) { padding: 20px 16px; }
 `;
-export const Tabs = styled.div`
-  display: flex; border-bottom: 1px solid #e2e9ed; gap: 20px; margin-bottom: 24px;
-  button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 0 0 16px; color: #64717b;
-    font-size: 15px; font-weight: 650; cursor: pointer; line-height: 1.6; }
-  button[aria-selected="true"] { color: #285f77; border-color: ${theme.colors.primary}; }
-  span { background: #eff5f8; border-radius: 8px; padding: 2px 7px; margin-left: 6px; font-size: 12px; }
-  @media (max-width: 480px) { gap: 12px; button { font-size: 13px; } }
-`;
 export const SectionHeading = styled.div`
   display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px;
   h2 { font-size: 20px; margin: 0; } p { color: #687983; font-size: 13px; line-height: 1.6; margin: 8px 0 0; }

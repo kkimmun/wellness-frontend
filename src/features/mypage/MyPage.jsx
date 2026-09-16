@@ -20,6 +20,5 @@ export default function MyPage({ onClose }) {
     </ProfileSection>
     <ActionButton type="button" onClick={() => open("/mypage")}>마이페이지</ActionButton>
     <ActionButton type="button" onClick={() => open("/map?mode=j", { planView: "saved" })}>나의 여행 계획</ActionButton>
-    <ActionButton type="button" onClick={() => open("/map?mode=p", { recommendationView: "saved" })}>나의 추천 코스</ActionButton>
   </ProfilePopoverCard>;
 }
