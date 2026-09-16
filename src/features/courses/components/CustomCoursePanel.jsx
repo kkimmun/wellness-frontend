@@ -98,12 +98,30 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginP
   const [creationState, setCreationState] = useState("idle");
   const [creationMessage, setCreationMessage] = useState("");
   const [courseResult, setCourseResult] = useState(null);
+  const panelBodyRef = useRef(null);
+  const waypointSectionRef = useRef(null);
   const searchControllerRef = useRef(null);
   const recommendationControllerRef = useRef(null);
   const creationControllerRef = useRef(null);
   const previewControllerRef = useRef(null);
   const [previewMessage, setPreviewMessage] = useState("");
   const destination = destinations.find((place) => String(place.placeNo) === destinationNo);
+
+  useEffect(() => {
+    if (!recommendations?.length) return;
+
+    const panel = panelBodyRef.current;
+    const section = waypointSectionRef.current;
+    if (!panel || !section) return;
+
+    panel.scrollTo({
+      top: panel.scrollTop + section.getBoundingClientRect().top
+        - panel.getBoundingClientRect().top - 16,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
+  }, [recommendations]);
 
   useEffect(() => {
     const preview = startCoursePreview({
@@ -475,7 +493,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginP
         </IconButton>
       </Header>
 
-      <PanelBody>
+      <PanelBody ref={panelBodyRef}>
         <Section aria-label="출발지 선택">
           <SectionHeading>
             <strong>출발지 선택</strong>
@@ -667,7 +685,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginP
         )}
 
         {recommendations !== null && (
-          <Section aria-label="중간 관광지 선택">
+          <Section ref={waypointSectionRef} aria-label="중간 관광지 선택">
             <SectionHeading>
               <strong>중간 관광지 추가하기</strong>
               <span>선택 · 최대 3곳 ({selectedWaypoints.length}/3)</span>
