@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   getCircularPinIndex,
+  getNextOverlappingPinIndex,
   groupOverlappingPins,
   groupPinsByScreenDistance,
 } from "./overlappingPins.js";
@@ -85,4 +86,22 @@ test("겹친 핀의 이전·다음 순번을 순환한다", () => {
   assert.equal(getCircularPinIndex(1, 2), 1);
   assert.equal(getCircularPinIndex(2, 2), 0);
   assert.equal(getCircularPinIndex(-1, 2), 1);
+});
+
+test("서로 다른 장소 번호라도 좌표가 완전히 같으면 한 그룹으로 묶는다", () => {
+  const pins = [
+    { placeNo: 11, xAxis: 126.7155, yAxis: 37.6153 },
+    { placeNo: 22, xAxis: 126.7155, yAxis: 37.6153 },
+  ];
+
+  const groups = groupOverlappingPins(pins);
+
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].pins.length, 2);
+});
+
+test("겹친 핀은 첫 클릭 후 같은 마커를 다시 누르면 다음 장소로 순환한다", () => {
+  assert.equal(getNextOverlappingPinIndex(undefined, 1, 3), 1);
+  assert.equal(getNextOverlappingPinIndex(1, 1, 3), 2);
+  assert.equal(getNextOverlappingPinIndex(2, 1, 3), 0);
 });

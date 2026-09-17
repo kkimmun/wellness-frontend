@@ -123,3 +123,14 @@ export const getCircularPinIndex = (index, length) => {
   if (!Number.isInteger(length) || length <= 0) return 0;
   return ((index % length) + length) % length;
 };
+
+// 겹친 핀은 첫 클릭에는 현재 보이는 핀을, 이후 클릭에는 다음 핀을 선택한다.
+export const getNextOverlappingPinIndex = (
+  activeIndex,
+  initialIndex,
+  length,
+) =>
+  getCircularPinIndex(
+    activeIndex == null ? initialIndex : activeIndex + 1,
+    length,
+  );

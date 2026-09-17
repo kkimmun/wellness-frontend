@@ -35,10 +35,19 @@ function Dashboard({ user }) {
       setError("");
       try {
         const plans = await PlanAPI.getPlans();
-        const details = await Promise.all(
+        const results = await Promise.allSettled(
           plans.map((plan) => PlanAPI.getPlan(plan.planNo)),
         );
-        if (!ignore) setTrips(details.filter(Boolean));
+        if (!ignore) {
+          const details = results
+            .filter((result) => result.status === "fulfilled")
+            .map((result) => result.value)
+            .filter(Boolean);
+          setTrips(details);
+          if (results.some((result) => result.status === "rejected")) {
+            setError("일부 저장 계획을 불러오지 못했습니다. 다시 시도해주세요.");
+          }
+        }
       } catch (loadError) {
         console.error("저장된 계획을 불러오지 못했습니다.", loadError);
         if (!ignore) {
@@ -90,6 +99,7 @@ function Dashboard({ user }) {
       <S.Section aria-label="저장한 여행">
         <S.SectionHeading><div><h2>나의 여행 계획</h2><p>직접 골라 연결한 나만의 여행입니다.</p></div><Link to="/map?mode=j">+ 계획 만들기</Link></S.SectionHeading>
         <S.Notice>현재 계정으로 DB에 저장한 여행 계획입니다. 로그인하면 다른 기기에서도 확인할 수 있습니다.</S.Notice>
+        {error && !deleteTarget && <S.Notice role="alert">{error}</S.Notice>}
         {isTripsLoading ? <S.Notice>저장된 계획을 불러오는 중입니다.</S.Notice> : visibleTrips.length ? <S.TripList>{visibleTrips.map((trip) => <S.Trip key={trip.id}>
           <h3>{trip.name}</h3><time>{formatSavedDate(trip.updatedAt || trip.createdAt)} 저장 · {trip.places.length}개 장소</time>
           <S.Origin><FaMapMarkerAlt />출발: {trip.origin.placeName || trip.origin.address || "지도에서 선택한 위치"}</S.Origin>

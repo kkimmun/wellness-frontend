@@ -57,24 +57,15 @@ export const PlanAPI = {
     return Array.isArray(data) ? data : [];
   },
 
-  // PlanCreateRequestDto: { planName, xAxis, yAxis } -> PlanCreateResponseDto: { planNo }
-  createPlan: async ({ planName, xAxis, yAxis }) => {
-    const body = await api.post("/plans", { planName, xAxis, yAxis });
+  // 계획 헤더와 장소를 한 요청으로 저장해 중간 실패 시 불완전한 계획이 남지 않게 한다.
+  createPlan: async ({ planName, xAxis, yAxis, places }) => {
+    const body = await api.post("/plans", { planName, xAxis, yAxis, places });
     const data = body?.data ?? body;
     return data?.planNo ?? null;
   },
 
-  updatePlan: async (planNo, { planName, xAxis, yAxis }) => {
-    await api.put(`/plans/${planNo}`, { planName, xAxis, yAxis });
-  },
-
-  // List<PlanPlaceRequestDto>: [{ placeNo, placeOrder }]
-  addPlaces: async (planNo, places) => {
-    await api.post(`/plans/${planNo}/places`, places);
-  },
-
-  editPlaces: async (planNo, places) => {
-    await api.put(`/plans/${planNo}/places`, places);
+  updatePlan: async (planNo, { planName, xAxis, yAxis, places }) => {
+    await api.put(`/plans/${planNo}`, { planName, xAxis, yAxis, places });
   },
 
   deletePlan: async (planNo) => {
