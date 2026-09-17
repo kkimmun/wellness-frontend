@@ -17,7 +17,7 @@ import { PrimaryButton } from "../../components/Button/Button.styles";
 import { BaseInput } from "../../components/Input/Input.styles";
 import { PasswordInput } from "../../components/Input/PasswordInput";
 import { AuthAPI } from "../../api/auth";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toastContextValue";
 
 const pwdRegex = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{6,15}$/;
 

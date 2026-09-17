@@ -724,7 +724,7 @@ const RoutePanel = ({
       $isDragging={isDragging}
       aria-hidden={!isOpen}
       // 코드 리뷰 반영: 닫힌 패널의 입력창과 버튼이 키보드 Tab 순서에 포함되지 않도록 한다.
-      inert={!isOpen ? "" : undefined}
+      inert={!isOpen || undefined}
     >
       <DragHandle
         onTouchStart={handleDragStart}

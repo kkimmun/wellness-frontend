@@ -278,7 +278,8 @@ export const RouteMarker = ({ onClick }) => (
   </RouteMarkerWrapper>
 );
 
-import TOP10_ICONS, { getTop10IconByPlaceNo } from "./Top10Icons";
+import TOP10_ICONS from "./Top10Icons";
+import { getTop10IconByPlaceNo } from "./top10IconSelectors";
 import { getTop10IconKeyByName } from "../utils/top10Marker";
 
 const Top10MarkerBody = styled.div`

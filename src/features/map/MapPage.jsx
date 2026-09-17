@@ -44,7 +44,7 @@ import { Modal } from "../../components/Modal/Modal";
 import LoginRequiredModal from "../../components/Modal/LoginRequiredModal";
 import { modalStack } from "../../components/Modal/modalStack";
 import { FiAlertCircle } from "react-icons/fi";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContextValue";
 import {
   MapContainer,
   FloatingTags,
@@ -390,7 +390,6 @@ const MapPage = () => {
     setTop10Overlay(null);
     setIsCourseOriginPickMode(true);
   }, []);
-  const [dismissedTop10Entry, setDismissedTop10Entry] = useState(null);
   const [top10Places, setTop10Places] = useState([]);
   const top10PlaceNos = useMemo(
     () => new Set(top10Places.map((place) => String(place.placeNo))),
@@ -1144,15 +1143,13 @@ const MapPage = () => {
     isCourseMapView && restaurantMap?.key === courseLocation.key
       ? restaurantMap.places
       : EMPTY_RESTAURANTS;
-  const handleRestaurantsChange = useCallback(
-    (places) => {
-      setRestaurantMap({
-        key: courseLocation.key,
-        places: places.filter(isCoursePoint),
-      });
-    },
-    [courseLocation.key],
-  );
+  const restaurantCourseKey = courseLocation.key;
+  const handleRestaurantsChange = useCallback((places) => {
+    setRestaurantMap({
+      key: restaurantCourseKey,
+      places: places.filter(isCoursePoint),
+    });
+  }, [restaurantCourseKey]);
   const handleRestaurantSelect = (place) => {
     const map = mapRef.current;
     const center = map?.getCenter();
@@ -1213,16 +1210,13 @@ const MapPage = () => {
     [courseRouteData, isCourseMapView],
   );
 
-  const baseSelectedPlace = useMemo(
-    () =>
-      placeNo
-        ? pins.find((pin) => String(pin.placeNo) === String(placeNo)) ||
-          (String(location.state?.restaurantPlace?.placeNo) === String(placeNo)
-            ? location.state.restaurantPlace
-            : null)
-        : null,
-    [placeNo, pins, location.state],
-  );
+  const restaurantPlace = location.state?.restaurantPlace;
+  const baseSelectedPlace = placeNo
+    ? pins.find((pin) => String(pin.placeNo) === String(placeNo)) ||
+      (String(restaurantPlace?.placeNo) === String(placeNo)
+        ? restaurantPlace
+        : null)
+    : null;
 
   const [overlayDetail, setOverlayDetail] = useState(null);
 
@@ -1842,10 +1836,6 @@ const MapPage = () => {
   const hasRouteSession = Boolean(
     isRouteOpen || routeOrigin || routeDestination || selectedRoute,
   );
-  const showRoutePanel = isRouteOpen && !isCourseView && !isTravelMode
-    && !isTop10Screen && !isDetailOpen && !top10Overlay && !blockingModal;
-  const showRouteToggle = hasRouteSession && !isCourseView && !isTravelMode
-    && !isTop10Screen && !isDetailOpen && !top10Overlay && !blockingModal;
   const searchablePins = hasPlaceFilter ? filterPins : pins;
 
   const routeSelectionPins = useMemo(

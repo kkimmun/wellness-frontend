@@ -22,7 +22,7 @@ import MyPage from "../../features/mypage/MyPage";
 import { getProfileImage } from "../../features/mypage/myPageModel";
 import LoginRequiredModal from "../Modal/LoginRequiredModal";
 
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContextValue";
 
 const Header = () => {
   const { status, user } = useAuth();

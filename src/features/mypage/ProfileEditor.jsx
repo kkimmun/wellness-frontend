@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
 import { Modal } from "../../components/Modal/Modal";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContextValue";
 import { MemberProfileAPI } from "../../api/memberProfile";
 import { getProfileImage } from "./myPageModel";
 import * as S from "./ProfileEditor.styles";

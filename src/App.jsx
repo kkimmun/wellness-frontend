@@ -1,23 +1,24 @@
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import MainLayout from "./components/Layout/MainLayout";
 import AuthLayout from "./components/Layout/AuthLayout";
 import AdminLayout from "./components/Layout/AdminLayout";
 import { PublicRoute, PrivateRoute, AdminRoute } from "./components/Layout/AuthGuard";
-import MyPageDashboard from "./features/mypage/MyPageDashboard";
-import SignUp from "./features/auth/SignUp";
-import EmailRequest from "./features/auth/EmailRequest";
-import EmailVerify from "./features/auth/EmailVerify";
-import Login from "./features/auth/Login";
-import MapPage from "./features/map/MapPage";
-import LandingPage from "./features/landing/LandingPage";
-import AdminPlace from "./features/admin/place/AdminPlace";
-import AdminPlaceDetail from "./features/admin/place/AdminPlaceDetail";
-import AdminPlaceForm from "./features/admin/place/AdminPlaceForm";
-import AdminCourse from "./features/admin/course/AdminCourse";
-import AdminCourseForm from "./features/admin/course/AdminCourseForm";
 import GlobalStyles from "./styles/GlobalStyles";
 import { Modal } from "./components/Modal/Modal";
+
+const MyPageDashboard = lazy(() => import("./features/mypage/MyPageDashboard"));
+const SignUp = lazy(() => import("./features/auth/SignUp"));
+const EmailRequest = lazy(() => import("./features/auth/EmailRequest"));
+const EmailVerify = lazy(() => import("./features/auth/EmailVerify"));
+const Login = lazy(() => import("./features/auth/Login"));
+const MapPage = lazy(() => import("./features/map/MapPage"));
+const LandingPage = lazy(() => import("./features/landing/LandingPage"));
+const AdminPlace = lazy(() => import("./features/admin/place/AdminPlace"));
+const AdminPlaceDetail = lazy(() => import("./features/admin/place/AdminPlaceDetail"));
+const AdminPlaceForm = lazy(() => import("./features/admin/place/AdminPlaceForm"));
+const AdminCourse = lazy(() => import("./features/admin/course/AdminCourse"));
+const AdminCourseForm = lazy(() => import("./features/admin/course/AdminCourseForm"));
 
 function App() {
   const navigate = useNavigate();
@@ -55,6 +56,7 @@ function App() {
         onConfirm={handleModalConfirm}
       />
 
+      <Suspense fallback={<div role="status">화면을 불러오는 중입니다.</div>}>
       <Routes>
         {/* 비로그인 사용자 전용 라우트 (로그인 시 접근 불가) */}
         <Route element={<PublicRoute />}>
@@ -115,6 +117,7 @@ function App() {
           </Route>
         </Route>
       </Routes>
+      </Suspense>
     </>
   );
 }
