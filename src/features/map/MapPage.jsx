@@ -1143,12 +1143,13 @@ const MapPage = () => {
     isCourseMapView && restaurantMap?.key === courseLocation.key
       ? restaurantMap.places
       : EMPTY_RESTAURANTS;
-  const handleRestaurantsChange = (places) => {
+  const restaurantCourseKey = courseLocation.key;
+  const handleRestaurantsChange = useCallback((places) => {
     setRestaurantMap({
-      key: courseLocation.key,
+      key: restaurantCourseKey,
       places: places.filter(isCoursePoint),
     });
-  };
+  }, [restaurantCourseKey]);
   const handleRestaurantSelect = (place) => {
     const map = mapRef.current;
     const center = map?.getCenter();

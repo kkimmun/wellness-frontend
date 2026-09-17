@@ -44,8 +44,12 @@ export const AuthAPI = {
   },
 
   logout: async () => {
+    const accessToken = localStorage.getItem("accessToken");
     try {
-      return await api.post("/auth/logout");
+      // clearAuth가 먼저 실행되어도 서버 로그아웃 요청에는 인증 정보를 유지한다.
+      return await api.post("/auth/logout", undefined, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
     } finally {
       // 서버 토큰 삭제가 실패하더라도 브라우저의 로그인 상태는 반드시 종료한다.
       clearLocalAuth();
