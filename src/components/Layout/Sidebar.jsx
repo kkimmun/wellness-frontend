@@ -4,6 +4,7 @@ import {
   SidebarTitle,
   SidebarNav,
   SidebarLink,
+  SidebarFooter,
 } from "./Sidebar.styles";
 
 /**
@@ -12,8 +13,9 @@ import {
  * Props
  * - title: 상단 타이틀 (선택)
  * - items: [{ label, path }] 메뉴 목록
+ * - footerItem: { label, path } 하단 고정 버튼 (선택, 예: 메인으로 돌아가기)
  */
-const Sidebar = ({ title, items = [] }) => {
+const Sidebar = ({ title, items = [], footerItem }) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -32,6 +34,13 @@ const Sidebar = ({ title, items = [] }) => {
           </SidebarLink>
         ))}
       </SidebarNav>
+      {footerItem && (
+        <SidebarFooter>
+          <SidebarLink type="button" onClick={() => navigate(footerItem.path)}>
+            {footerItem.label}
+          </SidebarLink>
+        </SidebarFooter>
+      )}
     </SidebarContainer>
   );
 };

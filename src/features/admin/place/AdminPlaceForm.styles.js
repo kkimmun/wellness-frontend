@@ -35,6 +35,11 @@ export const Field = styled.div`
   }
 `;
 
+export const Required = styled.span`
+  margin-left: ${theme.spacing.xs};
+  color: ${theme.colors.error};
+`;
+
 export const Row = styled.div`
   display: flex;
   gap: ${theme.spacing.md};

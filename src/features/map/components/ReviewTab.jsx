@@ -69,6 +69,7 @@ const ReviewTab = ({ place }) => {
   const [selectedReviewId, setSelectedReviewId] = useState(null);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   const loaderRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -409,8 +410,17 @@ const ReviewTab = ({ place }) => {
               {review.image && (
                 <img
                   src={review.image}
-                  alt="리뷰 첨부"
+                  alt="리뷰 첨부 (클릭 시 크게 보기)"
                   className="attached-image"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setLightboxImage(review.image)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setLightboxImage(review.image);
+                    }
+                  }}
                 />
               )}
             </ReviewItem>
@@ -481,6 +491,28 @@ const ReviewTab = ({ place }) => {
         message={alertMessage}
         onConfirm={() => setIsAlertModalOpen(false)}
       />
+
+      {/* 리뷰 이미지 크게 보기 */}
+      <Modal
+        isOpen={!!lightboxImage}
+        showClose={true}
+        size="image"
+        onClose={() => setLightboxImage(null)}
+      >
+        {lightboxImage && (
+          <img
+            src={lightboxImage}
+            alt="리뷰 이미지 크게 보기"
+            style={{
+              display: "block",
+              maxWidth: "100%",
+              maxHeight: "80dvh",
+              borderRadius: "8px",
+              objectFit: "contain",
+            }}
+          />
+        )}
+      </Modal>
     </ReviewContainer>
   );
 };

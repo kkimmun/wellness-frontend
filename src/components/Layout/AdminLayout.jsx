@@ -11,7 +11,11 @@ const ADMIN_MENU = [
 function AdminLayout() {
   return (
     <AdminWrapper>
-      <Sidebar title="Wellness CMS" items={ADMIN_MENU} />
+      <Sidebar
+        title="Wellness CMS"
+        items={ADMIN_MENU}
+        footerItem={{ label: "메인으로 돌아가기", path: "/" }}
+      />
       <AdminContent>
         <Outlet />
       </AdminContent>

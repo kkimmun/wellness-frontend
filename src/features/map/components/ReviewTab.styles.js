@@ -288,6 +288,12 @@ export const ReviewItem = styled.div`
     border-radius: 8px;
     margin-bottom: 12px;
     display: block;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+
+    &:hover {
+      opacity: 0.85;
+    }
 
     @media (max-width: 768px) {
       max-width: 100%;
