@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 import { ProfilePopoverCard, Title, ProfileSection, ProfileImage, NameRow, ActionButton } from "./MyPage.styles";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContextValue";
 import { getProfileImage } from "./myPageModel";
 
 // 헤더의 빠른 메뉴. 실제 회원정보와 여행 목록은 별도의 마이페이지에서 확인한다.

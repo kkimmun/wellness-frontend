@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { FaStar, FaArrowDown, FaUserCircle } from "react-icons/fa";
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/authContextValue";
 import { Modal } from "../../../components/Modal/Modal";
 import { FiAlertCircle } from "react-icons/fi";
 import { PlaceAPI } from "../../../api/place";

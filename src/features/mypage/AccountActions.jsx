@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContextValue";
 import { Modal } from "../../components/Modal/Modal";
 import { ActionButton } from "./MyPage.styles";
 

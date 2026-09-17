@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaMapMarkedAlt } from "react-icons/fa";
 import { FiLogIn, FiMenu, FiX } from "react-icons/fi";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContextValue";
 import LoginRequiredModal from "../../components/Modal/LoginRequiredModal";
 import gwLogo from "../../assets/GWLoGo2.svg";
 import {

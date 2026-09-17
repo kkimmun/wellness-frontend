@@ -20,8 +20,8 @@ import { BaseInput } from "../../components/Input/Input.styles";
 import { PasswordInput } from "../../components/Input/PasswordInput";
 import { AuthAPI } from "../../api/auth";
 
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/authContextValue";
+import { useToast } from "../../context/toastContextValue";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

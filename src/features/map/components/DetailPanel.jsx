@@ -22,7 +22,7 @@ import BasicInfoTab from "./BasicInfoTab";
 
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useToast } from "../../../context/ToastContext";
+import { useToast } from "../../../context/toastContextValue";
 
 const DetailPanel = ({
   place,
@@ -103,7 +103,7 @@ const DetailPanel = ({
     <PanelContainer
       $isOpen={isOpen}
       aria-hidden={!isOpen}
-      inert={!isOpen ? "" : undefined}
+      inert={!isOpen || undefined}
     >
       <TopHeader>
         <TitleGroup>

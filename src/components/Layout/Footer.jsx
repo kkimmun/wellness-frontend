@@ -7,7 +7,7 @@ import {
   CopyrightText,
 } from "./Footer.styles";
 
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContextValue";
 import LoginRequiredModal from "../Modal/LoginRequiredModal";
 
 const FOOTER_MENUS = [

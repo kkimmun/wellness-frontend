@@ -1,9 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '../styles/theme';
 import { FiCheckCircle, FiAlertCircle, FiInfo, FiX } from 'react-icons/fi';
-
-const ToastContext = createContext(null);
+import { ToastContext } from './toastContextValue';
 
 // --- Styled Components ---
 
@@ -152,12 +151,4 @@ export const ToastProvider = ({ children }) => {
       </ToastContainerWrapper>
     </ToastContext.Provider>
   );
-};
-
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
 };

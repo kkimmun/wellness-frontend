@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaUserCircle, FaMapMarkerAlt, FaRoute } from "react-icons/fa";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContextValue";
 import { Modal } from "../../components/Modal/Modal";
 import { PlanAPI } from "../../api/plan";
 import { formatSavedDate, getProfileImage, getTravelOwnerKey, getTripMapUrl } from "./myPageModel";

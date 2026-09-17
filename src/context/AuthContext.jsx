@@ -1,15 +1,12 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   useState,
 } from "react";
 import { AuthAPI } from "../api/auth";
 import { getValidRole } from "../utils/jwt";
-
-const AuthContext = createContext(null);
+import { AuthContext } from "./authContextValue";
 
 export const AuthProvider = ({ children }) => {
   const authRequestIdRef = useRef(0);
@@ -105,12 +102,4 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 };

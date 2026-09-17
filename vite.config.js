@@ -4,4 +4,19 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/recharts') || id.includes('node_modules/victory-vendor')) {
+            return 'charts'
+          }
+          if (id.includes('node_modules/react-kakao-maps-sdk')) {
+            return 'kakao-maps'
+          }
+          return undefined
+        },
+      },
+    },
+  },
 })
