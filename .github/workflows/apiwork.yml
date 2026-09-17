@@ -1,3 +1,4 @@
+```yaml
 name: Deploy React App
 
 on:
@@ -25,6 +26,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint
+        run: npm run lint
 
       - name: Build React App
         run: npm run build
@@ -55,3 +59,4 @@ jobs:
             상태: ${{ job.status }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+```
