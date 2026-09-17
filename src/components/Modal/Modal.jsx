@@ -105,16 +105,18 @@ export const Modal = ({
         {message && <S.Message id={messageId}>{message}</S.Message>}
         {children}
 
-        <S.ButtonGroup>
-          {isConfirmMode && (
-            <S.ActionButton type="button" disabled={pending} $variant={cancelVariant} onClick={onCancel}>
-              {cancelText}
-            </S.ActionButton>
-          )}
-          {onConfirm && <S.ActionButton type="button" disabled={pending} $variant={confirmVariant} onClick={onConfirm}>
-            {confirmText}
-          </S.ActionButton>}
-        </S.ButtonGroup>
+        {(isConfirmMode || onConfirm) && (
+          <S.ButtonGroup>
+            {isConfirmMode && (
+              <S.ActionButton type="button" disabled={pending} $variant={cancelVariant} onClick={onCancel}>
+                {cancelText}
+              </S.ActionButton>
+            )}
+            {onConfirm && <S.ActionButton type="button" disabled={pending} $variant={confirmVariant} onClick={onConfirm}>
+              {confirmText}
+            </S.ActionButton>}
+          </S.ButtonGroup>
+        )}
       </S.ModalContainer>
     </S.Overlay>,
     document.body

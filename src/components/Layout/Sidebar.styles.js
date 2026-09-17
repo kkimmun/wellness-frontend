@@ -31,6 +31,12 @@ export const SidebarNav = styled.nav`
   flex-direction: column;
 `;
 
+export const SidebarFooter = styled.div`
+  margin-top: auto;
+  padding-top: ${theme.spacing.md};
+  border-top: 1px solid ${theme.colors.borderLight};
+`;
+
 export const SidebarLink = styled.button`
   width: 100%;
   text-align: left;

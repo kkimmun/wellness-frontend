@@ -40,6 +40,7 @@ import {
   FieldError,
   Actions,
   StateBox,
+  Required,
 } from "./AdminPlaceForm.styles";
 
 const EMPTY_FORM = {
@@ -60,6 +61,10 @@ const EMPTY_LICENSE = {
   licenseUrl: "",
   attributionText: "",
 };
+
+// WGS84 10진수 좌표 형식 (경도 -180~180, 위도 -90~90)
+const LONGITUDE_REGEX = /^-?(180(\.0+)?|((1[0-7][0-9])|([1-9]?[0-9]))(\.\d+)?)$/;
+const LATITUDE_REGEX = /^-?(90(\.0+)?|([1-8]?[0-9])(\.\d+)?)$/;
 
 const LICENSE_FIELDS = [
   "sourceName",
@@ -134,12 +139,15 @@ const ImageLicenseEditor = ({
     {value.enabled && (
       <LicenseFields>
         <LicenseField>
-          <label htmlFor={`${idPrefix}-sourceName`}>출처명 *</label>
+          <label htmlFor={`${idPrefix}-sourceName`}>
+            출처명<Required aria-hidden="true">*</Required>
+          </label>
           <BaseInput
             id={`${idPrefix}-sourceName`}
             value={value.sourceName}
             maxLength={100}
             disabled={disabled}
+            aria-required="true"
             placeholder="예: 김포시 문화관광"
             onChange={(e) => onChange("sourceName", e.target.value)}
           />
@@ -157,7 +165,7 @@ const ImageLicenseEditor = ({
         </LicenseField>
         <LicenseField $wide>
           <label htmlFor={`${idPrefix}-sourcePageUrl`}>
-            출처 페이지 URL *
+            출처 페이지 URL<Required aria-hidden="true">*</Required>
           </label>
           <BaseInput
             id={`${idPrefix}-sourcePageUrl`}
@@ -165,17 +173,21 @@ const ImageLicenseEditor = ({
             value={value.sourcePageUrl}
             maxLength={2000}
             disabled={disabled}
+            aria-required="true"
             placeholder="https://..."
             onChange={(e) => onChange("sourcePageUrl", e.target.value)}
           />
         </LicenseField>
         <LicenseField>
-          <label htmlFor={`${idPrefix}-licenseCode`}>라이선스 코드 *</label>
+          <label htmlFor={`${idPrefix}-licenseCode`}>
+            라이선스 코드<Required aria-hidden="true">*</Required>
+          </label>
           <BaseInput
             id={`${idPrefix}-licenseCode`}
             value={value.licenseCode}
             maxLength={50}
             disabled={disabled}
+            aria-required="true"
             placeholder="예: CC BY 4.0"
             onChange={(e) => onChange("licenseCode", e.target.value)}
           />
@@ -194,13 +206,14 @@ const ImageLicenseEditor = ({
         </LicenseField>
         <LicenseField $wide>
           <label htmlFor={`${idPrefix}-attributionText`}>
-            귀속 표기 문구 *
+            귀속 표기 문구<Required aria-hidden="true">*</Required>
           </label>
           <BaseTextarea
             id={`${idPrefix}-attributionText`}
             value={value.attributionText}
             maxLength={1000}
             disabled={disabled}
+            aria-required="true"
             placeholder="예: 사진: 김포시, CC BY 4.0"
             onChange={(e) => onChange("attributionText", e.target.value)}
           />
@@ -227,6 +240,11 @@ const AdminPlaceForm = () => {
   const [loadError, setLoadError] = useState("");
 
   const [fieldError, setFieldError] = useState("");
+  const [descriptionError, setDescriptionError] = useState("");
+  const [addrError, setAddrError] = useState("");
+  const [typeError, setTypeError] = useState("");
+  const [xAxisError, setXAxisError] = useState("");
+  const [yAxisError, setYAxisError] = useState("");
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const imageDelete = usePlaceImageDelete(placeNo, (imgNo) => {
@@ -293,6 +311,11 @@ const AdminPlaceForm = () => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     if (name === "placeName") setFieldError("");
+    if (name === "placeDescription") setDescriptionError("");
+    if (name === "addr") setAddrError("");
+    if (name === "typeDetailNo") setTypeError("");
+    if (name === "x_axis") setXAxisError("");
+    if (name === "y_axis") setYAxisError("");
   };
 
   const handleAddFiles = (e) => {
@@ -399,6 +422,41 @@ const AdminPlaceForm = () => {
       return;
     }
 
+    if (!form.placeDescription.trim()) {
+      setDescriptionError("설명을 입력해주세요.");
+      return;
+    }
+
+    if (!form.addr.trim()) {
+      setAddrError("주소를 입력해주세요.");
+      return;
+    }
+
+    if (!form.typeDetailNo) {
+      setTypeError("명소 타입을 선택해주세요.");
+      return;
+    }
+
+    const xAxis = form.x_axis.trim();
+    if (!xAxis) {
+      setXAxisError("경도를 입력해주세요.");
+      return;
+    }
+    if (!LONGITUDE_REGEX.test(xAxis)) {
+      setXAxisError("경도는 WGS84 형식(-180~180의 10진수)으로 입력해주세요.");
+      return;
+    }
+
+    const yAxis = form.y_axis.trim();
+    if (!yAxis) {
+      setYAxisError("위도를 입력해주세요.");
+      return;
+    }
+    if (!LATITUDE_REGEX.test(yAxis)) {
+      setYAxisError("위도는 WGS84 형식(-90~90의 10진수)으로 입력해주세요.");
+      return;
+    }
+
     const licenseForms = [
       ...currentImages.map((image) => ({
         name: image.originalName ?? "기존 이미지",
@@ -486,47 +544,63 @@ const AdminPlaceForm = () => {
 
       <Form onSubmit={handleSubmit} noValidate>
         <Field>
-          <label htmlFor="placeName">명소명</label>
+          <label htmlFor="placeName">
+            명소명<Required aria-hidden="true">*</Required>
+          </label>
           <BaseInput
             id="placeName"
             name="placeName"
             value={form.placeName}
             onChange={handleChange}
             placeholder="명소명을 입력하세요"
+            aria-required="true"
             $hasError={!!fieldError}
           />
           {fieldError && <FieldError>{fieldError}</FieldError>}
         </Field>
 
         <Field>
-          <label htmlFor="placeDescription">설명</label>
+          <label htmlFor="placeDescription">
+            설명<Required aria-hidden="true">*</Required>
+          </label>
           <BaseTextarea
             id="placeDescription"
             name="placeDescription"
             value={form.placeDescription}
             onChange={handleChange}
             placeholder="명소 설명을 입력하세요"
+            aria-required="true"
+            $hasError={!!descriptionError}
           />
+          {descriptionError && <FieldError>{descriptionError}</FieldError>}
         </Field>
 
         <Field>
-          <label htmlFor="addr">주소</label>
+          <label htmlFor="addr">
+            주소<Required aria-hidden="true">*</Required>
+          </label>
           <BaseInput
             id="addr"
             name="addr"
             value={form.addr}
             onChange={handleChange}
             placeholder="주소를 입력하세요"
+            aria-required="true"
+            $hasError={!!addrError}
           />
+          {addrError && <FieldError>{addrError}</FieldError>}
         </Field>
 
         <Field>
-          <label htmlFor="typeDetailNo">명소 타입</label>
+          <label htmlFor="typeDetailNo">
+            명소 타입<Required aria-hidden="true">*</Required>
+          </label>
           <DropdownSelect
             id="typeDetailNo"
             name="typeDetailNo"
             value={form.typeDetailNo}
             onChange={handleChange}
+            aria-required="true"
           >
             <option value="">타입 선택</option>
             {PLACE_TYPE_GROUPS.map((group) => (
@@ -539,28 +613,39 @@ const AdminPlaceForm = () => {
               </optgroup>
             ))}
           </DropdownSelect>
+          {typeError && <FieldError>{typeError}</FieldError>}
         </Field>
 
         <Row>
           <Field>
-            <label htmlFor="x_axis">경도 (x_axis)</label>
+            <label htmlFor="x_axis">
+              경도 (x_axis)<Required aria-hidden="true">*</Required>
+            </label>
             <BaseInput
               id="x_axis"
               name="x_axis"
               value={form.x_axis}
               onChange={handleChange}
               placeholder="예: 126.xxxx"
+              aria-required="true"
+              $hasError={!!xAxisError}
             />
+            {xAxisError && <FieldError>{xAxisError}</FieldError>}
           </Field>
           <Field>
-            <label htmlFor="y_axis">위도 (y_axis)</label>
+            <label htmlFor="y_axis">
+              위도 (y_axis)<Required aria-hidden="true">*</Required>
+            </label>
             <BaseInput
               id="y_axis"
               name="y_axis"
               value={form.y_axis}
               onChange={handleChange}
               placeholder="예: 37.xxxx"
+              aria-required="true"
+              $hasError={!!yAxisError}
             />
+            {yAxisError && <FieldError>{yAxisError}</FieldError>}
           </Field>
         </Row>
 

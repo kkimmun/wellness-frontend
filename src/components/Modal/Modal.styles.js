@@ -20,14 +20,15 @@ export const Overlay = styled.div`
 `;
 
 export const ModalContainer = styled.div`
-  background-color: ${theme.colors.bgWhite};
-  border-radius: ${theme.radius.lg};
-  padding: ${theme.spacing.lg};
+  background-color: ${({ $size }) => $size === "image" ? "transparent" : theme.colors.bgWhite};
+  border-radius: ${({ $size }) => $size === "image" ? "0" : theme.radius.lg};
+  padding: ${({ $size }) => $size === "image" ? "0" : theme.spacing.lg};
   width: 100%;
-  max-width: ${({ $size }) => $size === "wide" ? "820px" : "320px"};
+  max-width: ${({ $size }) =>
+    $size === "wide" ? "820px" : $size === "image" ? "min(90vw, 960px)" : "320px"};
   max-height: calc(100dvh - ${theme.spacing.xl});
-  overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  overflow-y: ${({ $size }) => $size === "image" ? "visible" : "auto"};
+  box-shadow: ${({ $size }) => $size === "image" ? "none" : "0 4px 20px rgba(0, 0, 0, 0.1)"};
   display: flex;
   flex-direction: column;
   align-items: ${({ $size }) => $size === "wide" ? "stretch" : "center"};
