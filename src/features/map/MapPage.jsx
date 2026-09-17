@@ -80,6 +80,7 @@ import {
 } from "./utils/travelPlanStorage";
 import {
   getCircularPinIndex,
+  getNextOverlappingPinIndex,
   groupOverlappingPins,
   groupPinsByScreenDistance,
 } from "./utils/overlappingPins";
@@ -126,24 +127,28 @@ const PlaceCategoryMarker = ({ place, onClick }) => {
     return <Top10Marker placeName={place?.placeName ?? place?.PLACE_NAME} onClick={onClick} />;
   }
 
-  if (place?.type === "의료기관") return <MedicalMarker onClick={onClick} />;
-  if (place?.type === "음식점" || place?.type === "카페") {
+  const typeNo = Number(place?.typeNo ?? place?.TYPE_NO);
+  const type = place?.type ?? place?.TYPE;
+
+  if (type === "의료기관" || typeNo === 2) return <MedicalMarker onClick={onClick} />;
+  if (type === "음식점" || type === "카페" || typeNo === 6) {
     return <FoodMarker onClick={onClick} />;
   }
   if (
-    place?.type === "주요관광지" ||
-    place?.type === "관광명소" ||
-    place?.type === "관광지"
+    type === "주요관광지" ||
+    type === "관광명소" ||
+    type === "관광지" ||
+    [1, 3, 7, 8, 9].includes(typeNo)
   ) {
     return <TouristMarker onClick={onClick} />;
   }
-  if (place?.type === "생활체육시설" || place?.type === "체육시설") {
+  if (type === "생활체육시설" || type === "체육시설" || typeNo === 4) {
     return <SportsMarker onClick={onClick} />;
   }
-  if (place?.type === "종교시설") {
+  if (type === "종교시설" || typeNo === 5) {
     return <ReligionMarker onClick={onClick} />;
   }
-  if (place?.type === "이벤트" || place?.type === "축제") {
+  if (type === "이벤트" || type === "축제") {
     return <EventMarker onClick={onClick} />;
   }
   return <GeneralMarker onClick={onClick} />;
@@ -154,6 +159,7 @@ const OverlappingPlaceMarker = ({
   activeIndex,
   disabled,
   onPlaceClick,
+  zIndex,
 }) => {
   const normalizedIndex = getCircularPinIndex(
     activeIndex ?? getInitialTop10PinIndex(group.pins),
@@ -164,7 +170,14 @@ const OverlappingPlaceMarker = ({
 
   const handleClick = () => {
     if (disabled) return;
-    onPlaceClick(group, normalizedIndex);
+    onPlaceClick(
+      group,
+      getNextOverlappingPinIndex(
+        activeIndex,
+        normalizedIndex,
+        group.pins.length,
+      ),
+    );
   };
 
   return (
@@ -174,7 +187,7 @@ const OverlappingPlaceMarker = ({
         lng: Number(activePlace?.xAxis ?? activePlace?.X_AXIS),
       }}
       yAnchor={1}
-      zIndex={groupContainsTop10 ? 10 : 1}
+      zIndex={zIndex ?? (groupContainsTop10 ? 10 : 1)}
       clickable={!disabled}
     >
       <OverlapMarkerContainer
@@ -963,16 +976,16 @@ const MapPage = () => {
             planName: name.trim(),
             xAxis: planOrigin.xAxis,
             yAxis: planOrigin.yAxis,
+            places: requestPlaces,
           });
-          await PlanAPI.editPlaces(planNo, requestPlaces);
         } else {
           planNo = await PlanAPI.createPlan({
             planName: name.trim(),
             xAxis: planOrigin.xAxis,
             yAxis: planOrigin.yAxis,
+            places: requestPlaces,
           });
           if (!planNo) throw new Error("planNo가 발급되지 않았습니다.");
-          await PlanAPI.addPlaces(planNo, requestPlaces);
         }
 
         clearTravelPlanDraft(planOwnerKey);
@@ -982,7 +995,10 @@ const MapPage = () => {
         return { id: String(planNo), planNo, name: name.trim() };
       } catch (backendError) {
         console.error("계획을 DB에 저장하지 못했습니다.", backendError);
-        setAlertMessage("계획을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.");
+        setAlertMessage(
+          backendError?.message ||
+            "계획을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.",
+        );
         setIsAlertModalOpen(true);
         return null;
       }
@@ -1007,6 +1023,9 @@ const MapPage = () => {
         setIsPlanPanelOpen(true);
         clearTravelPlanDraft(planOwnerKey);
         moveMapToPlanPoint(saved.origin);
+        if (String(requestedSavedPlanId ?? "") !== String(saved.id)) {
+          navigate(`/map?mode=j&savedPlan=${saved.id}`, { replace: true });
+        }
         return saved;
       } catch (loadError) {
         console.error("DB에 저장된 계획을 불러오지 못했습니다.", loadError);
@@ -1015,7 +1034,7 @@ const MapPage = () => {
         return null;
       }
     },
-    [moveMapToPlanPoint, planOwnerKey],
+    [moveMapToPlanPoint, navigate, planOwnerKey, requestedSavedPlanId],
   );
 
   const handleDeleteSavedPlan = useCallback(
@@ -1032,6 +1051,9 @@ const MapPage = () => {
           setPlanOriginStatus("idle");
           setPlanPlaces([]);
           clearTravelPlanDraft(planOwnerKey);
+          if (String(requestedSavedPlanId ?? "") === String(planId)) {
+            navigate("/map?mode=j", { replace: true });
+          }
         }
       } catch (backendError) {
         console.error("계획을 DB에서 삭제하지 못했습니다.", backendError);
@@ -1039,7 +1061,14 @@ const MapPage = () => {
         setIsAlertModalOpen(true);
       }
     },
-    [activePlanId, planOwnerKey, refreshSavedPlans, savedPlans],
+    [
+      activePlanId,
+      navigate,
+      planOwnerKey,
+      refreshSavedPlans,
+      requestedSavedPlanId,
+      savedPlans,
+    ],
   );
 
   // 추천 모드 저장: 브라우저에 별도로 남기지 않고, 클릭 시점에 바로 /api/plans 에 저장한 뒤
@@ -1060,9 +1089,9 @@ const MapPage = () => {
         planName,
         xAxis: planOrigin.xAxis,
         yAxis: planOrigin.yAxis,
+        places: requestPlaces,
       });
       if (!planNo) throw new Error("planNo가 발급되지 않았습니다.");
-      await PlanAPI.addPlaces(planNo, requestPlaces);
     } catch (backendError) {
       console.error("추천 코스를 서버에 저장하지 못했습니다.", backendError);
       setAlertMessage("추천 코스를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.");
@@ -1082,8 +1111,11 @@ const MapPage = () => {
     setPlanDetailPlace(null);
     setActivePlanId(null);
     setActivePlanName("");
+    if (requestedSavedPlanId) {
+      navigate("/map?mode=j", { replace: true });
+    }
     requestCurrentPlanLocation();
-  }, [planOwnerKey, requestCurrentPlanLocation]);
+  }, [navigate, planOwnerKey, requestCurrentPlanLocation, requestedSavedPlanId]);
 
   const openPlanPlaceDetail = useCallback(async (place) => {
     if (!place?.placeNo) return;
@@ -1733,8 +1765,51 @@ const MapPage = () => {
       return { x: Number(point?.x), y: Number(point?.y) };
     });
   }, [mapInstance, mapLevel, visibleMapPins]);
+  const planPlaceGroups = useMemo(() => {
+    const mapsApi = globalThis.kakao?.maps;
+    const projection = mapInstance?.getProjection?.();
+
+    if (!Number.isFinite(mapLevel) || !mapsApi?.LatLng || !projection) {
+      return groupOverlappingPins([...planPlaces, ...visibleMapPins]);
+    }
+
+    return groupPinsByScreenDistance(
+      [...planPlaces, ...visibleMapPins],
+      (place) => {
+        const lat = Number(place?.yAxis ?? place?.Y_AXIS);
+        const lng = Number(place?.xAxis ?? place?.X_AXIS);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+        const point = projection.containerPointFromCoords(
+          new mapsApi.LatLng(lat, lng),
+        );
+        return { x: Number(point?.x), y: Number(point?.y) };
+      },
+    );
+  }, [mapInstance, mapLevel, planPlaces, visibleMapPins]);
+  const planOriginOverlapsPlace = useMemo(() => {
+    if (!planOrigin || planPlaces.length === 0) return false;
+    return groupOverlappingPins([planOrigin, ...planPlaces]).some(
+      (group) => group.pins.includes(planOrigin) && group.pins.length > 1,
+    );
+  }, [planOrigin, planPlaces]);
+  const planOriginMarkerImage = useMemo(() => {
+    const image = getRoutePointMarkerImage("출", "#FF7043");
+    if (!planOriginOverlapsPlace) return image;
+    return {
+      ...image,
+      options: {
+        ...image.options,
+        offset: {
+          ...image.options.offset,
+          x: image.options.offset.x + 28,
+        },
+      },
+    };
+  }, [planOriginOverlapsPlace]);
+  const overlapGroups = isPlanMode ? planPlaceGroups : visiblePinGroups;
   const activeOverlapGroup = overlapSelection
-    ? visiblePinGroups.find(
+    ? overlapGroups.find(
         (group) => group.key === overlapSelection.groupKey,
       ) || null
     : null;
@@ -1804,7 +1879,8 @@ const MapPage = () => {
 
   // 계획 모드: 계획 또는 추천 목록이 바뀌면 관련 장소가 지도 화면 안에 들어오도록 조정한다.
   useEffect(() => {
-    if (!isPlanMode || !mapRef.current || !window.kakao?.maps) return;
+    const map = mapInstance || mapRef.current;
+    if (!isPlanMode || !map || !window.kakao?.maps) return;
     const points =
       planRecommendationPins.length > 0
         ? [planPlaces.at(-1) || planOrigin, ...planRecommendationPins]
@@ -1829,10 +1905,11 @@ const MapPage = () => {
         ),
       );
     });
-    mapRef.current.setBounds(bounds, 80, isPlanPanelOpen ? 440 : 80, 80, 80);
+    map.setBounds(bounds, 80, isPlanPanelOpen ? 440 : 80, 80, 80);
   }, [
     isPlanMode,
     isPlanPanelOpen,
+    mapInstance,
     moveMapToPlanPoint,
     planMapPoints,
     planOrigin,
@@ -2299,7 +2376,7 @@ const MapPage = () => {
                     />
                   );
                 })
-              : visiblePinGroups.map((group) => (
+              : !isPlanMode && visiblePinGroups.map((group) => (
                   <OverlappingPlaceMarker
                     key={group.key}
                     group={group}
@@ -2316,8 +2393,8 @@ const MapPage = () => {
             {isPlanMode && planOrigin && (
               <MapMarker
                 position={{ lat: planOrigin.yAxis, lng: planOrigin.xAxis }}
-                title={planOrigin.placeName}
-                image={getRoutePointMarkerImage("출", "#FF7043")}
+                title={`${planOrigin.placeName}${planOriginOverlapsPlace ? " · 선택 장소와 같은 위치" : ""}`}
+                image={planOriginMarkerImage}
                 zIndex={50}
                 clickable={false}
               />
@@ -2334,19 +2411,18 @@ const MapPage = () => {
             )}
 
             {isPlanMode &&
-              planPlaces.map((place) => (
-                <CustomOverlayMap
-                  key={`plan-place-${place.placeNo}`}
-                  position={{ lat: place.yAxis, lng: place.xAxis }}
-                  yAnchor={1}
-                  zIndex={45}
-                  clickable
-                >
-                  <PlaceCategoryMarker
-                    place={place}
-                    onClick={() => handlePlanPlacePreview(place)}
-                  />
-                </CustomOverlayMap>
+              planPlaceGroups.map((group) => (
+                <OverlappingPlaceMarker
+                  key={`plan-${group.key}`}
+                  group={group}
+                  activeIndex={
+                    overlapSelection?.groupKey === group.key
+                      ? overlapSelection.index
+                      : undefined
+                  }
+                  onPlaceClick={selectOverlappingPlace}
+                  zIndex={55}
+                />
               ))}
 
             {/* 숫자 대신 타입 마커를 사용하므로 순례자길과 같은 화살표로 방문 방향을 표시한다. */}
