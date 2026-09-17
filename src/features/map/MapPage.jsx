@@ -1,6 +1,5 @@
 import { isVisibleMapPlace, visibleMapPlaces } from "./utils/placeVisibility";
 import { useState, useEffect, useMemo, useRef, useCallback, useSyncExternalStore } from "react";
-import { getSavedTrip } from "../mypage/myPageModel";
 import { FaChevronRight } from "react-icons/fa";
 import { BsBookmark, BsBookmarkFill } from "react-icons/bs";
 import {
@@ -75,14 +74,9 @@ import {
 } from "./routeSegmentStyles";
 import {
   MAX_TRAVEL_PLAN_PLACES,
-  TRAVEL_PLAN_KIND,
   clearTravelPlanDraft,
-  deleteTravelPlan,
   readTravelPlanDraft,
-  readTravelPlans,
-  saveTravelPlan,
   saveTravelPlanDraft,
-  updateTravelPlanBackendId,
 } from "./utils/travelPlanStorage";
 import {
   getCircularPinIndex,
@@ -367,6 +361,7 @@ const MapPage = () => {
   const [planPlaces, setPlanPlaces] = useState([]);
   const [savedPlans, setSavedPlans] = useState([]);
   const [activePlanId, setActivePlanId] = useState(null);
+  const [activePlanName, setActivePlanName] = useState("");
   const [planDetailPlace, setPlanDetailPlace] = useState(null);
   const planLocationRequestRef = useRef(0);
   // 추천 모드는 계획 저장 상태와 분리하고, 현재 세션에서 생성한 코스만 지도에 표시한다.
@@ -621,6 +616,11 @@ const MapPage = () => {
   const planOwnerKey =
     user?.memberId ||
     (user?.memberNo != null ? `member:${user.memberNo}` : null);
+  const refreshSavedPlans = useCallback(async () => {
+    const plans = await PlanAPI.getPlans();
+    setSavedPlans(plans);
+    return plans;
+  }, []);
   const isFixedCourseView =
     courseLocation.pathname.startsWith("/pilgrim/fixed");
   const isCustomCourseView = courseLocation.pathname === "/pilgrim/create";
@@ -740,7 +740,8 @@ const MapPage = () => {
   useEffect(() => {
     if (!isPlanMode || !planOwnerKey) return undefined;
 
-    const initializationTimer = window.setTimeout(() => {
+    let ignore = false;
+    const initializationTimer = window.setTimeout(async () => {
       // 계획 모드 진입 시 이전 길찾기 결과가 계획 직선과 겹치지 않도록 길찾기 화면 상태만 비운다.
       setIsRouteOpen(false);
       setRouteOrigin(null);
@@ -748,23 +749,33 @@ const MapPage = () => {
       setMapPickMode(null);
       setSelectedRoute(null);
       setIsPlanPanelOpen(true);
-      const saved = getSavedTrip(planOwnerKey, requestedSavedPlanId, TRAVEL_PLAN_KIND.PLAN);
-      if (saved) {
-        planLocationRequestRef.current += 1;
-        setPlanOrigin(saved.origin);
-        setPlanPlaces(saved.places);
-        setActivePlanId(saved.id);
-        setPlanOriginStatus("restored");
-        setPlanRecommendationPins([]);
-        setPlanDetailPlace(null);
-        setTop10Overlay(null);
-        moveMapToPlanPoint(saved.origin);
-        return;
-      }
       if (requestedSavedPlanId) {
-        setAlertMessage("저장된 여행을 찾을 수 없습니다. 현재 계정과 브라우저의 저장 목록을 확인해주세요.");
-        setIsAlertModalOpen(true);
+        try {
+          const saved = await PlanAPI.getPlan(requestedSavedPlanId);
+          if (ignore) return;
+          if (!saved) throw new Error("저장된 계획 응답이 없습니다.");
+          planLocationRequestRef.current += 1;
+          setPlanOrigin(saved.origin);
+          setPlanPlaces(saved.places);
+          setActivePlanId(saved.id);
+          setActivePlanName(saved.name);
+          setPlanOriginStatus("restored");
+          setPlanRecommendationPins([]);
+          setPlanDetailPlace(null);
+          setTop10Overlay(null);
+          clearTravelPlanDraft(planOwnerKey);
+          moveMapToPlanPoint(saved.origin);
+          return;
+        } catch (loadError) {
+          if (ignore) return;
+          console.error("DB에 저장된 계획을 불러오지 못했습니다.", loadError);
+          setAlertMessage("저장된 계획을 불러오지 못했습니다. 현재 계정의 저장 목록을 확인해주세요.");
+          setIsAlertModalOpen(true);
+        }
       }
+      if (ignore) return;
+      setActivePlanId(null);
+      setActivePlanName("");
       const draft = readTravelPlanDraft(planOwnerKey);
       if (draft) {
         setPlanOrigin(draft.origin);
@@ -778,6 +789,7 @@ const MapPage = () => {
     }, 0);
 
     return () => {
+      ignore = true;
       window.clearTimeout(initializationTimer);
       planLocationRequestRef.current += 1;
     };
@@ -792,13 +804,21 @@ const MapPage = () => {
   useEffect(() => {
     if (!isTravelMode || !planOwnerKey) return undefined;
 
+    let ignore = false;
     const restoreTimer = window.setTimeout(() => {
-      setSavedPlans(
-        readTravelPlans(planOwnerKey, undefined, TRAVEL_PLAN_KIND.PLAN),
-      );
+      refreshSavedPlans().catch((loadError) => {
+        if (ignore) return;
+        console.error("DB 저장 계획 목록을 불러오지 못했습니다.", loadError);
+        setSavedPlans([]);
+        setAlertMessage("저장된 계획 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+        setIsAlertModalOpen(true);
+      });
     }, 0);
-    return () => window.clearTimeout(restoreTimer);
-  }, [isTravelMode, planOwnerKey]);
+    return () => {
+      ignore = true;
+      window.clearTimeout(restoreTimer);
+    };
+  }, [isTravelMode, planOwnerKey, refreshSavedPlans]);
 
   useEffect(() => {
     if (!isRecommendationMode || !planOwnerKey) return undefined;
@@ -815,27 +835,6 @@ const MapPage = () => {
       setIsPlanOriginPickMode(false);
       setPlanDetailPlace(null);
       setIsRecommendationPanelOpen(true);
-      const saved = getSavedTrip(planOwnerKey, requestedSavedPlanId, TRAVEL_PLAN_KIND.RECOMMENDATION);
-      if (saved) {
-        planLocationRequestRef.current += 1;
-        setPlanOrigin(saved.origin);
-        setPlanOriginStatus("restored");
-        setActivePlanId(saved.id);
-        setRecommendationCourse({
-          courseSignature: `saved-${saved.places.map((place) => place.placeNo).join("-")}`,
-          placeCount: saved.places.length,
-          totalDistanceMeters: null,
-          places: saved.places.map((place) => ({ ...place, distanceFromPreviousMeters: null })),
-          isSaved: true,
-        });
-        setTop10Overlay(null);
-        moveMapToPlanPoint(saved.origin);
-        return;
-      }
-      if (requestedSavedPlanId) {
-        setAlertMessage("저장된 여행을 찾을 수 없습니다. 현재 계정과 브라우저의 저장 목록을 확인해주세요.");
-        setIsAlertModalOpen(true);
-      }
       setPlanOrigin(null);
       setRecommendationNearbyPlaces([]);
       setRecommendationNearbyState("idle");
@@ -846,7 +845,7 @@ const MapPage = () => {
       window.clearTimeout(initializationTimer);
       planLocationRequestRef.current += 1;
     };
-  }, [isRecommendationMode, planOwnerKey, requestedSavedPlanId, moveMapToPlanPoint, requestCurrentPlanLocation]);
+  }, [isRecommendationMode, planOwnerKey, requestCurrentPlanLocation]);
 
   useEffect(() => {
     if (!isRecommendationMode || !planOrigin) return undefined;
@@ -887,13 +886,13 @@ const MapPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!isPlanMode || !planOwnerKey || !planOrigin) return;
+    if (!isPlanMode || !planOwnerKey || !planOrigin || activePlanId) return;
     saveTravelPlanDraft({
       ownerKey: planOwnerKey,
       origin: planOrigin,
       places: planPlaces,
     });
-  }, [isPlanMode, planOrigin, planOwnerKey, planPlaces]);
+  }, [activePlanId, isPlanMode, planOrigin, planOwnerKey, planPlaces]);
 
   const handlePlanRecommendationsChange = useCallback((places) => {
     setPlanRecommendationPins(toValidPins(places));
@@ -945,92 +944,102 @@ const MapPage = () => {
   }, []);
 
   const handleSaveTravelPlan = useCallback(
-    (name) => {
-      const saved = saveTravelPlan({
-        id: activePlanId,
-        ownerKey: planOwnerKey,
-        kind: TRAVEL_PLAN_KIND.PLAN,
-        name,
-        origin: planOrigin,
-        places: planPlaces,
-      });
-      if (!saved) {
+    async (name) => {
+      if (!name?.trim() || !planOrigin || planPlaces.length === 0) {
         setAlertMessage("계획 이름과 한 개 이상의 장소를 확인해주세요.");
         setIsAlertModalOpen(true);
         return null;
       }
-      clearTravelPlanDraft(planOwnerKey);
-      setSavedPlans(
-        readTravelPlans(planOwnerKey, undefined, TRAVEL_PLAN_KIND.PLAN),
-      );
-      setActivePlanId(saved.id);
 
-      // 브라우저 저장은 위에서 즉시 끝난다. 서버 동기화(/api/plans)는 백그라운드로 진행하고,
-      // 실패해도 로컬 저장 결과(saved)에는 영향을 주지 않는다.
-      (async () => {
-        try {
-          const requestPlaces = saved.places.map((place, index) => ({
-            placeNo: Number(place.placeNo),
-            placeOrder: index + 1,
-          }));
+      const requestPlaces = planPlaces.map((place, index) => ({
+        placeNo: Number(place.placeNo),
+        placeOrder: index + 1,
+      }));
 
-          if (!saved.planNo) {
-            const planNo = await PlanAPI.createPlan({
-              planName: saved.name,
-              xAxis: saved.origin.xAxis,
-              yAxis: saved.origin.yAxis,
-            });
-            if (!planNo) return;
-            await PlanAPI.addPlaces(planNo, requestPlaces);
-            updateTravelPlanBackendId(planOwnerKey, saved.id, planNo);
-          } else {
-            await PlanAPI.editPlaces(saved.planNo, requestPlaces);
-          }
-          setSavedPlans(
-            readTravelPlans(planOwnerKey, undefined, TRAVEL_PLAN_KIND.PLAN),
-          );
-        } catch (backendError) {
-          console.error("계획을 서버에 저장하지 못했습니다.", backendError);
+      try {
+        let planNo = Number(activePlanId);
+        if (Number.isSafeInteger(planNo) && planNo > 0) {
+          await PlanAPI.updatePlan(planNo, {
+            planName: name.trim(),
+            xAxis: planOrigin.xAxis,
+            yAxis: planOrigin.yAxis,
+          });
+          await PlanAPI.editPlaces(planNo, requestPlaces);
+        } else {
+          planNo = await PlanAPI.createPlan({
+            planName: name.trim(),
+            xAxis: planOrigin.xAxis,
+            yAxis: planOrigin.yAxis,
+          });
+          if (!planNo) throw new Error("planNo가 발급되지 않았습니다.");
+          await PlanAPI.addPlaces(planNo, requestPlaces);
         }
-      })();
 
-      return saved;
+        clearTravelPlanDraft(planOwnerKey);
+        await refreshSavedPlans();
+        setActivePlanId(String(planNo));
+        setActivePlanName(name.trim());
+        return { id: String(planNo), planNo, name: name.trim() };
+      } catch (backendError) {
+        console.error("계획을 DB에 저장하지 못했습니다.", backendError);
+        setAlertMessage("계획을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.");
+        setIsAlertModalOpen(true);
+        return null;
+      }
     },
-    [activePlanId, planOrigin, planOwnerKey, planPlaces],
+    [activePlanId, planOrigin, planOwnerKey, planPlaces, refreshSavedPlans],
   );
 
   const handleOpenSavedPlan = useCallback(
-    (plan) => {
-      planLocationRequestRef.current += 1;
-      setPlanOrigin(plan.origin);
-      setPlanPlaces(plan.places);
-      setPlanOriginStatus("restored");
-      setPlanRecommendationPins([]);
-      setTop10Overlay(null);
-      setPlanDetailPlace(null);
-      setActivePlanId(plan.id);
-      setIsPlanPanelOpen(true);
-      moveMapToPlanPoint(plan.origin);
+    async (plan) => {
+      try {
+        const saved = await PlanAPI.getPlan(plan.planNo ?? plan.id);
+        if (!saved) throw new Error("저장된 계획 응답이 없습니다.");
+        planLocationRequestRef.current += 1;
+        setPlanOrigin(saved.origin);
+        setPlanPlaces(saved.places);
+        setPlanOriginStatus("restored");
+        setPlanRecommendationPins([]);
+        setTop10Overlay(null);
+        setPlanDetailPlace(null);
+        setActivePlanId(saved.id);
+        setActivePlanName(saved.name);
+        setIsPlanPanelOpen(true);
+        clearTravelPlanDraft(planOwnerKey);
+        moveMapToPlanPoint(saved.origin);
+        return saved;
+      } catch (loadError) {
+        console.error("DB에 저장된 계획을 불러오지 못했습니다.", loadError);
+        setAlertMessage("저장된 계획을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+        setIsAlertModalOpen(true);
+        return null;
+      }
     },
-    [moveMapToPlanPoint],
+    [moveMapToPlanPoint, planOwnerKey],
   );
 
   const handleDeleteSavedPlan = useCallback(
-    (planId) => {
+    async (planId) => {
       const target = savedPlans.find((plan) => plan.id === planId);
-      deleteTravelPlan(planOwnerKey, planId);
-      setSavedPlans(
-        readTravelPlans(planOwnerKey, undefined, TRAVEL_PLAN_KIND.PLAN),
-      );
-      if (activePlanId === planId) setActivePlanId(null);
-
-      if (target?.planNo) {
-        PlanAPI.deletePlan(target.planNo).catch((backendError) => {
-          console.error("계획을 서버에서 삭제하지 못했습니다.", backendError);
-        });
+      if (!target?.planNo) return;
+      try {
+        await PlanAPI.deletePlan(target.planNo);
+        await refreshSavedPlans();
+        if (activePlanId === planId) {
+          setActivePlanId(null);
+          setActivePlanName("");
+          setPlanOrigin(null);
+          setPlanOriginStatus("idle");
+          setPlanPlaces([]);
+          clearTravelPlanDraft(planOwnerKey);
+        }
+      } catch (backendError) {
+        console.error("계획을 DB에서 삭제하지 못했습니다.", backendError);
+        setAlertMessage("계획을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.");
+        setIsAlertModalOpen(true);
       }
     },
-    [activePlanId, planOwnerKey, savedPlans],
+    [activePlanId, planOwnerKey, refreshSavedPlans, savedPlans],
   );
 
   // 추천 모드 저장: 브라우저에 별도로 남기지 않고, 클릭 시점에 바로 /api/plans 에 저장한 뒤
@@ -1045,8 +1054,9 @@ const MapPage = () => {
     }));
     const planName = "추천모드 저장";
 
+    let planNo;
     try {
-      const planNo = await PlanAPI.createPlan({
+      planNo = await PlanAPI.createPlan({
         planName,
         xAxis: planOrigin.xAxis,
         yAxis: planOrigin.yAxis,
@@ -1060,11 +1070,9 @@ const MapPage = () => {
       return false;
     }
 
-    // 계획 모드 진입 초기화 효과가 이 초안을 그대로 불러와 '계획' 화면에 보여준다.
-    saveTravelPlanDraft({ ownerKey: planOwnerKey, origin: planOrigin, places });
-    navigate("/map?mode=j");
+    navigate(`/map?mode=j&savedPlan=${planNo}`);
     return true;
-  }, [navigate, planOrigin, planOwnerKey, recommendationCourse]);
+  }, [navigate, planOrigin, recommendationCourse]);
 
   const handleStartNewPlan = useCallback(() => {
     clearTravelPlanDraft(planOwnerKey);
@@ -1073,6 +1081,7 @@ const MapPage = () => {
     setTop10Overlay(null);
     setPlanDetailPlace(null);
     setActivePlanId(null);
+    setActivePlanName("");
     requestCurrentPlanLocation();
   }, [planOwnerKey, requestCurrentPlanLocation]);
 
@@ -1968,7 +1977,7 @@ const MapPage = () => {
           key={`plan-mode-${location.key}`}
           isOpen={isPlanPanelOpen && !planDetailPlace}
           initialView={requestedSavedPlanId ? "plan" : location.state?.planView === "saved" ? "saved" : "category"}
-          initialPlanName={getSavedTrip(planOwnerKey, requestedSavedPlanId, TRAVEL_PLAN_KIND.PLAN)?.name || ""}
+          initialPlanName={activePlanName}
           origin={planOrigin}
           originStatus={planOriginStatus}
           typeOptions={typeOptions}

@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { FaUserCircle, FaMapMarkerAlt, FaRoute } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import { Modal } from "../../components/Modal/Modal";
-import { deleteTravelPlan, TRAVEL_PLAN_KIND, TRAVEL_PLAN_STORAGE_KEY } from "../map/utils/travelPlanStorage";
-import { formatSavedDate, getMyTrips, getProfileImage, getTravelOwnerKey, getTripMapUrl } from "./myPageModel";
+import { PlanAPI } from "../../api/plan";
+import { formatSavedDate, getProfileImage, getTravelOwnerKey, getTripMapUrl } from "./myPageModel";
 import AccountActions from "./AccountActions";
 import ProfileEditor from "./ProfileEditor";
 import SensorSection from "./SensorSection";
@@ -17,36 +17,57 @@ export default function MyPageDashboard() {
 }
 
 function Dashboard({ user }) {
-  const ownerKey = getTravelOwnerKey(user);
-  const [trips, setTrips] = useState(() => getMyTrips(user));
+  const [trips, setTrips] = useState([]);
+  const [isTripsLoading, setIsTripsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [error, setError] = useState("");
   const [failedImage, setFailedImage] = useState(null);
   const [editing, setEditing] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const profileImage = getProfileImage(user);
-  const visibleTrips = trips.filter((trip) => trip.kind === TRAVEL_PLAN_KIND.PLAN);
+  const visibleTrips = trips;
 
   useEffect(() => {
-    const refresh = () => setTrips(getMyTrips(user));
-    const handleStorage = (event) => { if (!event.key || event.key === TRAVEL_PLAN_STORAGE_KEY) refresh(); };
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener("focus", refresh);
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("focus", refresh);
+    let ignore = false;
+    const loadTrips = async () => {
+      setIsTripsLoading(true);
+      setError("");
+      try {
+        const plans = await PlanAPI.getPlans();
+        const details = await Promise.all(
+          plans.map((plan) => PlanAPI.getPlan(plan.planNo)),
+        );
+        if (!ignore) setTrips(details.filter(Boolean));
+      } catch (loadError) {
+        console.error("저장된 계획을 불러오지 못했습니다.", loadError);
+        if (!ignore) {
+          setTrips([]);
+          setError("저장된 계획을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+        }
+      } finally {
+        if (!ignore) setIsTripsLoading(false);
+      }
     };
-  }, [user]);
+    loadTrips();
+    return () => {
+      ignore = true;
+    };
+  }, [user?.memberNo]);
 
-  const confirmDelete = () => {
-    if (!ownerKey || !deleteTarget) return;
+  const confirmDelete = async () => {
+    if (!deleteTarget || isDeleting) return;
+    setIsDeleting(true);
     try {
-      deleteTravelPlan(ownerKey, deleteTarget.id);
-      setTrips(getMyTrips(user));
+      await PlanAPI.deletePlan(deleteTarget.planNo ?? deleteTarget.id);
+      setTrips((current) => current.filter((trip) => trip.id !== deleteTarget.id));
       setDeleteTarget(null);
       setError("");
-    } catch {
-      setError("저장 공간에 접근할 수 없어 삭제하지 못했습니다. 브라우저 설정을 확인해주세요.");
+    } catch (deleteError) {
+      console.error("계획을 삭제하지 못했습니다.", deleteError);
+      setError("계획을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -68,8 +89,8 @@ function Dashboard({ user }) {
       <SensorSection />
       <S.Section aria-label="저장한 여행">
         <S.SectionHeading><div><h2>나의 여행 계획</h2><p>직접 골라 연결한 나만의 여행입니다.</p></div><Link to="/map?mode=j">+ 계획 만들기</Link></S.SectionHeading>
-        <S.Notice>현재 계정으로 이 브라우저에 저장한 여행만 표시됩니다. 다른 기기와 동기화되지 않으며, 브라우저 데이터를 삭제하면 사라질 수 있습니다.</S.Notice>
-        {visibleTrips.length ? <S.TripList>{visibleTrips.map((trip) => <S.Trip key={trip.id}>
+        <S.Notice>현재 계정으로 DB에 저장한 여행 계획입니다. 로그인하면 다른 기기에서도 확인할 수 있습니다.</S.Notice>
+        {isTripsLoading ? <S.Notice>저장된 계획을 불러오는 중입니다.</S.Notice> : visibleTrips.length ? <S.TripList>{visibleTrips.map((trip) => <S.Trip key={trip.id}>
           <h3>{trip.name}</h3><time>{formatSavedDate(trip.updatedAt || trip.createdAt)} 저장 · {trip.places.length}개 장소</time>
           <S.Origin><FaMapMarkerAlt />출발: {trip.origin.placeName || trip.origin.address || "지도에서 선택한 위치"}</S.Origin>
           <ol>{trip.places.map((place, index) => <li key={`${place.placeNo}-${index}`}>{place.placeName || `장소 ${place.placeNo}`}</li>)}</ol>
@@ -80,7 +101,7 @@ function Dashboard({ user }) {
     </S.Layout>
     {editing && <ProfileEditor user={user} onClose={() => setEditing(false)} onSaved={(message) => { setProfileMessage(message); setEditing(false); }} />}
     <Modal isOpen={Boolean(deleteTarget)} title="저장한 여행 삭제" message={`“${deleteTarget?.name || ""}”을 삭제하시겠습니까? 삭제한 여행은 복구할 수 없습니다.`}
-      confirmText="삭제" confirmVariant="danger" onConfirm={confirmDelete} onCancel={() => setDeleteTarget(null)}>
+      confirmText={isDeleting ? "삭제 중..." : "삭제"} confirmVariant="danger" pending={isDeleting} onConfirm={confirmDelete} onCancel={() => setDeleteTarget(null)}>
       {error && <p role="alert">{error}</p>}
     </Modal>
   </S.Container></S.Page>;
