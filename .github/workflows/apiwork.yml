@@ -1,4 +1,4 @@
-```yaml
+yaml
 name: Deploy React App
 
 on:
@@ -59,4 +59,3 @@ jobs:
             상태: ${{ job.status }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-```
