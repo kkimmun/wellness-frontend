@@ -10,7 +10,6 @@ import {
 export default function ReviewCard({ author, date, rating, content }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // 긴 텍스트인지 판별 (간단하게 100자 기준으로 설정)
   const isLongText = content.length > 100;
 
   return (

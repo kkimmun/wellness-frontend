@@ -15,7 +15,7 @@ const TabItem = styled.button`
   color: ${({ $isActive }) =>
     $isActive ? theme.colors.primary : theme.colors.textMuted};
 
-  /* 활성 탭 하단 밑줄 표시 */
+  
   border-bottom: 2px solid
     ${({ $isActive }) => ($isActive ? theme.colors.primary : "transparent")};
   transition: all 0.2s ease;

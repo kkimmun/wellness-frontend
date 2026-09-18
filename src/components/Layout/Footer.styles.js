@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { theme } from "../../styles/theme"; // 명세서 4.2 기준 직접 import
+import { theme } from "../../styles/theme";
 
 export const FooterContainer = styled.footer`
   width: 100%;
@@ -8,7 +8,7 @@ export const FooterContainer = styled.footer`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 20px ${theme.spacing.lg}; /* 48px 20px 24px */
+  padding: 48px 20px ${theme.spacing.lg}; 
   box-sizing: border-box;
 
   @media (max-width: 768px) {
@@ -42,7 +42,7 @@ export const FooterNavItem = styled.li`
   letter-spacing: -0.02em;
   text-align: center;
 
-  /* 메인 텍스트 hover 투명도 적용 */
+  
   & > span {
     transition: opacity 0.15s ease, color 0.15s ease;
   }
@@ -60,7 +60,7 @@ export const FooterNavItem = styled.li`
 export const CopyrightText = styled.p`
   margin-top: 28px;
   color: rgba(255, 255, 255, 0.75);
-  font-size: ${theme.fontSize.xs}; /* 11px */
+  font-size: ${theme.fontSize.xs}; 
   text-align: center;
   letter-spacing: 0.02em;
   line-height: 1.6;

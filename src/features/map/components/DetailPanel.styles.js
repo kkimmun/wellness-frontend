@@ -4,22 +4,22 @@ import { theme } from "../../../styles/theme";
 export const PanelContainer = styled.div`
   position: absolute;
   top: 0;
-  left: 0; /* 우측(right)에서 좌측(left)으로 변경 */
-  width: 540px; /* 검색 패널(540px)과 동일한 폭으로 넓힘 */
+  left: 0; 
+  width: 540px; 
   height: 100vh;
   background-color: ${theme.colors.bgWhite};
-  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.1); /* 그림자 방향 변경 */
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.1); 
   z-index: 200;
   display: flex;
   flex-direction: column;
-  transform: ${({ $isOpen }) => ($isOpen ? "translateX(0)" : "translateX(-100%)")}; /* 음수 100%로 변경 */
+  transform: ${({ $isOpen }) => ($isOpen ? "translateX(0)" : "translateX(-100%)")}; 
   transition: transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
   visibility: ${({ $isOpen }) => ($isOpen ? "visible" : "hidden")};
   pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
   overflow-y: auto;
   font-family: 'Pretendard', sans-serif;
 
-  /* 스크롤바 숨기기 */
+  
   &::-webkit-scrollbar {
     display: none;
   }
@@ -80,7 +80,7 @@ export const ActionIcons = styled.div`
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background-color: #81D4FA; /* 연한 파란색 */
+    background-color: #81D4FA; 
     color: white;
     display: flex;
     justify-content: center;
@@ -139,8 +139,8 @@ export const CarouselItem = styled.div`
   position: absolute;
   top: 50%;
   left: 50%;
-  margin-top: -110px; /* height 220 / 2 */
-  margin-left: -160px; /* width 320 / 2 */
+  margin-top: -110px; 
+  margin-left: -160px; 
   width: 320px;
   height: 220px;
   border-radius: 16px;
@@ -165,7 +165,7 @@ export const CarouselItem = styled.div`
   }
 
   &.prev {
-    /* 여백을 두기 위해 기존보다 더 멀리(-150px) 보냄 */
+    
     transform: translateX(-150px) scale(0.85);
     z-index: 2;
     opacity: 0.5;

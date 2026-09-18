@@ -58,8 +58,7 @@ export default function ProfileEditor({ user, onClose, onSaved }) {
     try {
       if (section === "password") {
         await MemberProfileAPI.updatePassword(currentPassword, newPassword);
-        // 서버 변경 성공 후에만 인증을 정리하며, 비밀번호는 저장소에 기록하지 않는다.
-        try { await logout(); } catch { /* 로그아웃 실패와 관계없이 로컬 인증은 정리된다. */ }
+        try { await logout(); } catch {   }
         window.location.replace("/login"); return;
       }
       const updated = section === "name" ? await MemberProfileAPI.updateName(name)

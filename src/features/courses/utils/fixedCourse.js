@@ -13,7 +13,6 @@ export function fixedCourseStops(info) {
   if (!waypoints.every((place) => isPlaceNumber(place?.placeNo))) {
     throw new Error("고정 코스의 경유지 정보를 확인할 수 없습니다.");
   }
-  // 백엔드의 등록 순서를 유지한다. 추천 API로 방문 순서를 다시 계산하지 않는다.
   if (waypoints.every((place) => Number.isFinite(place.waypointSequence))) {
     waypoints.sort((left, right) => left.waypointSequence - right.waypointSequence);
   }
@@ -67,7 +66,6 @@ export function buildFixedCourse(info, pins, routeData) {
 
 export async function fetchFixedCourseRoute(info, signal) {
   const stops = fixedCourseStops(info);
-  // 구간별 조회는 경유지 수 제한과 무관하게 고정 코스의 순서를 보존한다.
   const segments = await Promise.all(stops.slice(1).map(async (destination, index) => {
     const data = await RouteAPI.findRoutes({
       startPlaceNo: stops[index].placeNo,

@@ -16,10 +16,8 @@ export default function AccountActions({ onClose }) {
     setPending(true);
     setError("");
     if (action === "logout") {
-      // 인증 가드가 이 컴포넌트를 언마운트해도 랜딩 이동을 보장한다.
-      // 쿠키 정리 요청이 끝난 다음 이동하여 로그아웃 요청을 중간에 끊지 않는다.
       const request = logout();
-      try { await request; } catch { /* 로컬 인증은 logout의 finally에서 정리된다. */ }
+      try { await request; } catch {   }
       onClose?.();
       window.location.replace("/");
       return;

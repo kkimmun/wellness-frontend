@@ -10,7 +10,6 @@ import ProfileEditor from "./ProfileEditor";
 import SensorSection from "./SensorSection";
 import * as S from "./MyPageDashboard.styles";
 
-// 계정이 바뀌면 선택 탭·삭제 확인 대상까지 함께 초기화한다.
 export default function MyPageDashboard() {
   const { user } = useAuth();
   return <Dashboard key={getTravelOwnerKey(user) || "unknown"} user={user} />;

@@ -1,7 +1,6 @@
 import { FaMapMarkerAlt, FaPhoneAlt, FaInfoCircle } from "react-icons/fa";
 import { InfoSection, InfoRow, BottomArea } from "./DetailPanel.styles";
 
-// 계획 모드 연동: 기존 경로찾기 버튼을 그대로 유지하면서 계획 화면에서만 버튼 문구와 동작을 바꾼다.
 const BasicInfoTab = ({ place, onFindRoute, actionLabel = "경로찾기" }) => {
   const phoneNumber = [place?.phoneNumber, place?.phone]
     .map((value) => String(value ?? "").trim())
@@ -31,7 +30,6 @@ const BasicInfoTab = ({ place, onFindRoute, actionLabel = "경로찾기" }) => {
           </div>
         </InfoRow>
 
-        {/* 장소 상세 개선: DB 설명을 표시하고 비어 있으면 명확한 빈 상태 문구를 제공한다. */}
         <InfoRow>
           <div className="label-group">
             <FaInfoCircle size={14} />

@@ -5,7 +5,6 @@ import { ProfilePopoverCard, Title, ProfileSection, ProfileImage, NameRow, Actio
 import { useAuth } from "../../context/authContextValue";
 import { getProfileImage } from "./myPageModel";
 
-// 헤더의 빠른 메뉴. 실제 회원정보와 여행 목록은 별도의 마이페이지에서 확인한다.
 export default function MyPage({ onClose }) {
   const { user } = useAuth();
   const navigate = useNavigate();

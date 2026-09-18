@@ -57,7 +57,7 @@ export const RatingSummaryBox = styled.div`
 
   .rating-graph {
     flex: 1;
-    height: 100px; /* recharts 높이 확보 */
+    height: 100px; 
     display: flex;
     align-items: center;
     justify-content: center;

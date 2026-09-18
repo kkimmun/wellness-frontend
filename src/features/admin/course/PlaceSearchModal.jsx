@@ -10,7 +10,6 @@ import * as S from "./PlaceSearchModal.styles";
 
 const PAGE_SIZE = 5;
 
-// 전체 명소를 제공하는 기존 API를 재사용하고 결과 내에서 이름 검색과 페이지 이동을 처리한다.
 export default function PlaceSearchModal({ targetLabel, currentPlaceNo, excludedPlaceNos, onSelect, onClose }) {
   const [response, setResponse] = useState({ places: [], status: "loading", error: "" });
   const [input, setInput] = useState("");

@@ -1,12 +1,6 @@
 import styled from "styled-components";
 import { theme } from "../../styles/theme";
 
-/**
- * DropdownSelect (필터링용 셀렉트 박스)
- *
- * 기본 브라우저 화살표를 숨기고 커스텀 화살표(SVG data URI)를 적용한다.
- * 관리자 목록 화면의 검색 대상(target) 선택 등에 사용한다.
- */
 export const DropdownSelect = styled.select`
   appearance: none;
   -webkit-appearance: none;

@@ -27,7 +27,7 @@ export const UploadTrigger = styled.label`
     color: ${({ theme }) => theme.colors.primary};
   }
 
-  /* 숨겨진 실제 file input */
+  
   input {
     display: none;
   }

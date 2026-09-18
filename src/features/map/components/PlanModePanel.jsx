@@ -58,8 +58,6 @@ const PlanModePanel = ({
   const requestControllerRef = useRef(null);
   const previousPlaceCountRef = useRef(places.length);
 
-  // 인증 정보가 늦게 도착해 복원 이름이 바뀐 경우만 동기화한다.
-  // 일반 재렌더링에서는 사용자가 입력 중인 이름을 유지한다.
   if (previousInitialPlanName !== initialPlanName) {
     setPreviousInitialPlanName(initialPlanName);
     setPlanName(initialPlanName);
@@ -87,8 +85,6 @@ const PlanModePanel = ({
   );
 
   useEffect(() => {
-    // 계획 모드: 추천 카드와 상세 패널 어느 쪽에서 추가해도 계획 흐름으로 동일하게 이동한다.
-    // 저장 목록으로 진입한 경우에는 늦게 복원된 초안이 저장 목록 화면을 덮지 않게 한다.
     if (
       initialView !== VIEW.SAVED &&
       places.length > previousPlaceCountRef.current
@@ -169,7 +165,6 @@ const PlanModePanel = ({
     }
   };
 
-  // 계획 모드: 저장 목록에서 계획을 선택하면 지도 상태를 복원하고 계획 내용을 즉시 보여준다.
   const openSavedPlan = async (plan) => {
     const restored = await onOpenSavedPlan(plan);
     if (!restored) return;
@@ -178,7 +173,6 @@ const PlanModePanel = ({
     setView(VIEW.PLAN);
   };
 
-  // 계획 모드: 새 계획은 저장된 목록을 유지한 채 현재 초안만 비우고 추천 단계로 돌아간다.
   const startNewPlan = () => {
     requestControllerRef.current?.abort();
     setRecommendations([]);

@@ -1,15 +1,6 @@
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { PaginationNav, PageButton, Ellipsis } from "./Pagination.styles";
 
-/**
- * 리스트 하단 페이지 이동 컨트롤러
- *
- * Props
- * - currentPage: 현재 페이지 (1부터 시작)
- * - totalPages: 전체 페이지 수
- * - onPageChange: (page) => void  선택한 페이지(1부터)를 전달
- * - pageRange: 현재 페이지 양옆으로 보여줄 페이지 개수 (기본 2)
- */
 const Pagination = ({
   currentPage = 1,
   totalPages = 1,
@@ -23,7 +14,6 @@ const Pagination = ({
     onPageChange?.(page);
   };
 
-  // 표시할 페이지 번호 목록 계산 (1 ... a b [c] d e ... last)
   const pages = [];
   const start = Math.max(2, currentPage - pageRange);
   const end = Math.min(totalPages - 1, currentPage + pageRange);
