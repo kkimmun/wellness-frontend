@@ -20,7 +20,7 @@ export const Card = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  align-items: stretch; /* 자식 요소 가로 꽉 채움 */
+  align-items: stretch; 
   padding: ${theme.spacing.xxl};
   border-radius: ${theme.radius.lg};
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
@@ -97,7 +97,7 @@ export const InputGroup = styled.div`
     color: ${theme.colors.textSecondary};
   }
 
-  /* BaseInput과 PasswordInput이 flex 하위에서 100% 너비를 갖도록 강제 */
+  
   & > * {
     width: 100% !important;
     box-sizing: border-box !important;

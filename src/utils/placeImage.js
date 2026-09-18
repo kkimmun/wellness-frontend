@@ -1,4 +1,3 @@
-// wellness_image 프로젝트에서 업로드한 유형별 공통 이미지. DB 이미지 행을 만들지 않는다.
 const defaults = [
   {
     "typeDetailNo": 2,

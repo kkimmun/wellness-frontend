@@ -26,7 +26,6 @@ export const MapStatus = styled.div`
   }
 `;
 
-/* 대중교통 경로 색상: 지도 경로의 도보·버스·지하철 색을 설명하는 범례다. */
 export const RouteLegend = styled.div`
   position: absolute;
   right: 24px;
@@ -61,7 +60,6 @@ export const LegendLine = styled.i`
   border-radius: ${theme.radius.pill};
 `;
 
-/* 길찾기 UX 개선: 타입·태그 토글처럼 패널 상태만 여닫는 원형 버튼이다. */
 export const RouteReopenButton = styled.button`
   position: absolute;
   top: 50%;
@@ -122,10 +120,10 @@ export const MapPickNotice = styled.div`
   }
 
   @media (max-width: 768px) {
-    /* 검색창이 있던 자리(top: 12px)로 올림 — 바텀시트와 겹치지 않음 */
+    
     top: 12px;
     left: 12px;
-    transform: none;  /* 가운데 정렬 대신 좌측 고정 */
+    transform: none;  
     right: 12px;
     justify-content: center;
     font-size: 12px;
@@ -150,7 +148,7 @@ export const MapPinToolbar = styled.div`
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
 
-  /* 모바일: FloatingTags 제거 후 상단 우측 배치, 바텀시트(z-index: 250) 아래에 위치 */
+  
   @media (max-width: 768px) {
     top: 76px;
     right: 12px;
@@ -205,7 +203,7 @@ export const MapPinCreateButton = styled.button`
     background: ${({ $color }) => `${$color}18`};
   }
 
-  /* 모바일: 핀 아이콘 숨기고 텍스트만 pill 버튼 */
+  
   @media (max-width: 768px) {
     flex-direction: row;
     width: auto;
@@ -235,7 +233,7 @@ export const FloatingTags = styled.div`
   align-items: center;
   gap: 8px;
   z-index: 10;
-  pointer-events: none; /* 컨테이너 자체는 터치 통과 → 지도 드래그 허용 */
+  pointer-events: none; 
   
   @media (max-width: 1024px) {
     top: 16px;
@@ -247,14 +245,13 @@ export const FloatingTags = styled.div`
   }
 `;
 
-/* SearchPanel styles moved */
 
 export const TagList = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
   overflow: hidden;
-  pointer-events: auto; /* FloatingTags의 none을 자식에서 다시 활성화 */
+  pointer-events: auto; 
   
   max-width: ${({ $isOpen }) => ($isOpen ? "750px" : "0px")};
   opacity: ${({ $isOpen }) => ($isOpen ? "1" : "0")};
@@ -269,13 +266,12 @@ export const TagList = styled.div`
     gap: 6px;
     max-width: none;
     width: 100%;
-    /* 모바일: 열림/닫힘을 display로 확실하게 제어 */
+    
     display: ${({ $isOpen }) => ($isOpen ? "flex" : "none")};
     opacity: 1;
   }
 `;
 
-/* DB 장소 필터 연동: 타입과 태그의 실제 DB 값을 선택하는 공통 셀렉트다. */
 export const FilterSelect = styled.select`
   min-width: 170px;
   height: 50px;
@@ -308,14 +304,13 @@ export const FilterSelect = styled.select`
 
   @media (max-width: 768px) {
     min-width: 0;
-    width: 100%;             /* FloatingTags max-width 안에서 꽉 채움 */
+    width: 100%;             
     padding: 7px 28px 7px 12px;
     font-size: 12px;
     border-radius: 10px;
   }
 `;
 
-/* DB 장소 필터 연동: 선택한 타입·태그 조건을 해제하고 전체 핀으로 복원한다. */
 export const FilterResetButton = styled.button`
   min-width: 88px;
   height: 50px;
@@ -345,7 +340,7 @@ export const FilterResetButton = styled.button`
 
   @media (max-width: 768px) {
     min-width: 0;
-    width: 100%;             /* FloatingTags max-width 안에서 꽉 채움 */
+    width: 100%;             
     padding: 7px 12px;
     font-size: 12px;
     border-radius: 10px;
@@ -369,13 +364,13 @@ export const ToggleButton = styled.button`
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
-  pointer-events: auto; /* FloatingTags의 none을 자식에서 다시 활성화 */
+  pointer-events: auto; 
 
   svg {
     transform: translateX(1.5px);
   }
 
-  /* 모바일 pill에서만 보이는 텍스트 레이블 - 데스크톱에서는 숨김 */
+  
   .toggle-label {
     display: none;
   }
@@ -401,12 +396,11 @@ export const ToggleButton = styled.button`
     }
 
     .toggle-label {
-      display: inline; /* 모바일 pill에서만 "필터" / "접기" 텍스트 표시 */
+      display: inline; 
     }
   }
 `;
 
-// 커스텀 오버레이 스타일 (마커 클릭 시 뜨는 카드)
 export const OverlayCard = styled.div`
   background: white;
   border-radius: 8px;
@@ -417,11 +411,11 @@ export const OverlayCard = styled.div`
   gap: 8px;
   width: 260px;
   position: relative;
-  /* 마커 크기(24px)를 고려하여 꼬리가 핀을 정확히 가리키도록 여백 조정 */
+  
   margin-bottom: 22px; 
   z-index: 100;
 
-  /* 말풍선 꼬리 */
+  
   &::after {
     content: '';
     position: absolute;
@@ -452,12 +446,12 @@ export const OverlayCard = styled.div`
         cursor: pointer;
       }
       .btn-start {
-        background-color: #2196F3; /* 파란색 출발 버튼 */
+        background-color: #2196F3; 
       }
       .btn-end {
-        background-color: #FF5722; /* 주황색 도착 버튼 */
+        background-color: #FF5722; 
       }
-      /* 계획 모드 연동: 장소 요약에서 경로찾기 대신 계획에 바로 추가한다. */
+      
       .btn-plan {
         background-color: #46558A;
       }
@@ -547,7 +541,7 @@ export const OverlayCard = styled.div`
     }
   }
 
-  /* ── 모바일: 카드 전체를 확실하게 축소 ── */
+  
   @media (max-width: 768px) {
     width: 170px !important;
     padding: 7px 8px !important;

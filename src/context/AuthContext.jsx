@@ -13,13 +13,12 @@ export const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState({
     status: localStorage.getItem("accessToken")
       ? "loading"
-      : "unauthenticated", // "loading" | "authenticated" | "unauthenticated"
+      : "unauthenticated",
     user: null,
-    role: null, // accessToken payload에서 디코딩한 권한 값
+    role: null,
   });
 
   const clearAuth = useCallback(() => {
-    // 진행 중인 이전 회원정보 조회가 뒤늦게 로그인 상태를 되살리지 못하게 한다.
     authRequestIdRef.current += 1;
     localStorage.removeItem("accessToken");
     localStorage.removeItem("memberId");
@@ -48,11 +47,10 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // 권한은 localStorage에 저장된 accessToken payload에서 추출 (만료 시 null)
       const role = getValidRole(localStorage.getItem("accessToken"));
       setAuthState({
         status: "authenticated",
-        user: response.data || response, // 응답 구조에 맞게 조정
+        user: response.data || response,
         role,
       });
     } catch {
@@ -62,13 +60,11 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(() => {
     const logoutRequest = AuthAPI.logout();
-    // 서버 응답을 기다리는 동안 프로필이 다시 열리지 않도록 즉시 비회원 처리한다.
     clearAuth();
     return logoutRequest;
   }, [clearAuth]);
 
   const applyProfile = useCallback((profile) => {
-    // 늦게 도착한 저장 응답이 로그아웃 또는 다른 계정의 정보를 덮지 않게 한다.
     if (profile?.memberNo == null) return;
     authRequestIdRef.current += 1;
     setAuthState((current) => {

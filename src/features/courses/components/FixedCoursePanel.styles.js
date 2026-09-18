@@ -37,7 +37,7 @@ export const PanelContainer = styled.section`
     padding: ${theme.spacing.md};
   }
 
-  /* 모바일: 하단 바텀시트 */
+  
   @media (max-width: 768px) {
     position: fixed;
     bottom: 0;
@@ -58,7 +58,6 @@ export const PanelContainer = styled.section`
   }
 `;
 
-/* 모바일에서만 표시되는 드래그 핸들 */
 export const DragHandle = styled.div`
   display: none;
 
@@ -66,7 +65,7 @@ export const DragHandle = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
-    width: calc(100% + 32px); /* 좌우 padding 보정 */
+    width: calc(100% + 32px); 
     margin: 0 -16px;
     padding: 10px 0 12px;
     flex-shrink: 0;

@@ -30,7 +30,6 @@ const Login = () => {
   const location = useLocation();
   const { checkAuth } = useAuth();
   const { info } = useToast();
-  // 헷갈림을 방지하기 위해 payload로 변수명 변경 및 백엔드 명세 키값 적용
   const [payload, setPayload] = useState({
     memberId: "",
     memberPwd: "",

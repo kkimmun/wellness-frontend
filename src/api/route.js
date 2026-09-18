@@ -19,7 +19,6 @@ const serializeRouteParams = (params) => {
 
 export const RouteAPI = {
   searchOriginPlaces: async (query, signal) => {
-    // 지도 검색과 동일한 카카오 장소 검색을 사용한다. 외부 ID는 DB 번호가 아니다.
     const externalSearch = new Promise((resolve, reject) => {
       const cancel = () => {
         const error = new Error("검색이 취소되었습니다.");
@@ -59,7 +58,6 @@ export const RouteAPI = {
       error.code = "ERR_CANCELED";
       throw error;
     }
-    // 일반 장소 검색 실패를 관광지 검색 성공으로 숨기지 않는다.
     if (external.status === "rejected") throw external.reason;
     const registered = local.status === "fulfilled" && Array.isArray(local.value)
       ? local.value : [];

@@ -55,8 +55,6 @@ const Header = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // MyPage의 확인 모달은 Portal로 body 아래에 렌더링된다.
-      // 모달 클릭을 외부 클릭으로 처리하면 click 이벤트 전에 MyPage가 언마운트된다.
       if (event.target.closest?.('[role="dialog"]')) return;
 
       const isOutsideDesktop =
@@ -66,7 +64,6 @@ const Header = () => {
         mobileDropdownRef.current &&
         !mobileDropdownRef.current.contains(event.target);
 
-      // 데스크톱과 모바일 양쪽 영역 밖을 클릭했을 때만 닫기
       if (isOutsideDesktop && isOutsideMobile) {
         setProfileOpen(false);
       }
@@ -165,7 +162,6 @@ const Header = () => {
           </NavItem>
         </DesktopNavList>
 
-        {/* 데스크톱 마이페이지/로그인 아이콘 + 팝업 메뉴 */}
         <UserIconWrapper $desktop ref={desktopDropdownRef}>
           <DesktopUserIconArea as="button" type="button" aria-label={isLoggedIn ? "내 정보 메뉴" : "로그인"} aria-expanded={isLoggedIn && profileOpen} style={{ border: 0, background: "none" }} onClick={handleUserIconClick}>
             {profileImg ? (
@@ -183,7 +179,6 @@ const Header = () => {
         </UserIconWrapper>
 
         <MobileRightGroup>
-          {/* 모바일 마이페이지/로그인 아이콘 + 팝업 메뉴 */}
           <UserIconWrapper ref={mobileDropdownRef}>
             <UserIconArea as="button" type="button" aria-label={isLoggedIn ? "내 정보 메뉴" : "로그인"} aria-expanded={isLoggedIn && profileOpen} style={{ border: 0, background: "none" }} onClick={handleUserIconClick}>
               {profileImg ? (

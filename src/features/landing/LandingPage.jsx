@@ -50,7 +50,6 @@ const LandingPage = () => {
         </LogoGroup>
 
         <HeaderAuthA>
-          {/* 데스크탑 메뉴 */}
           <div className="desktop-menu">
             <button className="btn-ghost" onClick={() => navigate('/map')}>
               <FaMapMarkedAlt /> 지도 둘러보기
@@ -76,14 +75,12 @@ const LandingPage = () => {
             )}
           </div>
           
-          {/* 모바일 햄버거 버튼 */}
           <button aria-label="메뉴 열기 또는 닫기" aria-expanded={isMobileMenuOpen} className="hamburger" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             {isMobileMenuOpen ? <FiX /> : <FiMenu />}
           </button>
         </HeaderAuthA>
       </Header>
 
-      {/* 모바일 열림 메뉴 */}
       <MobileMenu $isOpen={isMobileMenuOpen}>
         <button className="btn-ghost" onClick={() => navigate('/map')}>
           <FaMapMarkedAlt /> 지도 둘러보기

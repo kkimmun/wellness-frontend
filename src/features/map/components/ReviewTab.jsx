@@ -14,7 +14,6 @@ import {
   LoadingMore,
 } from "./ReviewTab.styles";
 
-// 프로필 이미지가 없거나(기본값) 로드에 실패하면 아이콘으로 대체한다.
 const ReviewerAvatar = ({ src, alt }) => {
   const [failed, setFailed] = useState(false);
   if (!src || failed) {
@@ -23,7 +22,6 @@ const ReviewerAvatar = ({ src, alt }) => {
   return <img src={src} alt={alt} onError={() => setFailed(true)} />;
 };
 
-// 서버가 내려주는 createDate 문자열을 화면 표기용으로 정규화한다.
 const formatDate = (raw) => {
   if (!raw) return "";
   const parsed = new Date(String(raw).replace(" ", "T"));
@@ -35,7 +33,6 @@ const formatDate = (raw) => {
   });
 };
 
-// ReviewItemDto -> 화면에서 쓰는 형태로 변환
 const toReview = (dto) => ({
   id: dto.reviewNo,
   memberNo: dto.memberNo,
@@ -74,7 +71,6 @@ const ReviewTab = ({ place }) => {
   const loaderRef = useRef(null);
   const fileInputRef = useRef(null);
   const writeBoxRef = useRef(null);
-  // 장소가 빠르게 바뀔 때 뒤늦게 도착한 응답이 목록을 덮어쓰지 않도록 한다.
   const requestIdRef = useRef(0);
 
   const currentMemberNo = user?.memberNo ?? null;
@@ -122,15 +118,11 @@ const ReviewTab = ({ place }) => {
     [placeNo],
   );
 
-  // DetailPanel이 placeNo마다 새로 마운트되므로, 첫 페이지만 불러오면 된다.
   useEffect(() => {
     if (!placeNo) return;
-    // 데이터 페칭용 effect. loadPage 내부의 로딩 상태 갱신은 의도된 동작이다.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPage(1);
   }, [placeNo, loadPage]);
 
-  // 무한 스크롤: 로더가 보이면 다음 페이지를 이어서 불러온다.
   useEffect(() => {
     if (!hasNext || isLoading) return undefined;
     const target = loaderRef.current;
@@ -205,13 +197,10 @@ const ReviewTab = ({ place }) => {
 
     const selectedFile = fileInputRef.current?.files?.[0];
     if (selectedFile) {
-      // 새 이미지 첨부: 기존 이미지를 이 파일로 교체한다.
       formData.append("image", selectedFile);
     } else if (editingReviewId && isImageDeleted) {
-      // 빈 파트를 보내면 서버가 기존 리뷰 이미지를 삭제한다.
       formData.append("image", new Blob([]), "");
     }
-    // 수정 중 이미지에 손대지 않았으면 image 파트를 아예 보내지 않아 기존 이미지를 유지한다.
 
     setIsSubmitting(true);
     try {
@@ -246,7 +235,6 @@ const ReviewTab = ({ place }) => {
 
   return (
     <ReviewContainer>
-      {/* 평점 요약 */}
       <RatingSummaryBox $hasReviews={totalReviewCount > 0}>
         <div className="avg-rating">
           <FaStar className="star" />
@@ -285,7 +273,6 @@ const ReviewTab = ({ place }) => {
         </div>
       </RatingSummaryBox>
 
-      {/* 리뷰 작성 / 수정 */}
       <ReviewWriteBox ref={writeBoxRef}>
         <div className="header">
           <h3>{editingReviewId ? "리뷰 수정하기" : "리뷰 남기기"}</h3>
@@ -350,7 +337,6 @@ const ReviewTab = ({ place }) => {
         </div>
       </ReviewWriteBox>
 
-      {/* 리뷰 목록 */}
       <ReviewList>
         {reviews.map((review) => {
           const isLong = review.content.length > 80;
@@ -428,7 +414,6 @@ const ReviewTab = ({ place }) => {
         })}
       </ReviewList>
 
-      {/* 상태 표시 */}
       {isLoading && reviews.length === 0 && (
         <LoadingMore>
           <div style={{ color: "#999", fontSize: "13px" }}>
@@ -464,7 +449,6 @@ const ReviewTab = ({ place }) => {
         </LoadingMore>
       )}
 
-      {/* 리뷰 삭제 확인 모달 */}
       <Modal
         isOpen={isDeleteModalOpen}
         icon={FiAlertCircle}
@@ -482,7 +466,6 @@ const ReviewTab = ({ place }) => {
         onCancel={handleDeleteReview}
       />
 
-      {/* 공통 알림 모달 */}
       <Modal
         isOpen={isAlertModalOpen}
         icon={FiAlertCircle}
@@ -492,7 +475,6 @@ const ReviewTab = ({ place }) => {
         onConfirm={() => setIsAlertModalOpen(false)}
       />
 
-      {/* 리뷰 이미지 크게 보기 */}
       <Modal
         isOpen={!!lightboxImage}
         showClose={true}

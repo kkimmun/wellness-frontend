@@ -1,6 +1,5 @@
 import api from "../../../../api/axios";
 
-// 공통 인스턴스가 /api, 인증 헤더와 응답 body 변환을 담당한다.
 export const AdminCourseAPI = {
   getCourses: async ({ page = 1, keyword = "", active = "" } = {}, signal) => {
     const params = { page };

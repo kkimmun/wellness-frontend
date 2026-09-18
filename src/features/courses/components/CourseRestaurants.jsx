@@ -12,7 +12,6 @@ export default function CourseRestaurants({ origin, destination, routeOption, id
   const resultsRef = useRef(null);
   const [state, setState] = useState(initialState);
   const [attempt, setAttempt] = useState(0);
-  // 사진·설명이 나중에 보완되어도 같은 구간의 경로를 다시 조회하지 않는다.
   const requestKey = JSON.stringify({
     origin: { placeNo: origin.placeNo, xAxis: origin.X_AXIS ?? origin.xAxis, yAxis: origin.Y_AXIS ?? origin.yAxis },
     destination: { placeNo: destination.placeNo, xAxis: destination.X_AXIS ?? destination.xAxis, yAxis: destination.Y_AXIS ?? destination.yAxis },

@@ -24,7 +24,7 @@ export const SearchForm = styled.form`
   flex: 1;
   min-width: 280px;
 
-  /* SearchInputWrapper가 남은 공간을 차지하도록 */
+  
   & > div {
     flex: 1;
     max-width: 360px;

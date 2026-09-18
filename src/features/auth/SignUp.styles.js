@@ -5,7 +5,7 @@ export const SignupContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  /* 헤더/푸터를 제외한 본문 영역 높이 확보 (상황에 맞게 조절 가능) */
+  
   min-height: calc(100vh - 160px);
   background-color: ${theme.colors.bgLight};
   padding: ${theme.spacing.xxl} ${theme.spacing.md};
@@ -14,7 +14,7 @@ export const SignupContainer = styled.div`
 export const Card = styled.div`
   background-color: ${theme.colors.bgWhite};
   width: 100%;
-  max-width: 520px; /* 2열 배치를 위해 기존 AuthCard보다 넓게 설정 */
+  max-width: 520px; 
   padding: ${theme.spacing.xxl};
   border-radius: ${theme.radius.lg};
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
@@ -28,7 +28,7 @@ export const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: ${theme.spacing.xl}; /* Subtitle이 빠졌으므로 간격 원상복구 */
+  margin-bottom: ${theme.spacing.xl}; 
 `;
 
 export const Title = styled.h2`
@@ -63,7 +63,7 @@ export const InputGrid = styled.div`
   gap: ${theme.spacing.lg} ${theme.spacing.md};
   margin-bottom: ${theme.spacing.xl};
 
-  /* 모바일에서는 1열로 세로 배치 */
+  
   @media (max-width: ${theme.breakpoints.sm}) {
     grid-template-columns: 1fr;
     gap: ${theme.spacing.md};

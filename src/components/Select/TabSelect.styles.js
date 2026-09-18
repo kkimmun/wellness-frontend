@@ -19,7 +19,7 @@ export const TabItem = styled.button`
   position: relative;
   transition: color 0.2s ease;
 
-  /* 활성화 시 하단 굵은 밑줄 포인트 */
+  
   &::after {
     content: "";
     position: absolute;

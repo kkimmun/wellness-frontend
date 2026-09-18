@@ -99,7 +99,7 @@ export const ListContainer = styled.div`
   padding: 10px;
   gap: 15px;
 
-  /* 스크롤바 숨기기 (한번에 다 띄운다는 요청 반영하되, 혹시 넘치면 휠은 되도록) */
+  
   &::-webkit-scrollbar {
     display: none;
   }
