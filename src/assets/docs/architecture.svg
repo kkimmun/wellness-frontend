@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580" width="100%" height="100%">
+  <defs>
+    <style>
+      .main-title { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 800; font-size: 26px; fill: #000000; text-anchor: middle; }
+      .layer-header-bg { fill: #000000; }
+      .layer-header-text { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 700; font-size: 15px; fill: #ffffff; text-anchor: middle; }
+      .card-bg { fill: #ffffff; stroke: #000000; stroke-width: 1.5; rx: 8px; }
+      .card-title { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 700; font-size: 14px; fill: #000000; text-anchor: middle; }
+      .card-sub { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 500; font-size: 12px; fill: #444444; text-anchor: middle; }
+      .arrow { stroke: #000000; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .arrow-head { fill: #000000; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="580" fill="#ffffff"/>
+
+  <!-- Main Title -->
+  <text x="500" y="45" class="main-title">프론트엔드 계층별 아키텍처 (Layered Architecture)</text>
+
+  <!-- ==================== LAYER 1: 엔트리 & 라우팅 ==================== -->
+  <g transform="translate(180, 70)">
+    <rect width="640" height="75" class="card-bg"/>
+    <path d="M0,8 Q0,0 8,0 L632,0 Q640,0 640,8 L640,28 L0,28 Z" class="layer-header-bg"/>
+    <text x="320" y="19" class="layer-header-text">1. 엔트리 &amp; 라우팅 (App.jsx &amp; Router)</text>
+    <text x="320" y="54" class="card-sub">• React.lazy 라우트별 코드 스플리팅        • CustomEvent 세션 만료 모달 감지</text>
+  </g>
+
+  <!-- Arrow 1 -> 2 -->
+  <g transform="translate(500, 145)">
+    <line x1="0" y1="0" x2="0" y2="22" class="arrow"/>
+    <polygon points="-4,22 0,28 4,22" class="arrow-head"/>
+  </g>
+
+  <!-- ==================== LAYER 2: 접근 제어 & 레이아웃 ==================== -->
+  <g transform="translate(180, 175)">
+    <rect width="640" height="75" class="card-bg"/>
+    <path d="M0,8 Q0,0 8,0 L632,0 Q640,0 640,8 L640,28 L0,28 Z" class="layer-header-bg"/>
+    <text x="320" y="19" class="layer-header-text">2. 접근 제어 &amp; 레이아웃 (AuthGuard)</text>
+    <text x="320" y="54" class="card-sub">• PublicRoute (비로그인 전용)      • PrivateRoute (회원 전용)      • AdminRoute (관리자 전용)</text>
+  </g>
+
+  <!-- Arrow 2 -> 3 -->
+  <g transform="translate(500, 250)">
+    <line x1="0" y1="0" x2="0" y2="22" class="arrow"/>
+    <polygon points="-4,22 0,28 4,22" class="arrow-head"/>
+  </g>
+
+  <!-- ==================== LAYER 3: 도메인 기능 모듈 (Features) ==================== -->
+  <g transform="translate(40, 280)">
+    <rect width="920" height="115" class="card-bg"/>
+    <path d="M0,8 Q0,0 8,0 L912,0 Q920,0 920,8 L920,28 L0,28 Z" class="layer-header-bg"/>
+    <text x="460" y="19" class="layer-header-text">3. 도메인 기능 모듈 (features/)</text>
+
+    <!-- 5 Feature Cards inside Layer 3 -->
+    <!-- Card 1: Auth -->
+    <g transform="translate(16, 40)">
+      <rect width="168" height="60" rx="6" fill="#f8f8f8" stroke="#000000" stroke-width="1"/>
+      <text x="84" y="26" class="card-title">인증 (Auth)</text>
+      <text x="84" y="46" class="card-sub">로그인 · 가입 · 이메일인증</text>
+    </g>
+
+    <!-- Card 2: Map -->
+    <g transform="translate(196, 40)">
+      <rect width="168" height="60" rx="6" fill="#f8f8f8" stroke="#000000" stroke-width="1"/>
+      <text x="84" y="26" class="card-title">지도 &amp; 길찾기 (Map)</text>
+      <text x="84" y="46" class="card-sub">카카오맵 · 핀 · Polyline</text>
+    </g>
+
+    <!-- Card 3: Courses -->
+    <g transform="translate(376, 40)">
+      <rect width="168" height="60" rx="6" fill="#f8f8f8" stroke="#000000" stroke-width="1"/>
+      <text x="84" y="26" class="card-title">코스 제작 (Courses)</text>
+      <text x="84" y="46" class="card-sub">J/P모드 · 순례길 · 프리뷰</text>
+    </g>
+
+    <!-- Card 4: MyPage -->
+    <g transform="translate(556, 40)">
+      <rect width="168" height="60" rx="6" fill="#f8f8f8" stroke="#000000" stroke-width="1"/>
+      <text x="84" y="26" class="card-title">마이페이지 (MyPage)</text>
+      <text x="84" y="46" class="card-sub">코스보관함 · 리뷰 · 북마크</text>
+    </g>
+
+    <!-- Card 5: Admin -->
+    <g transform="translate(736, 40)">
+      <rect width="168" height="60" rx="6" fill="#f8f8f8" stroke="#000000" stroke-width="1"/>
+      <text x="84" y="26" class="card-title">관리자 (Admin)</text>
+      <text x="84" y="46" class="card-sub">장소 &amp; 코스 CMS 관리</text>
+    </g>
+  </g>
+
+  <!-- Arrow 3 -> 4 -->
+  <g transform="translate(500, 395)">
+    <line x1="0" y1="0" x2="0" y2="22" class="arrow"/>
+    <polygon points="-4,22 0,28 4,22" class="arrow-head"/>
+  </g>
+
+  <!-- ==================== LAYER 4: 공통 인프라 & 서비스 (Shared) ==================== -->
+  <g transform="translate(40, 425)">
+    <rect width="920" height="115" class="card-bg"/>
+    <path d="M0,8 Q0,0 8,0 L912,0 Q920,0 920,8 L920,28 L0,28 Z" class="layer-header-bg"/>
+    <text x="460" y="19" class="layer-header-text">4. 공통 인프라 &amp; 서비스 (Shared Layer)</text>
+
+    <!-- 3 Shared Cards inside Layer 4 -->
+    <!-- Card 1: Components -->
+    <g transform="translate(20, 40)">
+      <rect width="275" height="60" rx="6" fill="#f8f8f8" stroke="#000000" stroke-width="1"/>
+      <text x="137" y="26" class="card-title">공통 UI 컴포넌트 (components/)</text>
+      <text x="137" y="46" class="card-sub">Button · Modal · BottomSheet · Input</text>
+    </g>
+
+    <!-- Card 2: API & Network -->
+    <g transform="translate(322, 40)">
+      <rect width="275" height="60" rx="6" fill="#f8f8f8" stroke="#000000" stroke-width="1"/>
+      <text x="137" y="26" class="card-title">API 통신 &amp; 인터셉터 (api/)</text>
+      <text x="137" y="46" class="card-sub">Axios Queue · JWT Silent Refresh</text>
+    </g>
+
+    <!-- Card 3: Styles & Utils -->
+    <g transform="translate(625, 40)">
+      <rect width="275" height="60" rx="6" fill="#f8f8f8" stroke="#000000" stroke-width="1"/>
+      <text x="137" y="26" class="card-title">글로벌 스타일 &amp; 유틸 (styles/ &amp; utils/)</text>
+      <text x="137" y="46" class="card-sub">GlobalStyles · Design Tokens · Storage</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 800" width="100%" height="100%">
+  <defs>
+    <style>
+      .main-title { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 800; font-size: 32px; fill: #000000; text-anchor: middle; }
+      .main-sub { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 500; font-size: 16px; fill: #333333; text-anchor: middle; }
+      .section-title { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 800; font-size: 18px; fill: #000000; text-anchor: middle; letter-spacing: 1px; }
+      .section-sub { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 400; font-size: 14px; fill: #555555; text-anchor: middle; }
+      .step-num-bg { fill: #000000; }
+      .step-num-text { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 800; font-size: 12px; fill: #ffffff; text-anchor: middle; }
+      .step-title { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 800; font-size: 16px; fill: #000000; text-anchor: middle; }
+      .step-desc-main { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 600; font-size: 12px; fill: #111111; text-anchor: middle; }
+      .step-desc-sub { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 400; font-size: 11px; fill: #555555; text-anchor: middle; }
+      .auth-title { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 800; font-size: 16px; fill: #000000; text-anchor: middle; }
+      .auth-desc { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 500; font-size: 13px; fill: #222222; text-anchor: middle; }
+      .summary-title { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 800; font-size: 15px; fill: #000000; text-anchor: middle; }
+      .summary-flow { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 600; font-size: 14px; fill: #111111; text-anchor: middle; }
+      .card-border { fill: #ffffff; stroke: #000000; stroke-width: 1.5; rx: 8px; }
+      .outer-card { fill: #ffffff; stroke: #000000; stroke-width: 1.5; rx: 8px; }
+      .icon-stroke { stroke: #000000; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="800" fill="#ffffff"/>
+
+  <!-- Top Header -->
+  <text x="550" y="55" class="main-title">Gimpo Wellness 핵심 사용자 흐름</text>
+  <text x="550" y="85" class="main-sub">관광지 탐색부터 코스 계획과 방문 기록까지</text>
+
+  <!-- Main Outer Container: USER JOURNEY -->
+  <g transform="translate(30, 115)">
+    <rect width="1040" height="520" class="outer-card"/>
+    
+    <!-- Section Header -->
+    <text x="520" y="42" class="section-title">USER JOURNEY</text>
+    <text x="520" y="65" class="section-sub">장소를 발견하고, 이동 경로와 나만의 여행 코스를 완성하는 과정</text>
+
+    <!-- 6 STEP CARDS -->
+    <!-- Step 1: 장소 탐색 -->
+    <g transform="translate(20, 100)">
+      <rect width="150" height="200" class="card-border"/>
+      <circle cx="24" cy="24" r="11" class="step-num-bg"/>
+      <text x="24" y="28" class="step-num-text">1</text>
+      <!-- Icon: Location Pin -->
+      <g transform="translate(75, 52)">
+        <circle cx="0" cy="-6" r="11" class="icon-stroke"/>
+        <circle cx="0" cy="-6" r="3.5" fill="#000000"/>
+        <path d="M0 5 L0 16 M-8 16 L8 16" class="icon-stroke"/>
+      </g>
+      <text x="75" y="102" class="step-title">장소 탐색</text>
+      <text x="75" y="132" class="step-desc-main">카카오 맵 &amp; 8종 마커</text>
+      <line x1="20" y1="150" x2="130" y2="150" stroke="#eeeeee" stroke-width="1"/>
+      <text x="75" y="172" class="step-desc-sub">중복 핀(+N) 순환 조회</text>
+    </g>
+
+    <!-- Arrow 1 -->
+    <g transform="translate(176, 200)">
+      <line x1="0" y1="0" x2="10" y2="0" stroke="#000000" stroke-width="1.5"/>
+      <polygon points="10,-3 15,0 10,3" fill="#000000"/>
+    </g>
+
+    <!-- Step 2: 조건 선택 -->
+    <g transform="translate(193, 100)">
+      <rect width="150" height="200" class="card-border"/>
+      <circle cx="24" cy="24" r="11" class="step-num-bg"/>
+      <text x="24" y="28" class="step-num-text">2</text>
+      <!-- Icon: Filter / Sliders -->
+      <g transform="translate(75, 52)">
+        <line x1="-16" y1="-8" x2="16" y2="-8" class="icon-stroke"/>
+        <circle cx="-6" cy="-8" r="3" fill="#000000"/>
+        <line x1="-16" y1="2" x2="16" y2="2" class="icon-stroke"/>
+        <circle cx="6" cy="2" r="3" fill="#000000"/>
+        <line x1="-16" y1="12" x2="16" y2="12" class="icon-stroke"/>
+        <circle cx="-2" cy="12" r="3" fill="#000000"/>
+      </g>
+      <text x="75" y="102" class="step-title">조건 선택</text>
+      <text x="75" y="132" class="step-desc-main">대·소분류 &amp; 태그 칩</text>
+      <line x1="20" y1="150" x2="130" y2="150" stroke="#eeeeee" stroke-width="1"/>
+      <text x="75" y="172" class="step-desc-sub">김포 TOP 10 전용 패널</text>
+    </g>
+
+    <!-- Arrow 2 -->
+    <g transform="translate(349, 200)">
+      <line x1="0" y1="0" x2="10" y2="0" stroke="#000000" stroke-width="1.5"/>
+      <polygon points="10,-3 15,0 10,3" fill="#000000"/>
+    </g>
+
+    <!-- Step 3: 상세 확인 -->
+    <g transform="translate(366, 100)">
+      <rect width="150" height="200" class="card-border"/>
+      <circle cx="24" cy="24" r="11" class="step-num-bg"/>
+      <text x="24" y="28" class="step-num-text">3</text>
+      <!-- Icon: Place Detail / BottomSheet -->
+      <g transform="translate(75, 52)">
+        <rect x="-14" y="-14" width="28" height="28" rx="3" class="icon-stroke"/>
+        <polyline points="-14,6 -4,-4 4,4 14,-6" class="icon-stroke"/>
+        <circle cx="6" cy="-6" r="2.5" fill="#000000"/>
+      </g>
+      <text x="75" y="102" class="step-title">상세 확인</text>
+      <text x="75" y="132" class="step-desc-main">슬라이드 바텀시트</text>
+      <line x1="20" y1="150" x2="130" y2="150" stroke="#eeeeee" stroke-width="1"/>
+      <text x="75" y="172" class="step-desc-sub">별점·리뷰 &amp; 출발·도착</text>
+    </g>
+
+    <!-- Arrow 3 -->
+    <g transform="translate(522, 200)">
+      <line x1="0" y1="0" x2="10" y2="0" stroke="#000000" stroke-width="1.5"/>
+      <polygon points="10,-3 15,0 10,3" fill="#000000"/>
+    </g>
+
+    <!-- Step 4: 길찾기 -->
+    <g transform="translate(539, 100)">
+      <rect width="150" height="200" class="card-border"/>
+      <circle cx="24" cy="24" r="11" class="step-num-bg"/>
+      <text x="24" y="28" class="step-num-text">4</text>
+      <!-- Icon: Directions / Polyline -->
+      <g transform="translate(75, 52)">
+        <circle cx="-10" cy="-8" r="4" class="icon-stroke"/>
+        <circle cx="10" cy="8" r="4" class="icon-stroke"/>
+        <path d="M-6 -8 C 6 -8, -6 8, 6 8" class="icon-stroke"/>
+      </g>
+      <text x="75" y="102" class="step-title">길찾기</text>
+      <text x="75" y="132" class="step-desc-main">도보 &amp; 대중교통 경로</text>
+      <line x1="20" y1="150" x2="130" y2="150" stroke="#eeeeee" stroke-width="1"/>
+      <text x="75" y="172" class="step-desc-sub">실시간 Polyline &amp; 범례</text>
+    </g>
+
+    <!-- Arrow 4 -->
+    <g transform="translate(695, 200)">
+      <line x1="0" y1="0" x2="10" y2="0" stroke="#000000" stroke-width="1.5"/>
+      <polygon points="10,-3 15,0 10,3" fill="#000000"/>
+    </g>
+
+    <!-- Step 5: 코스 제작 · 추천 -->
+    <g transform="translate(712, 100)">
+      <rect width="150" height="200" class="card-border"/>
+      <circle cx="24" cy="24" r="11" class="step-num-bg"/>
+      <text x="24" y="28" class="step-num-text">5</text>
+      <!-- Icon: Course Planner -->
+      <g transform="translate(75, 52)">
+        <path d="M-10 14 L0 -14 L10 14" class="icon-stroke"/>
+        <circle cx="-10" cy="14" r="2.5" fill="#000000"/>
+        <circle cx="0" cy="-14" r="2.5" fill="#000000"/>
+        <circle cx="10" cy="14" r="2.5" fill="#000000"/>
+      </g>
+      <text x="75" y="96" class="step-title">코스 제작 ·</text>
+      <text x="75" y="116" class="step-title">맞춤 추천</text>
+      <text x="75" y="142" class="step-desc-main">J모드 계획 &amp; P모드 AI</text>
+      <line x1="20" y1="155" x2="130" y2="155" stroke="#eeeeee" stroke-width="1"/>
+      <text x="75" y="176" class="step-desc-sub">둘레길 탐색 &amp; 맛집 연계</text>
+    </g>
+
+    <!-- Arrow 5 -->
+    <g transform="translate(868, 200)">
+      <line x1="0" y1="0" x2="10" y2="0" stroke="#000000" stroke-width="1.5"/>
+      <polygon points="10,-3 15,0 10,3" fill="#000000"/>
+    </g>
+
+    <!-- Step 6: 기록 & 보관 -->
+    <g transform="translate(885, 100)">
+      <rect width="135" height="200" class="card-border"/>
+      <circle cx="24" cy="24" r="11" class="step-num-bg"/>
+      <text x="24" y="28" class="step-num-text">6</text>
+      <!-- Icon: MyPage & Bookmark -->
+      <g transform="translate(67, 52)">
+        <rect x="-14" y="-12" width="28" height="20" rx="3" class="icon-stroke"/>
+        <polyline points="-6,8 -6,14 2,8" class="icon-stroke"/>
+        <line x1="-8" y1="-5" x2="8" y2="-5" stroke="#000000" stroke-width="1.5"/>
+        <line x1="-8" y1="0" x2="4" y2="0" stroke="#000000" stroke-width="1.5"/>
+      </g>
+      <text x="67" y="102" class="step-title">기록 &amp; 보관</text>
+      <text x="67" y="132" class="step-desc-main">마이페이지 보관함</text>
+      <line x1="15" y1="150" x2="120" y2="150" stroke="#eeeeee" stroke-width="1"/>
+      <text x="67" y="172" class="step-desc-sub">북마크 찜 &amp; 리뷰 관리</text>
+    </g>
+
+    <!-- Bottom Auth Classification (비회원 vs 회원) -->
+    <!-- Non-member Box -->
+    <g transform="translate(20, 330)">
+      <rect width="496" height="155" class="card-border"/>
+      <text x="248" y="42" class="auth-title">비회원 (Public)</text>
+      <line x1="30" y1="62" x2="466" y2="62" stroke="#000000" stroke-width="1"/>
+      <text x="248" y="105" class="auth-desc">지도 탐색 · 다차원 필터링 · 바텀시트 상세 · 실시간 길찾기</text>
+    </g>
+
+    <!-- Member Box -->
+    <g transform="translate(524, 330)">
+      <rect width="496" height="155" class="card-border"/>
+      <text x="248" y="42" class="auth-title">회원 (Private / AuthGuard)</text>
+      <line x1="30" y1="62" x2="466" y2="62" stroke="#000000" stroke-width="1"/>
+      <text x="248" y="105" class="auth-desc">J/P모드 코스 계획 및 저장 · 코스 보관함 · 리뷰 작성 · 북마크 관리</text>
+    </g>
+  </g>
+
+  <!-- Bottom Summary Bar: 핵심 흐름 -->
+  <g transform="translate(30, 660)">
+    <rect width="1040" height="95" class="outer-card"/>
+    <text x="520" y="38" class="summary-title">핵심 흐름</text>
+    <text x="520" y="68" class="summary-flow">장소 탐색  〉  조건 선택  〉  상세 확인  〉  길찾기  〉  코스 제작 및 저장  〉  기록 · 보관</text>
+  </g>
+</svg>

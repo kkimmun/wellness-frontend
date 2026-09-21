@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" width="100%" height="100%">
+  <defs>
+    <style>
+      .main-title { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 800; font-size: 30px; fill: #000000; }
+      .main-subtitle { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 500; font-size: 15px; fill: #555555; }
+      .card-bg { fill: #ffffff; stroke: #000000; stroke-width: 1.5; rx: 12px; }
+      .badge-bg { fill: #f0f0f0; rx: 6px; }
+      .badge-text { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 700; font-size: 12px; fill: #000000; }
+      .card-title { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 800; font-size: 20px; fill: #000000; }
+      .item-title { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 700; font-size: 14px; fill: #111111; }
+      .item-desc { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-weight: 400; font-size: 13px; fill: #444444; }
+      .icon-stroke { stroke: #000000; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="680" fill="#ffffff"/>
+
+  <!-- Header -->
+  <text x="60" y="65" class="main-title">웰니스 김포 핵심 기능</text>
+  <text x="60" y="95" class="main-subtitle">장소 탐색부터 길찾기, 코스 추천 및 여행 기록까지 제공하는 4대 핵심 서비스</text>
+
+  <!-- ==================== CARD 1: 장소 조회 ==================== -->
+  <g transform="translate(60, 130)">
+    <rect width="520" height="235" class="card-bg"/>
+    <!-- Icon (Location Pin) -->
+    <g transform="translate(24, 22)">
+      <circle cx="16" cy="14" r="8" class="icon-stroke"/>
+      <path d="M16 22 L16 30 M10 30 L22 30" class="icon-stroke"/>
+      <circle cx="16" cy="14" r="3" fill="#000000"/>
+    </g>
+    <text x="64" y="44" class="card-title">1. 장소 조회 &amp; 필터링</text>
+    <rect x="420" y="24" width="76" height="24" class="badge-bg"/>
+    <text x="432" y="40" class="badge-text">EXPLORE</text>
+
+    <!-- Content Items -->
+    <g transform="translate(24, 75)">
+      <circle cx="4" cy="10" r="3" fill="#000000"/>
+      <text x="16" y="14" class="item-title">8종 카테고리 마커 &amp; TOP 10 핫플레이스</text>
+      <text x="16" y="32" class="item-desc">관광지, 음식점, 의료, 체육 등 목적별 커스텀 마커 표출</text>
+
+      <circle cx="4" cy="55" r="3" fill="#000000"/>
+      <text x="16" y="59" class="item-title">다차원 태그 필터 &amp; 실시간 키워드 검색</text>
+      <text x="16" y="77" class="item-desc">대/소분류 카테고리 및 테마별 태그 조합 필터링</text>
+
+      <circle cx="4" cy="100" r="3" fill="#000000"/>
+      <text x="16" y="104" class="item-title">장소 상세 바텀시트 &amp; 중복 핀 순환</text>
+      <text x="16" y="122" class="item-desc">도로명 주소, 별점, 리뷰 확인 및 겹침 핀(+N) 순환 탐색</text>
+    </g>
+  </g>
+
+  <!-- ==================== CARD 2: 길찾기 ==================== -->
+  <g transform="translate(620, 130)">
+    <rect width="520" height="235" class="card-bg"/>
+    <!-- Icon (Route / Direction) -->
+    <g transform="translate(24, 22)">
+      <circle cx="8" cy="24" r="4" class="icon-stroke"/>
+      <circle cx="24" cy="8" r="4" class="icon-stroke"/>
+      <path d="M12 22 C 18 20, 14 12, 20 10" class="icon-stroke"/>
+    </g>
+    <text x="64" y="44" class="card-title">2. 실시간 길찾기 &amp; 경로 안내</text>
+    <rect x="435" y="24" width="61" height="24" class="badge-bg"/>
+    <text x="447" y="40" class="badge-text">ROUTE</text>
+
+    <!-- Content Items -->
+    <g transform="translate(24, 75)">
+      <circle cx="4" cy="10" r="3" fill="#000000"/>
+      <text x="16" y="14" class="item-title">도보 및 대중교통 최적 경로 안내</text>
+      <text x="16" y="32" class="item-desc">이동수단별 총 거리, 소요 시간, 환승 정보 계산</text>
+
+      <circle cx="4" cy="55" r="3" fill="#000000"/>
+      <text x="16" y="59" class="item-title">지도 상 실시간 Polyline 경로선 렌더링</text>
+      <text x="16" y="77" class="item-desc">대중교통 구간별 색상 구분 및 도보 화살표 시각화</text>
+
+      <circle cx="4" cy="100" r="3" fill="#000000"/>
+      <text x="16" y="104" class="item-title">비동기 요청 제어 (AbortController &amp; Debounce)</text>
+      <text x="16" y="122" class="item-desc">빠른 장소 변경 시 이전 요청 즉시 취소로 Race Condition 방지</text>
+    </g>
+  </g>
+
+  <!-- ==================== CARD 3: 코스 추천 & 계획 ==================== -->
+  <g transform="translate(60, 395)">
+    <rect width="520" height="235" class="card-bg"/>
+    <!-- Icon (Compass / Signpost) -->
+    <g transform="translate(24, 22)">
+      <rect x="6" y="6" width="20" height="10" class="icon-stroke"/>
+      <path d="M26 11 L30 11 M16 16 L16 30 M10 30 L22 30" class="icon-stroke"/>
+    </g>
+    <text x="64" y="44" class="card-title">3. 맞춤형 코스 제작 &amp; 추천</text>
+    <rect x="424" y="24" width="72" height="24" class="badge-bg"/>
+    <text x="436" y="40" class="badge-text">COURSE</text>
+
+    <!-- Content Items -->
+    <g transform="translate(24, 75)">
+      <circle cx="4" cy="10" r="3" fill="#000000"/>
+      <text x="16" y="14" class="item-title">J모드 (여행 계획형 직접 코스 설계)</text>
+      <text x="16" y="32" class="item-desc">현재 위치/김포시청 기준 원하는 장소를 순서대로 직접 담기</text>
+
+      <circle cx="4" cy="55" r="3" fill="#000000"/>
+      <text x="16" y="59" class="item-title">P모드 (AI 맞춤 힐링 코스 추천)</text>
+      <text x="16" y="77" class="item-desc">사용자 취향·선호 태그 기반 주변 명소 자동 연계 추천</text>
+
+      <circle cx="4" cy="100" r="3" fill="#000000"/>
+      <text x="16" y="104" class="item-title">고정 둘레길 코스 &amp; 주변 맛집 연동</text>
+      <text x="16" y="122" class="item-desc">공식 웰니스 순례길 탐색 및 코스 인근 식당/카페 정보 제공</text>
+    </g>
+  </g>
+
+  <!-- ==================== CARD 4: 저장 & 마이페이지 ==================== -->
+  <g transform="translate(620, 395)">
+    <rect width="520" height="235" class="card-bg"/>
+    <!-- Icon (Bookmark / Star) -->
+    <g transform="translate(24, 22)">
+      <path d="M8 6 L24 6 L24 28 L16 22 L8 28 Z" class="icon-stroke"/>
+    </g>
+    <text x="64" y="44" class="card-title">4. 코스 저장 &amp; 마이페이지</text>
+    <rect x="428" y="24" width="68" height="24" class="badge-bg"/>
+    <text x="440" y="40" class="badge-text">MYPAGE</text>
+
+    <!-- Content Items -->
+    <g transform="translate(24, 75)">
+      <circle cx="4" cy="10" r="3" fill="#000000"/>
+      <text x="16" y="14" class="item-title">나만의 맞춤 코스 보관함</text>
+      <text x="16" y="32" class="item-desc">생성한 여행 코스를 계정에 저장하고 언제든지 재열람</text>
+
+      <circle cx="4" cy="55" r="3" fill="#000000"/>
+      <text x="16" y="59" class="item-title">관심 장소 북마크 (찜 목록)</text>
+      <text x="16" y="77" class="item-desc">가고 싶은 명소를 저장하고 마이페이지에서 원클릭 지도 이동</text>
+
+      <circle cx="4" cy="100" r="3" fill="#000000"/>
+      <text x="16" y="104" class="item-title">방문 장소 리뷰 &amp; 평점 관리</text>
+      <text x="16" y="122" class="item-desc">실제 다녀온 장소 후기 작성 및 내가 쓴 리뷰 모아보기</text>
+    </g>
+  </g>
+</svg>
