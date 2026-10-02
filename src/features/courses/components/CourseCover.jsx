@@ -13,7 +13,6 @@ export default function CourseCover({ src, name, number, tone = 0, courseNo, pla
   useEffect(() => {
     if (!placeNo && !courseNo) return undefined;
     const controller = new AbortController();
-    // 저장된 코스의 오래된 사진보다 현재 장소 대표 이미지를 우선한다.
     const request = placeNo
       ? PlaceAPI.getPlaceDetail(placeNo).then((data) => data?.imageUrl)
       : CourseAPI.getFixedCourse(courseNo, controller.signal).then((response) => response?.data?.endPlaceImg);
@@ -23,7 +22,7 @@ export default function CourseCover({ src, name, number, tone = 0, courseNo, pla
           setRemoteCover({ key: coverKey, imageUrl });
         }
       })
-      .catch(() => { /* 사진 조회 실패 시 공통 이미지 URL을 사용한다. */ });
+      .catch(() => {   });
     return () => controller.abort();
   }, [src, courseNo, placeNo, coverKey]);
 

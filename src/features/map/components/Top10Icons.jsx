@@ -1,8 +1,6 @@
 import { useId } from "react";
 import markerSheet from "../../../assets/icons/top10-markers-reference.png";
 
-// 제공받은 원본 시트의 큰 핀만 표시한다. 원본 파일은 재가공하지 않는다.
-// SVG 클리핑으로 핀 바깥 배경과 아래 지도 예시가 지도 위에 보이지 않게 한다.
 const Top10Illustration = ({ x, y, name, number }) => {
   const clipId = `top10-${useId().replace(/:/g, "")}`;
   return (
@@ -33,7 +31,6 @@ const Top10Illustration = ({ x, y, name, number }) => {
   );
 };
 
-// 번호는 여행 방문 순서가 아니라 제공된 TOP 10 디자인의 고정 번호다.
 const TOP10_ICONS = {
   art: <Top10Illustration x={43} y={38} number={1} name="김포 아트빌리지" />,
   park: <Top10Illustration x={338} y={38} number={2} name="김포국제조각공원" />,

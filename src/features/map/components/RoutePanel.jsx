@@ -105,7 +105,6 @@ const samePoint = (left, right) => {
   return left.X_AXIS === right.X_AXIS && left.Y_AXIS === right.Y_AXIS;
 };
 
-// 대중교통 상세 안내: 카카오 대중교통 구간과 출발·도착 좌표 사이의 연결 도보를 계산한다.
 const toCoordinate = (point) => {
   const X_AXIS = Number(point?.X_AXIS);
   const Y_AXIS = Number(point?.Y_AXIS);
@@ -179,19 +178,17 @@ const RoutePanel = ({
   const [routeMessage, setRouteMessage] = useState("");
   const [routeData, setRouteData] = useState(null);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
-  // 대중교통 상세 안내: 선택 경로별 연결 도보 조회 상태와 펼침 상태를 분리해 관리한다.
   const [expandedRouteIndex, setExpandedRouteIndex] = useState(null);
   const [transitDetails, setTransitDetails] = useState({});
   const searchControllerRef = useRef(null);
   const routeControllerRef = useRef(null);
   const transitDetailControllerRef = useRef(null);
 
-  // ── 모바일 바텀시트 드래그 리사이즈 (기존 로직과 완전히 분리) ──────────────
-  const [mobileHeight, setMobileHeight] = useState(null); // null → CSS 기본값(40vh) 사용
+  const [mobileHeight, setMobileHeight] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartYRef = useRef(null); // 터치 시작 Y 좌표
-  const dragStartHRef = useRef(null); // 터치 시작 시점의 패널 높이(px)
-  const panelRef = useRef(null); // RoutePanelContainer DOM 참조
+  const dragStartYRef = useRef(null);
+  const dragStartHRef = useRef(null);
+  const panelRef = useRef(null);
 
   const handleDragStart = (e) => {
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -206,7 +203,7 @@ const RoutePanel = ({
       if (!isDragging || dragStartYRef.current === null) return;
       if (e.cancelable) e.preventDefault();
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      const deltaY = dragStartYRef.current - clientY; // 위로 올리면 +
+      const deltaY = dragStartYRef.current - clientY;
       const minAllowedH = Math.max(140, window.innerHeight * 0.25);
       const newHeight = Math.min(
         window.innerHeight - 56,
@@ -251,7 +248,6 @@ const RoutePanel = ({
       setMobileHeight(null);
     }
   }
-  // ─────────────────────────────────────────────────────────────────────────────
   useEffect(
     () => () => {
       searchControllerRef.current?.abort();
@@ -266,7 +262,6 @@ const RoutePanel = ({
   }, [origin, destination, onPointsChange]);
 
   const clearRouteResult = () => {
-    // 길찾기 표시 안정화: 이동수단·입력 변경 뒤 이전 요청이 늦게 도착해 경로를 다시 그리지 못하게 한다.
     routeControllerRef.current?.abort();
     routeControllerRef.current = null;
     setRouteState("idle");
@@ -498,7 +493,6 @@ const RoutePanel = ({
     return params;
   };
 
-  // 대중교통 상세 안내: 대중교통 API가 생략한 첫 승차지 전·마지막 하차지 후 도보를 기존 도보 API로 보완한다.
   const requestConnectionWalk = async ({
     start,
     end,
@@ -550,7 +544,6 @@ const RoutePanel = ({
             route.path,
             cachedDetail.egressStep?.path,
           ),
-          // 대중교통 경로 색상: 연결 도보까지 구간별로 지도에 전달한다.
           mapSteps: [
             cachedDetail.accessStep,
             ...(route.steps || []),
@@ -643,7 +636,6 @@ const RoutePanel = ({
       {
         ...route,
         path: combinePaths(accessStep?.path, route.path, egressStep?.path),
-        // 대중교통 경로 색상: 버스·지하철·도보 path를 합치지 않고도 각각 그릴 수 있게 보존한다.
         mapSteps: [accessStep, ...(route.steps || []), egressStep].filter(
           Boolean,
         ),
@@ -723,7 +715,6 @@ const RoutePanel = ({
       $mobileHeight={mobileHeight}
       $isDragging={isDragging}
       aria-hidden={!isOpen}
-      // 코드 리뷰 반영: 닫힌 패널의 입력창과 버튼이 키보드 Tab 순서에 포함되지 않도록 한다.
       inert={!isOpen || undefined}
     >
       <DragHandle
@@ -733,7 +724,6 @@ const RoutePanel = ({
       />
       <RouteHeader>
         <h2>경로 찾기</h2>
-        {/* 길찾기 UX 개선: 바텀시트를 아래로 접는 FaChevronDown 버튼 */}
         <IconButton type="button" onClick={onClose} aria-label="경로 찾기 접기">
           <FaChevronDown size={18} />
         </IconButton>
@@ -989,7 +979,6 @@ const RoutePanel = ({
                 key={`${route.routeType || "route"}-${index}`}
                 $selected={selectedRouteIndex === index}
               >
-                {/* 대중교통 상세 안내: 카드 선택 시 이동 단계와 연결 도보를 함께 펼친다. */}
                 <RouteCardButton
                   type="button"
                   $selected={selectedRouteIndex === index}

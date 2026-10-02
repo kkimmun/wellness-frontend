@@ -22,8 +22,6 @@ export const AuthAPI = {
 
     localStorage.setItem("accessToken", accessToken);
 
-    // 사용자 식별값은 서버가 확인해 반환한 값만 저장한다.
-    // 응답에 memberId가 없으면 문자열 "undefined"나 이전 계정 값이 남지 않도록 제거한다.
     const memberId = loginResult?.memberId;
     if (typeof memberId === "string" && memberId.trim()) {
       localStorage.setItem("memberId", memberId);
@@ -46,12 +44,10 @@ export const AuthAPI = {
   logout: async () => {
     const accessToken = localStorage.getItem("accessToken");
     try {
-      // clearAuth가 먼저 실행되어도 서버 로그아웃 요청에는 인증 정보를 유지한다.
       return await api.post("/auth/logout", undefined, {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
     } finally {
-      // 서버 토큰 삭제가 실패하더라도 브라우저의 로그인 상태는 반드시 종료한다.
       clearLocalAuth();
     }
   },
@@ -60,10 +56,8 @@ export const AuthAPI = {
     const result = await api.delete("/members");
 
     try {
-      // 회원 삭제 후 서버의 refresh token과 쿠키도 함께 정리한다.
       await api.post("/auth/logout");
     } catch {
-      // 회원 삭제는 이미 완료됐으므로 로그아웃 정리 실패로 탈퇴 성공을 뒤집지 않는다.
     } finally {
       clearLocalAuth();
     }

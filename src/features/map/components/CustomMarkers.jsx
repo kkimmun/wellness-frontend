@@ -36,7 +36,6 @@ const RouteMarkerWrapper = styled.div`
   margin-bottom: 6px;
 `;
 
-// 1. 의료기관
 const MedicalBody = styled.div`
   width: 32px;
   height: 32px;
@@ -74,7 +73,6 @@ export const MedicalMarker = ({ onClick }) => (
   </MarkerWrapper>
 );
 
-// 2. 주요관광지
 const TouristBody = styled.div`
   width: 40px;
   height: 40px;
@@ -106,7 +104,6 @@ export const TouristMarker = ({ onClick }) => (
   </MarkerWrapper>
 );
 
-// 3. 생활체육시설
 const SportsBody = styled.div`
   width: 45px;
   height: 45px;
@@ -144,7 +141,6 @@ export const SportsMarker = ({ onClick }) => (
   </MarkerWrapper>
 );
 
-// 4. 종교시설
 const ReligionBody = styled.div`
   width: 40px;
   height: 40px;
@@ -166,7 +162,6 @@ export const ReligionMarker = ({ onClick }) => (
   </MarkerWrapper>
 );
 
-// 5. 음식점
 const FoodBody = styled.div`
   width: 40px;
   height: 40px;
@@ -248,7 +243,6 @@ export const EventMarker = ({ onClick }) => (
   </MarkerWrapper>
 );
 
-// 7. 경로 (출발/도착)
 const RouteBody = styled.div`
   width: 56px;
   height: 56px;
@@ -290,12 +284,11 @@ const Top10MarkerBody = styled.div`
   justify-content: center;
   z-index: 10;
   position: relative;
-  filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.25)); /* 아이콘 자체에 그림자 추가 */
+  filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.25)); 
 `;
 
 export const Top10Marker = ({ placeName, placeNo, onClick }) => {
   const SvgIcon = (placeName ? TOP10_ICONS[getTop10IconKeyByName(placeName)] : null) ?? (placeNo ? getTop10IconByPlaceNo(placeNo) : null);
-  // 전용 아이콘이 없는 장소는 일반 마커로 표시하고 노란 배지를 만들지 않는다.
   if (!SvgIcon) return <GeneralMarker onClick={onClick} />;
 
   return (

@@ -44,11 +44,9 @@ const PAGE_SIZE_FALLBACK = 10;
 const AdminPlace = () => {
   const navigate = useNavigate();
 
-  // 입력 상태 (검색 실행 전)
   const [keywordInput, setKeywordInput] = useState("");
   const [targetInput, setTargetInput] = useState("all");
 
-  // 실제 조회에 사용하는 확정 쿼리 (page는 1부터)
   const [query, setQuery] = useState({ page: 1, keyword: "", target: "all" });
   const [refetchKey, setRefetchKey] = useState(0);
 
@@ -59,14 +57,13 @@ const AdminPlace = () => {
     totalElements: 0,
     totalPages: 0,
   });
-  const [screenState, setScreenState] = useState("loading"); // loading | success | empty | error
+  const [screenState, setScreenState] = useState("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
   const [selected, setSelected] = useState(() => new Set());
-  const [modalType, setModalType] = useState(null); // "delete" | "restore" | null
+  const [modalType, setModalType] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // 목록 조회 / 검색
   useEffect(() => {
     let ignore = false;
 
@@ -84,7 +81,7 @@ const AdminPlace = () => {
         const content = data?.content ?? [];
         setResult({
           content,
-          currentPage: data?.currentPage ?? query.page, // 페이지는 1부터
+          currentPage: data?.currentPage ?? query.page,
           size: data?.size ?? PAGE_SIZE_FALLBACK,
           totalElements: data?.totalElements ?? 0,
           totalPages: data?.totalPages ?? 0,
@@ -106,7 +103,6 @@ const AdminPlace = () => {
   }, [query, refetchKey]);
 
   const handleTargetChange = (e) => {
-    // 검색 대상이 바뀌면 입력값을 초기화 (타입 검색은 typeDetailNo, 그 외는 자유 텍스트)
     setTargetInput(e.target.value);
     setKeywordInput("");
   };
@@ -154,7 +150,7 @@ const AdminPlace = () => {
 
       setModalType(null);
       setSelected(new Set());
-      setRefetchKey((k) => k + 1); // 현재 쿼리로 재조회
+      setRefetchKey((k) => k + 1);
     } catch (err) {
       setModalType(null);
       setErrorMessage(

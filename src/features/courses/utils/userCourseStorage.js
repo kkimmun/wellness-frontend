@@ -77,7 +77,6 @@ export function readUserCourses(storage) {
       }
     }
   } catch {
-    // 이전 버전의 코스가 남아 있으면 복원한다.
   }
   try {
     const saved = JSON.parse((storage ?? window.localStorage).getItem(USER_COURSE_KEY));

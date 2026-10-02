@@ -1,5 +1,3 @@
-// 통계청 2018년 시군구 경계 GeoJSON의 김포시 영역을 지도 표시용으로 단순화한 좌표입니다.
-// Source: https://github.com/southkorea/southkorea-maps/tree/master/kostat/2018/json
 const GIMPO_BOUNDARY_COORDINATES = [
   [
     [126.549919, 37.596112],

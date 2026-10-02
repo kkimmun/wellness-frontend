@@ -15,7 +15,7 @@ export const PasswordInput = ({
   const [showPassword, setShowPassword] = useState(false);
 
   const handleToggle = (e) => {
-    e.preventDefault(); // 폼 제출 방지
+    e.preventDefault();
     setShowPassword(!showPassword);
   };
 
@@ -34,7 +34,6 @@ export const PasswordInput = ({
         type="button"
         aria-label="비밀번호 표시 토글"
       >
-        {/* 눈 모양 아이콘 (SVG) */}
         <svg
           width="20"
           height="20"

@@ -4,7 +4,6 @@ import { theme } from '../styles/theme';
 import { FiCheckCircle, FiAlertCircle, FiInfo, FiX } from 'react-icons/fi';
 import { ToastContext } from './toastContextValue';
 
-// --- Styled Components ---
 
 const slideUp = keyframes`
   from { transform: translateY(100%); opacity: 0; }
@@ -16,7 +15,7 @@ const ToastContainerWrapper = styled.div`
   bottom: 24px;
   right: 24px;
   display: flex;
-  flex-direction: column-reverse; /* 새 알림이 아래쪽에 쌓이도록 */
+  flex-direction: column-reverse; 
   gap: 12px;
   z-index: 9999;
   pointer-events: none;
@@ -92,13 +91,12 @@ const ToastBox = styled.div`
   }
 `;
 
-// Toast 개별 아이템 (자동 삭제 타이머 로직 내장)
 const ToastItem = ({ toast, removeToast, getIcon }) => {
   React.useEffect(() => {
     const timer = setTimeout(() => {
       removeToast(toast.id);
     }, 3000);
-    return () => clearTimeout(timer); // 언마운트 시 자동 정리 (메모리 누수 방지)
+    return () => clearTimeout(timer);
   }, [toast.id, removeToast]);
 
   return (
@@ -134,7 +132,6 @@ export const ToastProvider = ({ children }) => {
     }
   };
 
-  // 객체가 매 렌더링마다 재생성되는 것을 방지하여 무한 루프(useEffect) 차단
   const toast = useMemo(() => ({
     success: (msg) => addToast(msg, 'success'),
     error: (msg) => addToast(msg, 'error'),

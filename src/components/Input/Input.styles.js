@@ -32,7 +32,7 @@ export const SearchInputWrapper = styled.div`
   position: relative;
   width: 100%;
 
-  /* 내부에 들어갈 돋보기 아이콘을 위한 절대 위치 세팅 */
+  
   svg {
     position: absolute;
     right: ${theme.spacing.md};
@@ -51,7 +51,7 @@ export const BaseTextarea = styled.textarea`
   border: 1px solid ${theme.colors.borderLight};
   border-radius: ${theme.radius.md};
   outline: none;
-  resize: vertical; /* 세로 크기 조절만 허용 */
+  resize: vertical; 
   min-height: 100px;
   transition: border-color 0.2s ease;
 

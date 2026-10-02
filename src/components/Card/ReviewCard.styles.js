@@ -34,7 +34,7 @@ export const ReviewContent = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
   line-height: 1.5;
 
-  /* isExpanded 상태에 따라 텍스트 잘림 처리 */
+  
   ${({ $isExpanded }) =>
     !$isExpanded &&
     `

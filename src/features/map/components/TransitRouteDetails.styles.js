@@ -56,7 +56,7 @@ export const StepIcon = styled.span`
   align-items: center;
   justify-content: center;
   color: ${theme.colors.white};
-  /* 대중교통 경로 색상: 지도 선과 동일한 분류 색상을 단계 아이콘에도 적용한다. */
+  
   background: ${({ $color }) => $color || "#6B7280"};
   font-size: 13px;
 `;

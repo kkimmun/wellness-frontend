@@ -12,7 +12,6 @@ const resolvePlanKind = (plan) => {
   }
   if (plan?.kind === TRAVEL_PLAN_KIND.PLAN) return TRAVEL_PLAN_KIND.PLAN;
 
-  // 구버전 추천 저장 데이터에는 종류가 없으므로 기존 자동 생성 이름으로 한 번 분류한다.
   return plan?.name?.startsWith("추천 코스 ")
     ? TRAVEL_PLAN_KIND.RECOMMENDATION
     : TRAVEL_PLAN_KIND.PLAN;
@@ -119,7 +118,6 @@ export const saveTravelPlan = (
     updatedAt: savedAt,
     origin: normalizedOrigin,
     places: normalizedPlaces,
-    // 백엔드 /api/plans 에 동기화된 뒤 채워지는 서버 측 식별자 (updateTravelPlanBackendId 참고).
     planNo: existingPlan?.planNo ?? null,
   };
   const plans = existingPlan
@@ -136,8 +134,6 @@ export const saveTravelPlan = (
   return plan;
 };
 
-// 계획을 로컬에 즉시 저장한 뒤, 백그라운드로 /api/plans 동기화가 끝나면
-// 발급받은 planNo를 기존 로컬 기록에 붙여 다음 수정 시 addPlaces 대신 editPlaces를 쓰게 한다.
 export const updateTravelPlanBackendId = (ownerKey, planId, planNo, storage) => {
   const target = storage ?? window.localStorage;
   const plans = readCollection(target).map((plan) =>

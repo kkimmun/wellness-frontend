@@ -44,7 +44,6 @@ const Top10Panel = ({
           if (res && res.code === 200 && res.data && res.data.content) {
             places = res.data.content;
           } else if (res && res.data && Array.isArray(res.data)) {
-            // In case the API directly returns an array
             places = res.data;
           } else if (Array.isArray(res)) {
             places = res;
@@ -67,7 +66,6 @@ const Top10Panel = ({
   }, [isOpen, onPlacesLoaded, hasProvidedPlaces]);
 
   const handlePlaceClick = (place) => {
-    // onPlaceClick 사용을 위해 addr 파라미터를 API 응답의 address로 맞춰준다 (하위 호환)
     const placeData = {
       ...place,
       addr: place.address || place.addr,
@@ -82,8 +80,6 @@ const Top10Panel = ({
   const { listRef, onScroll, visiblePlaces, hasMore } = useIncrementalPlaces(listToRender, isOpen);
   const isLoading = hasProvidedPlaces ? placesLoading : loading;
 
-  // 목록 API는 로그인 사용자별 북마크 여부를 내려주지 않으므로,
-  // 화면에 실제로 보이는 카드에 한해 북마크 상태 API로 값을 채운다.
   useEffect(() => {
     if (!hydrateBookmarkStatus) return;
     visiblePlaces.forEach((place) => {
@@ -103,7 +99,7 @@ const Top10Panel = ({
           <span className="mobile-icon"><FaChevronDown size={18} /></span>
         </button>
         <h2>{title}</h2>
-        <div style={{ width: 30 }} /> {/* 균형을 맞추기 위한 빈 공간 */}
+        <div style={{ width: 30 }} />
       </Header>
 
       <ListContainer ref={listRef} onScroll={onScroll} role="region" aria-label="장소 목록" tabIndex={0}>

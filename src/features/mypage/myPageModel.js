@@ -1,6 +1,5 @@
 import { readTravelPlans, TRAVEL_PLAN_KIND } from "../map/utils/travelPlanStorage.js";
 
-// 지도에서 저장할 때 쓰는 소유자 키와 동일한 규칙을 사용한다.
 export const getTravelOwnerKey = (user) =>
   user?.memberId || (user?.memberNo != null ? `member:${user.memberNo}` : null);
 
@@ -23,7 +22,6 @@ export const getTripMapUrl = (trip) =>
   })}`;
 
 export function getProfileImage(user) {
-  // 다른 계정에서 남긴 전역 localStorage 프로필 사진은 사용하지 않는다.
   let image = user?.profileImage || user?.imgPath;
   if (typeof image !== "string") return null;
   if (!user?.profileImage && image.endsWith("/") && user?.saveName) {

@@ -1,6 +1,5 @@
 import { isCoursePoint, getCourseRoute } from "./userCourseStorage.js";
 
-// Immediately show selected places, then replace the preview with the actual walking route.
 export function startCoursePreview({ origin, destination, waypointPlaceNos, places, findRoute, onRoute, onMessage, delay = 250 }) {
   const controller = new AbortController();
   const validOrigin = isCoursePoint(origin) ? origin : null;

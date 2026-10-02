@@ -7,7 +7,7 @@ export const Overlay = styled.div`
   background-color: ${theme.colors.bgDim};
   display: flex;
   justify-content: center;
-  align-items: flex-end; /* bottom sheet */
+  align-items: flex-end; 
   z-index: 1000;
   visibility: ${({ $visible }) => ($visible ? "visible" : "hidden")};
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};

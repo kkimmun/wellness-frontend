@@ -1,7 +1,6 @@
 const ARROW_SPACING = 80;
 const END_PADDING = 24;
 
-// Work in screen pixels so arrows keep the same size at every zoom level.
 export function getCourseArrowPaths(points, width, height) {
   const arrows = [];
   const totalLength = points.slice(1).reduce((total, point, index) =>
@@ -23,7 +22,6 @@ export function getCourseArrowPaths(points, width, height) {
     let min = Math.max(0, END_PADDING - segmentStart);
     let max = Math.min(length - 1e-8, totalLength - END_PADDING - segmentStart);
 
-    // Clip before sampling, including when zooming far into a long segment.
     for (const [origin, direction, limit] of [[start.x, ux, width], [start.y, uy, height]]) {
       if (Math.abs(direction) < 1e-10) {
         if (origin < -8 || origin > limit + 8) max = -1;

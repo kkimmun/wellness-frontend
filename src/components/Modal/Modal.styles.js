@@ -33,7 +33,7 @@ export const ModalContainer = styled.div`
   flex-direction: column;
   align-items: ${({ $size }) => $size === "wide" ? "stretch" : "center"};
   gap: ${theme.spacing.md};
-  position: relative; /* 닫기 버튼 배치를 위해 추가 */
+  position: relative; 
 `;
 
 export const CloseButton = styled.button`

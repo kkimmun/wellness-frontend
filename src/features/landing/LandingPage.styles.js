@@ -42,14 +42,14 @@ export const LogoGroup = styled.div`
     color: #1a1a1a;
     
     @media (max-width: 768px) {
-      display: none; /* 모바일에서는 공간 부족으로 글씨 숨김 */
+      display: none; 
     }
   }
 `;
 
 export const MainSplit = styled.main`
   display: flex;
-  flex: 1; /* 남은 높이 채우기 */
+  flex: 1; 
   
   @media (max-width: 768px) {
     flex-direction: column;
@@ -58,10 +58,10 @@ export const MainSplit = styled.main`
 
 export const SplitSection = styled.div`
   flex: 1;
-  padding: 40px 80px; /* 기존 80px 80px에서 세로 여백 축소 */
+  padding: 40px 80px; 
   display: flex;
   flex-direction: column;
-  justify-content: center; /* 세로 중앙 정렬로 남는 공간 분배 */
+  justify-content: center; 
   background-color: ${(props) => props.$bgColor};
   position: relative;
   overflow: hidden;
@@ -71,7 +71,7 @@ export const SplitSection = styled.div`
     justify-content: flex-start;
   }
 
-  /* 상단 패턴 SVG + 그라데이션 불투명도 적용 */
+  
   &::before {
     content: "";
     position: absolute;
@@ -101,7 +101,7 @@ export const SectionTitle = styled.h1`
   font-weight: 900;
   color: ${(props) => props.$color};
   margin-bottom: 24px;
-  margin-top: 0; /* 기존 40px에서 제거하여 위로 당김 */
+  margin-top: 0; 
 
   @media (max-width: 768px) {
     font-size: 32px;
@@ -115,7 +115,7 @@ export const SectionDesc = styled.p`
   line-height: 1.6;
   color: ${(props) => props.$color || "#666"};
   opacity: 0.85;
-  margin-bottom: 24px; /* 기존 40px에서 축소 */
+  margin-bottom: 24px; 
   word-break: keep-all;
 
   @media (max-width: 768px) {
@@ -146,7 +146,7 @@ export const ActionButton = styled.button`
 `;
 
 export const RoutePreview = styled.div`
-  margin-top: 40px; /* 기존 60px에서 축소 */
+  margin-top: 40px; 
   
   h3 {
     font-size: 15px;
@@ -183,7 +183,7 @@ export const RoutePreview = styled.div`
 `;
 
 export const BottomCarousel = styled.section`
-  padding: 24px 0; /* 기존 40px에서 세로 여백 축소 */
+  padding: 24px 0; 
   background-color: #ffffff;
   overflow: hidden;
   
@@ -198,7 +198,7 @@ export const BottomCarousel = styled.section`
 export const PlaceCard = styled.div`
   min-width: 240px;
   max-width: 240px;
-  height: 160px; /* 기존 180px에서 카드 높이 축소 */
+  height: 160px; 
   border-radius: 4px;
   overflow: hidden;
   background: #000;
@@ -211,16 +211,16 @@ export const PlaceCard = styled.div`
     display: block;
   }
 
-  /* 이미지 하단에 어두워지는 그라데이션 오버레이 추가 */
+  
   &::after {
     content: "";
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60%; /* 카드 높이의 절반 정도까지 그라데이션 */
+    height: 60%; 
     background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
-    pointer-events: none; /* 오버레이가 클릭 등을 방해하지 않도록 */
+    pointer-events: none; 
   }
 
   .info {
@@ -231,8 +231,8 @@ export const PlaceCard = styled.div`
     padding: 16px;
     font-weight: 700;
     font-size: 15px;
-    color: #ffffff; /* 흰색 글씨 */
-    z-index: 1; /* 그라데이션 오버레이 위로 텍스트가 올라오도록 설정 */
+    color: #ffffff; 
+    z-index: 1; 
   }
 `;
 
@@ -246,7 +246,7 @@ export const HeaderAuthA = styled.div`
     gap: 12px;
 
     @media (max-width: 768px) {
-      display: none; /* 모바일에서는 데스크탑 메뉴 숨김 */
+      display: none; 
     }
   }
 

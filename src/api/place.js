@@ -16,7 +16,6 @@ export const PlaceAPI = {
     return response.data;
   },
 
-  // TYPE/TYPE_DETAIL과 TAG 선택지는 DB 마스터를 조회해 화면에 동적으로 구성한다.
   getTypeOptions: async () => {
     const response = await api.get("/places/type-options");
     return response.data;
@@ -27,7 +26,6 @@ export const PlaceAPI = {
     return response.data;
   },
 
-  // DB 장소 필터 연동: TYPE 또는 TYPE_DETAIL의 정확한 이름으로 지도 핀을 조회한다.
   getPinsByType: async (type) => {
     const response = await api.get("/places/types", {
       params: { type },
@@ -35,7 +33,6 @@ export const PlaceAPI = {
     return response.data;
   },
 
-  // DB 장소 필터 연동: TAG_CONTENT의 정확한 이름으로 지도 핀을 조회한다.
   getPinsByTag: async (tag) => {
     const response = await api.get("/places/tags", {
       params: { tag },
@@ -44,20 +41,15 @@ export const PlaceAPI = {
   },
 
   getPlaceDetail: async (placeNo) => {
-    // 장소 상세 API는 활성 이미지 전체와 설명을 반환한다.
     const response = await api.get(`/places/${placeNo}/detail`);
     return response.data;
   },
 
   getGimpoTop10: async () => {
-    // 백엔드 명세에 따른 요청 URL (axios 인스턴스의 baseURL 설정에 따라 /api 유무가 다를 수 있음)
-    // 기존 코드들의 패턴을 따라 /gimpoTop10 으로 호출합니다.
     const response = await api.get("/places?typeDetailNo=18");
-    return response; // ApiResponse 형식 (code, data, message) 전체 반환
+    return response;
   },
 
-  // 장소 리뷰 목록 조회 (10개 단위 페이지네이션, 비회원도 조회 가능)
-  // 응답 data 형식: { summary, content, currentPage, totalPages, hasNext, hasPrevious, ... }
   getReviews: async (placeNo, page = 1, signal) => {
     const response = await api.get(`/places/${placeNo}/reviews`, {
       params: { page },
@@ -66,7 +58,6 @@ export const PlaceAPI = {
     return response.data;
   },
 
-  // 리뷰 단건 조회 (수정 화면용, 로그인 필요)
   getReview: async (placeNo, reviewNo) => {
     const response = await api.get(`/places/${placeNo}/reviews/${reviewNo}`);
     return response.data;
@@ -87,7 +78,6 @@ export const PlaceAPI = {
   },
 
   updateReview: async (placeNo, reviewNo, formData) => {
-    // URL이 스펙에 따라 2가지(form, reviews)로 혼동될 수 있으므로 RESTful 방식을 따름
     const response = await api.patch(
       `/places/${placeNo}/reviews/${reviewNo}`,
       formData,

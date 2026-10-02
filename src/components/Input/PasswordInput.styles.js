@@ -8,9 +8,9 @@ export const PasswordWrapper = styled.div`
 `;
 
 export const StyledPasswordInput = styled(BaseInput)`
-  padding-right: 48px; /* 우측 눈 모양 아이콘 공간 확보 */
+  padding-right: 48px; 
 
-  /* 에러 상태일 때 테두리 색상 변경 */
+  
   ${({ $hasError }) =>
     $hasError &&
     `

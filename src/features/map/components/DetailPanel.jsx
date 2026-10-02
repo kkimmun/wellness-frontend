@@ -30,20 +30,15 @@ const DetailPanel = ({
   onClose,
   isBookmarked,
   onBookmark,
-  // 길찾기 기능 연동: 기본정보 탭의 경로찾기 동작을 MapPage까지 전달
   onFindRoute,
-  // 계획 모드에서는 같은 상세 패널의 기본 동작을 "계획에 추가"로 재사용한다.
   primaryActionLabel = "경로찾기",
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 장소 상세 개선: MapPage가 조회해 합친 상세 데이터를 사용해 동일 API의 중복 요청을 막는다.
   const displayPlace = place;
-  // S3 장소 이미지 연동: 상세 API가 없거나 실패해도 지도 핀에 포함된 대표 이미지를 표시한다.
   const registeredImages = displayPlace?.placeImages?.length
     ? displayPlace.placeImages : displayPlace?.images || [];
-  // 목록과 같은 API 대표 이미지: 장소 사진 → 리뷰 사진 → 기본 이미지.
   const displayImages = registeredImages.length
     ? registeredImages
     : displayPlace?.imageUrl
@@ -53,7 +48,6 @@ const DetailPanel = ({
     placeNo: null,
     index: 0,
   });
-  // 장소가 바뀌면 렌더 단계에서 첫 이미지로 전환해 effect의 연쇄 렌더를 피한다.
   const activeImageIndex =
     activeImageState.placeNo === displayPlace?.placeNo
       ? activeImageState.index
@@ -133,7 +127,6 @@ const DetailPanel = ({
         </ActionIcons>
       </TopHeader>
 
-      {/* 리뷰 집계가 null이거나 없을 경우 무조건 0으로 표시되도록 수정 */}
       <RatingInfo>
         <span>리뷰 {displayPlace?.reviewCount ?? 0}</span>
         <div className="rating-box">
@@ -142,7 +135,6 @@ const DetailPanel = ({
         </div>
       </RatingInfo>
 
-      {/* DB 지도 핀 연동: 장소가 바뀌면 이미지 선택 상태도 첫 항목으로 초기화한다. */}
       <ImageSlider
         key={displayPlace?.placeNo}
         placeImages={displayImages}

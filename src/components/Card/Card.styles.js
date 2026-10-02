@@ -11,7 +11,7 @@ export const AuthCardWrapper = styled.div`
   border-radius: ${theme.radius.lg};
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
-  /* 모바일 대응 여백 축소 */
+  
   @media (max-width: ${theme.breakpoints.sm}) {
     padding: ${theme.spacing.lg};
     border: none;

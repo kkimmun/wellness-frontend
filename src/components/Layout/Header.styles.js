@@ -1,4 +1,3 @@
-// (기존 코드 하단에 추가할 내용만 덮어쓰지 않기 위해 전체 코드를 다시 작성)
 import styled from "styled-components";
 import { theme } from "../../styles/theme";
 
@@ -118,13 +117,13 @@ export const HeaderProfileImg = styled.img`
 
 export const PopoverWrapper = styled.div`
   position: absolute;
-  bottom: 0; /* 데스크톱: 아이콘이 최하단에 있으므로 위쪽으로 솟아오르도록 설정 */
-  left: 60px; /* 사이드바 바깥 우측으로 팝업 */
+  bottom: 0; 
+  left: 60px; 
   z-index: 10001;
 
   @media (max-width: 1024px) {
     top: 36px;
-    bottom: auto; /* 모바일: 상단 헤더 아래로 떨어지도록 설정 */
+    bottom: auto; 
     left: auto;
     right: 0; 
   }

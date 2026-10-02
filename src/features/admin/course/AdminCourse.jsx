@@ -20,7 +20,6 @@ export default function AdminCourse() {
   const active = ["Y", "N"].includes(params.get("active")) ? params.get("active") : "";
   const [inputs, setInputs] = useState({ key: location.key, keyword, active });
   const [submittedQuery, setSubmittedQuery] = useState(null);
-  // URL 이동 시 입력값도 동기화하되 입력 DOM을 재생성하지 않는다.
   if (inputs.key !== location.key) {
     const isSubmittedNavigation = submittedQuery === JSON.stringify([page, keyword, active]);
     setInputs(isSubmittedNavigation ? { ...inputs, key: location.key } : { key: location.key, keyword, active });
