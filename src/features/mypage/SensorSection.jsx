@@ -13,7 +13,6 @@ const formatTime = (value) => {
     : date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 };
 
-// 화면 목적: 회원의 만보기 사용에 대한 관리(당일 걸음 수 상세조회)
 export default function SensorSection() {
   const [status, setStatus] = useState(STATUS.LOADING);
   const [records, setRecords] = useState([]);

@@ -19,7 +19,7 @@ export const PanelContainer = styled.div`
   visibility: ${({ $isVisible }) => ($isVisible ? "visible" : "hidden")};
   pointer-events: none;
 
-  /* 모바일: 하단 일체형 바텀시트 */
+  
   @media (max-width: 768px) {
     position: fixed;
     bottom: 0;

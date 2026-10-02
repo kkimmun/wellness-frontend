@@ -46,7 +46,6 @@ const EmailRequest = () => {
     try {
       setIsLoading(true);
       await AuthAPI.sendVerificationEmail(requestEmail);
-      // 인증코드 화면 이후 뒤로가기로 이 화면이 되살아나 재요청되지 않도록 replace로 이동한다.
       navigate("/verify-code", { state: { requestEmail }, replace: true });
     } catch (err) {
       setRequestEmailError(

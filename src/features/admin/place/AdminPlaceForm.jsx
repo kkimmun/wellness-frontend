@@ -62,7 +62,6 @@ const EMPTY_LICENSE = {
   attributionText: "",
 };
 
-// WGS84 10진수 좌표 형식 (경도 -180~180, 위도 -90~90)
 const LONGITUDE_REGEX = /^-?(180(\.0+)?|((1[0-7][0-9])|([1-9]?[0-9]))(\.\d+)?)$/;
 const LATITUDE_REGEX = /^-?(90(\.0+)?|([1-8]?[0-9])(\.\d+)?)$/;
 
@@ -102,7 +101,6 @@ const toLicensePayload = (imgNo, license) => ({
   attributionText: license.attributionText.trim(),
 });
 
-// S3 장소 이미지 연동: 수정 화면의 기존 이미지는 백엔드가 반환한 완성 URL로 표시한다.
 const buildImageUrl = (img) =>
   img.imageUrl || `${img.imgPath ?? ""}${img.saveName ?? ""}`;
 
@@ -229,11 +227,10 @@ const AdminPlaceForm = () => {
   const mode = placeNo ? "edit" : "add";
 
   const [form, setForm] = useState(EMPTY_FORM);
-  const [files, setFiles] = useState([]); // 업로드할 이미지 (순서 = imgOrder)
+  const [files, setFiles] = useState([]);
   const [fileLicenses, setFileLicenses] = useState([]);
-  const [currentImages, setCurrentImages] = useState([]); // edit: 기존 등록 이미지
+  const [currentImages, setCurrentImages] = useState([]);
 
-  // edit 모드에서 기존 데이터를 불러오는 상태
   const [loadState, setLoadState] = useState(
     mode === "edit" ? "loading" : "ready",
   );
@@ -262,8 +259,6 @@ const AdminPlaceForm = () => {
       try {
         const data = await AdminPlaceAPI.getPlace(placeNo);
         if (ignore) return;
-        // 최초 진입 응답: createDate, placeName, placeDescrpition, xAxis, yAxis,
-        //               typeDetailNo, addr, placeImages
         setForm((prev) => ({
           ...prev,
           placeName: data?.placeName ?? "",
@@ -325,7 +320,7 @@ const AdminPlaceForm = () => {
       ...prev,
       ...picked.map(() => createLicenseForm()),
     ]);
-    e.target.value = ""; // 같은 파일 다시 선택 가능하도록
+    e.target.value = "";
   };
 
   const removeFile = (index) => {
@@ -485,7 +480,6 @@ const AdminPlaceForm = () => {
     fd.append("xAxis", form.x_axis);
     fd.append("yAxis", form.y_axis);
     if (mode === "add") fd.append("viewCount", "0");
-    // 이미지: 표시된 순서대로 imageFiles 를 여러 개 추가 (append 순서 = imgOrder)
     files.forEach((file) => fd.append("imageFiles", file));
     fileLicenses.forEach((license, index) => {
       fd.append(`imageLicenses[${index}].enabled`, String(license.enabled));

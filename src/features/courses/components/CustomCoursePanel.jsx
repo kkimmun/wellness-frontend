@@ -361,7 +361,6 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginP
             : {}),
           endPlaceNo: Number(destinationNo),
           tags: selectedTags,
-          // 백엔드 필수 필드 호환용 기본값(분). 추천 계산에는 사용되지 않습니다.
           estimatedTime: 120,
         },
         controller.signal,

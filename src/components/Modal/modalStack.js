@@ -1,4 +1,3 @@
-// Keep pending dialogs mounted while only the newest eligible dialog is visible.
 export function createModalStack() {
   const entries = new Map();
   const listeners = new Set();

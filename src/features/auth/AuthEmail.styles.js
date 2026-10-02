@@ -44,7 +44,7 @@ export const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-bottom: ${theme.spacing.xl}; /* Subtitle이 하단으로 빠졌으므로 원래 간격 복구 */
+  margin-bottom: ${theme.spacing.xl}; 
 `;
 
 export const Title = styled.h2`

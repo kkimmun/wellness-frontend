@@ -145,7 +145,6 @@ const TransitRouteDetails = ({ route, detail }) => {
         <TransitTimeline>
           {steps.map((step, index) => (
             <TransitStep key={`${step.type}-${step.guidance || "step"}-${index}`}>
-              {/* 대중교통 경로 색상: 상세 목록과 지도에서 같은 교통수단은 같은 색으로 표시한다. */}
               <StepIcon
                 $color={getRouteSegmentStyle(step).color}
                 title={getRouteSegmentStyle(step).label}

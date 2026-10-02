@@ -148,7 +148,6 @@ const RecommendationModePanel = ({
         },
         controller.signal,
       );
-      // 위치 변경이나 새 요청으로 무효화된 이전 응답은 현재 추천 결과에 반영하지 않는다.
       if (
         controller.signal.aborted ||
         requestControllerRef.current !== controller
@@ -192,7 +191,6 @@ const RecommendationModePanel = ({
       setMessage("추천 코스를 저장하지 못했습니다.");
       return;
     }
-    // 저장에 성공하면 상위(MapPage)에서 곧바로 계획 모드로 이동시키므로 별도 안내는 필요 없다.
   };
 
   return (

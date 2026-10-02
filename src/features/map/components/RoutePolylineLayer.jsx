@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useMap } from "react-kakao-maps-sdk";
 
-// 길찾기 표시 안정화: 이동수단 변경 시 이전 Kakao Polyline 객체를 지도에서 직접 제거한다.
 const RoutePolylineLayer = ({
   revision,
   segments,

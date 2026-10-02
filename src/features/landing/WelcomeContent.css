@@ -21,7 +21,7 @@
   .section-description { font-size: 14px; line-height: 1.65; margin-bottom: 20px; }
   .welcome-eyebrow { font-size: 9px; letter-spacing: 2px; margin-bottom: 10px; }
 
-  /* 계획모드 / 추천모드 1열 수직 스택 및 여백 최적화 */
+  
   .welcome-modes { grid-template-columns: 1fr; gap: 20px; }
   .mode-card { padding: 26px 22px; min-height: auto; }
   .mode-copy { width: 100%; }
@@ -33,7 +33,7 @@
   .mode-copy button { width: 100%; justify-content: center; padding: 13px 20px; font-size: 15px; display: inline-flex; align-items: center; gap: 10px; }
   .welcome-route-art, .recommend-art { display: none; }
 
-  /* 순례길 목록 가로 스와이프 캐러셀 및 카드 최적화 */
+  
   .welcome-courses {
     display: flex;
     overflow-x: auto;

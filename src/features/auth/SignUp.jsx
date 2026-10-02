@@ -42,7 +42,6 @@ const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // 보안 강화를 위해 sessionStorage 사용
     if (!verifiedEmail && !signupCompletedRef.current) {
       toast.error("이메일 인증이 필요합니다.");
       navigate("/request-email", { replace: true });
@@ -92,7 +91,6 @@ const SignUp = () => {
         memberPwd: payload.memberPwd
       });
 
-      // 인증 정보 삭제로 재렌더링되어도 인증 화면으로 되돌아가지 않게 완료 상태를 먼저 기록한다.
       signupCompletedRef.current = true;
       sessionStorage.removeItem("verifiedEmail");
       navigate("/login", { replace: true });
@@ -112,7 +110,6 @@ const SignUp = () => {
           <BackButton onClick={() => navigate(-1)} />
         </Header>
 
-        {/* 로그인 링크는 EmailRequest로 이동됨 */}
 
         <RequiredNotice>
           <RequiredMark aria-hidden="true">*</RequiredMark> 필수 입력 항목

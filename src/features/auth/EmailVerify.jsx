@@ -25,7 +25,7 @@ const EmailVerify = () => {
 
   const [authCode, setAuthCode] = useState("");
   const [codeError, setCodeError] = useState("");
-  const [timeLeft, setTimeLeft] = useState(180); // 3분 타이머
+  const [timeLeft, setTimeLeft] = useState(180);
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
@@ -36,7 +36,6 @@ const EmailVerify = () => {
     }
   }, [requestEmail, navigate]);
 
-  // 타이머 최적화: 의존성 없이 콜백으로 상태 업데이트
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -67,7 +66,7 @@ const EmailVerify = () => {
       setIsResending(true);
       setCodeError("");
       await AuthAPI.resendVerificationEmail(requestEmail);
-      setTimeLeft(180); // 타이머 리셋
+      setTimeLeft(180);
       alert("인증코드가 재전송되었습니다.");
     } catch (err) {
       setCodeError(err.message || "재전송에 실패했습니다.");
@@ -93,10 +92,8 @@ const EmailVerify = () => {
       setIsLoading(true);
       await AuthAPI.verifyEmailCode(requestEmail, authCode);
       
-      // 보안성 강화를 위해 sessionStorage에 저장 (창 닫으면 증발)
       sessionStorage.setItem("verifiedEmail", requestEmail);
       alert("이메일 인증이 완료되었습니다.");
-      // 회원가입 화면 이후 뒤로가기로 인증 완료된 이 화면이 되살아나지 않도록 replace로 이동한다.
       navigate("/signup", { replace: true });
     } catch (err) {
       setCodeError(err.message || "인증번호가 일치하지 않거나 만료되었습니다.");

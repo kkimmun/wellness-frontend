@@ -41,7 +41,6 @@ const SearchPanel = ({
   const [lastSearchedKeyword, setLastSearchedKeyword] = useState("");
   const hasSearched = Boolean(lastSearchedKeyword.trim());
 
-  // 모바일 바텀시트 드래그 리사이즈
   const [mobileHeight, setMobileHeight] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartYRef = useRef(null);
@@ -104,7 +103,6 @@ const SearchPanel = ({
     }
   }
 
-  // 목록과 지도 모두 같은 검색 결과를 사용한다.
   const matchingPlaces = useMemo(
     () => (hasSearched ? filterDbPlaces(pins, lastSearchedKeyword) : pins),
     [pins, hasSearched, lastSearchedKeyword]
@@ -118,8 +116,6 @@ const SearchPanel = ({
     useIncrementalPlaces(matchingPlaces, lastSearchedKeyword);
   const resultsLoading = filtersLoading;
 
-  // 목록 API는 로그인 사용자별 북마크 여부를 내려주지 않으므로,
-  // 화면에 실제로 보이는 카드에 한해 북마크 상태 API로 값을 채운다.
   useEffect(() => {
     if (!hydrateBookmarkStatus) return;
     resultsToRender.forEach((place) => {

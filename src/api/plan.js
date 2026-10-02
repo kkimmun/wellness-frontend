@@ -57,7 +57,6 @@ export const PlanAPI = {
     return Array.isArray(data) ? data : [];
   },
 
-  // 계획 헤더와 장소를 한 요청으로 저장해 중간 실패 시 불완전한 계획이 남지 않게 한다.
   createPlan: async ({ planName, xAxis, yAxis, places }) => {
     const body = await api.post("/plans", { planName, xAxis, yAxis, places });
     const data = body?.data ?? body;

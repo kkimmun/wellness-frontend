@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 
-// 검색 조건이 바뀌면 즉시 처음 10개부터 다시 표시한다.
 export default function useIncrementalPlaces(places, resetKey) {
   const listRef = useRef(null);
   const [windowState, setWindowState] = useState(null);

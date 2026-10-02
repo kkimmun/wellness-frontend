@@ -25,9 +25,7 @@ function App() {
   const [isSessionExpired, setIsSessionExpired] = useState(false);
 
   useEffect(() => {
-    // axios.js에서 보낸 401 세션 만료 이벤트를 감지
     const handleSessionExpired = () => {
-      // Bearer 토큰 인증용으로 저장한 값 정리
       localStorage.removeItem("accessToken");
       localStorage.removeItem("memberId");
       setIsSessionExpired(true);
@@ -47,7 +45,6 @@ function App() {
     <>
       <GlobalStyles />
 
-      {/* 401 공통 모달 렌더링 */}
       <Modal
         isOpen={isSessionExpired}
         priority={100}
@@ -58,7 +55,6 @@ function App() {
 
       <Suspense fallback={<div role="status">화면을 불러오는 중입니다.</div>}>
       <Routes>
-        {/* 비로그인 사용자 전용 라우트 (로그인 시 접근 불가) */}
         <Route element={<PublicRoute />}>
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
@@ -68,10 +64,8 @@ function App() {
           </Route>
         </Route>
 
-        {/* 랜딩 페이지 (단독 레이아웃) */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* 메인 서비스 화면 */}
         <Route element={<MainLayout />}>
           <Route element={<PrivateRoute />}>
             <Route path="/mypage" element={<MyPageDashboard />} />
@@ -91,7 +85,6 @@ function App() {
           <Route path="/gimpoTop10/:placeNo/review" element={<MapPage />} />
         </Route>
 
-        {/* 관리자 화면 (인증 + 관리자 권한 필요) */}
         <Route element={<AdminRoute />}>
           <Route element={<AdminLayout />}>
             <Route path="/admin/courses" element={<AdminCourse />} />

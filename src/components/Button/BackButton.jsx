@@ -10,25 +10,25 @@ const StyledBackButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  /* 부드러운 애니메이션을 위한 transition 추가 */
+  
   transition: opacity 0.2s ease;
 
   svg {
-    /* SVG 자체에도 이동 애니메이션 설정 */
+    
     transition: transform 0.2s ease-in-out;
   }
 
   &:hover:not(:disabled) {
     opacity: 0.7;
     svg {
-      /* 마우스 올리면 왼쪽으로 4px 부드럽게 이동 */
+      
       transform: translateX(-4px);
     }
   }
 
   &:active:not(:disabled) {
     svg {
-      /* 클릭하는 순간 왼쪽으로 살짝 더(6px) 쏙 들어감 */
+      
       transform: translateX(-6px);
     }
   }

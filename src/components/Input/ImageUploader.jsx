@@ -23,10 +23,8 @@ export default function ImageUploader({ maxFiles = 5, onImagesChange }) {
     const newUrls = files.map((file) => URL.createObjectURL(file));
     setPreviewUrls((prev) => [...prev, ...newUrls]);
 
-    // 부모 컴포넌트에 파일 객체 전달 로직 필요 시 여기에 추가
     if (onImagesChange) onImagesChange(files);
 
-    // 같은 파일을 다시 선택할 수 있도록 인풋 초기화
     e.target.value = "";
   };
 

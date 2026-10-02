@@ -2,23 +2,8 @@ import { useEffect, useId, useLayoutEffect, useRef, useSyncExternalStore } from 
 import { createPortal } from "react-dom";
 import { FiX } from "react-icons/fi";
 import * as S from "./BottomSheet.styles";
-import { modalStack } from "../Modal/modalStack"; // reuse stack for z‑order
+import { modalStack } from "../Modal/modalStack";
 
-/**
- * BottomSheet component – a mobile‑first bottom‑up modal.
- *
- * Props:
- *  - isOpen: boolean – controls visibility
- *  - title?: string – optional title
- *  - message?: string – optional message
- *  - icon?: ReactComponent – optional icon component
- *  - iconColor?: string – "danger" | "primary"
- *  - showClose?: boolean – show X button (default true)
- *  - onClose: () => void – called when sheet should close
- *  - children?: ReactNode – custom content
- *  - size?: "default" | "wide" – width of the sheet (default "default")
- *  - priority?: number – stack priority, same as Modal
- */
 export const BottomSheet = ({
   isOpen,
   title,
@@ -48,7 +33,6 @@ export const BottomSheet = ({
     return modalStack.register(stackId, priority);
   }, [isOpen, stackId, priority]);
 
-  // Focus management
   useEffect(() => {
     if (!visible) return;
     const previousFocus = document.activeElement;

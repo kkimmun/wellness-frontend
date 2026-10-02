@@ -8,16 +8,16 @@ export const Modal = ({
   isOpen,
   title,
   message,
-  icon: Icon,           // 선택적 아이콘 컴포넌트 전달
-  iconColor,            // "danger" | "primary"
-  showClose = false,    // 우측 상단 X 버튼 표시 여부
+  icon: Icon,
+  iconColor,
+  showClose = false,
   onConfirm,
   onCancel,
   onClose,
   confirmText = "확인",
   cancelText = "취소",
-  confirmVariant = "primary", // "primary" | "danger" | "secondary"
-  cancelVariant = "secondary", // "primary" | "danger" | "secondary"
+  confirmVariant = "primary",
+  cancelVariant = "secondary",
   pending = false,
   children,
   size = "default",
@@ -47,11 +47,9 @@ export const Modal = ({
 
   if (!isOpen) return null;
 
-  // onCancel이 있으면 Confirm(2버튼), 없으면 Alert(1버튼) 모드로 작동
   const isConfirmMode = Boolean(onCancel);
   const dismissHandler = onClose || onCancel;
 
-  // 취소 또는 별도 닫기 동작을 전달한 모달만 오버레이로 닫을 수 있다.
   const handleOverlayClick = () => {
     if (dismissHandler && !pending) {
       dismissHandler();
@@ -60,7 +58,6 @@ export const Modal = ({
 
   return createPortal(
     <S.Overlay $visible={visible} aria-hidden={!visible} onClick={handleOverlayClick}>
-      {/* 모달 본체 클릭 시 이벤트 버블링 차단 */}
       <S.ModalContainer
         ref={containerRef}
         $size={size}

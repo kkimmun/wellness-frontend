@@ -62,7 +62,6 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
   const sentinelRef = useRef(null);
   const requestingNextPageRef = useRef(false);
 
-  // 모바일 바텀시트 드래그 리사이즈 (SearchPanel과 동일한 방식)
   const [mobileHeight, setMobileHeight] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartYRef = useRef(null);
@@ -80,7 +79,6 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
   const handleDragMove = useCallback(
     (e) => {
       if (!isDragging || dragStartYRef.current === null) return;
-      // 터치 스크롤과 드래그 충돌 방지
       if (e.cancelable) e.preventDefault();
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const deltaY = dragStartYRef.current - clientY;
@@ -105,7 +103,6 @@ const FixedCoursePanel = ({ onClose, onCourseSelect, selectedCourseNo, onUserCou
     const onEnd = () => handleDragEnd();
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onEnd);
-    // passive: false — preventDefault() 호출을 위해 필수
     window.addEventListener("touchmove", onMove, { passive: false });
     window.addEventListener("touchend", onEnd);
     return () => {

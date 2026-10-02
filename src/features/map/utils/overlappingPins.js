@@ -39,7 +39,6 @@ const getPlaceKey = (place, index) => {
   return `${place?.placeName || "place"}-${lat}-${lng}-${index}`;
 };
 
-// 지도에서 서로 가려지는 가까운 장소를 하나의 순환 가능한 마커 그룹으로 묶는다.
 export const groupOverlappingPins = (places = [], maxDistanceMeters = 30) => {
   const groups = [];
 
@@ -75,8 +74,6 @@ export const groupOverlappingPins = (places = [], maxDistanceMeters = 30) => {
 const getScreenDistancePixels = (left, right) =>
   Math.hypot(right.x - left.x, right.y - left.y);
 
-// 현재 줌에서 실제로 겹치는 마커만 화면 좌표 기준으로 묶는다.
-// 지도 확대 시 좌표 사이의 픽셀 간격이 벌어지면 자동으로 다시 분리된다.
 export const groupPinsByScreenDistance = (
   places = [],
   projectPlace,
@@ -124,7 +121,6 @@ export const getCircularPinIndex = (index, length) => {
   return ((index % length) + length) % length;
 };
 
-// 겹친 핀은 첫 클릭에는 현재 보이는 핀을, 이후 클릭에는 다음 핀을 선택한다.
 export const getNextOverlappingPinIndex = (
   activeIndex,
   initialIndex,

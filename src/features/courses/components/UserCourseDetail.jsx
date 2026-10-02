@@ -27,7 +27,6 @@ export default function UserCourseDetail({ course, places = [], onBack, backLabe
   const triggerRef = useRef(null);
   const closeRef = useRef(null);
 
-  // 모바일 바텀시트 드래그 리사이즈
   const [mobileHeight, setMobileHeight] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartYRef = useRef(null);
@@ -119,7 +118,6 @@ export default function UserCourseDetail({ course, places = [], onBack, backLabe
         $mobileHeight={mobileHeight}
         $isDragging={isDragging}
       >
-        {/* 모바일 바텀시트 드래그 핸들 */}
         <S.DragHandle
           aria-hidden="true"
           onMouseDown={handleDragStart}

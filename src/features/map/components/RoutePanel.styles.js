@@ -21,9 +21,9 @@ export const RoutePanelContainer = styled.aside`
   transition: transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
   pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
 
-  /* ── 모바일: 좌측 풀패널 → 하단 바텀시트로 전환 ── */
+  
   @media (max-width: 768px) {
-    /* 위치를 좌측 슬라이드에서 하단 슬라이드로 완전히 재정의 */
+    
     inset: auto 0 0 0;
     width: 100%;
     height: ${({ $mobileHeight }) => $mobileHeight ?? "40vh"};
@@ -33,11 +33,11 @@ export const RoutePanelContainer = styled.aside`
     border-radius: 20px 20px 0 0;
     box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
 
-    /* 좌측 슬라이드 대신 하단에서 위로 올라오는 애니메이션 */
+    
     transform: ${({ $isOpen }) =>
       $isOpen ? "translateY(0)" : "translateY(105%)"};
 
-    /* 드래그 중에는 transition을 끄고 손가락을 놓을 때만 스냅 애니메이션 적용 */
+    
     transition: ${({ $isDragging }) =>
       $isDragging
         ? "none"
@@ -45,9 +45,8 @@ export const RoutePanelContainer = styled.aside`
   }
 `;
 
-/* 모바일 전용 드래그 핸들 바 */
 export const DragHandle = styled.div`
-  display: none; /* 데스크톱에서는 숨김 */
+  display: none; 
 
   @media (max-width: 768px) {
     display: flex;
@@ -57,7 +56,7 @@ export const DragHandle = styled.div`
     padding: 10px 0 6px;
     cursor: grab;
     flex-shrink: 0;
-    touch-action: none; /* 드래그 중 브라우저 스크롤 방지 */
+    touch-action: none; 
 
     &::after {
       content: "";
@@ -486,7 +485,6 @@ export const RouteResultsSection = styled.section`
   }
 `;
 
-/* 대중교통 상세 안내: 카드 안에 단계별 경로를 배치할 수 있도록 카드와 선택 버튼을 분리한다. */
 export const RouteCard = styled.article`
   width: 100%;
   margin-bottom: 10px;

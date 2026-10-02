@@ -5,7 +5,6 @@ import { Modal } from "../../../components/Modal/Modal";
 import { isDefaultPlaceImage } from "../../../utils/placeImage";
 
 const getImageUrl = (item) => (typeof item === "string" ? item : item?.imageUrl);
-// 등록된 실제 썸네일이 없으면 PlaceImage가 기본 일러스트로 대체하는데, 이 경우는 확대해서 볼 실물 사진이 없으므로 클릭을 막는다.
 const hasRealImage = (item) => {
   const url = getImageUrl(item)?.trim();
   return Boolean(url) && !isDefaultPlaceImage(url);
