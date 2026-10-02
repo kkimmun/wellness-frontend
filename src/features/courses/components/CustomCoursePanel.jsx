@@ -5,6 +5,7 @@ import { CourseAPI } from "../../../api/course";
 import { PlaceAPI } from "../../../api/place";
 import { createUserCourse } from "../utils/userCourseStorage";
 import { startCoursePreview } from "../utils/coursePreview";
+import { createCourseGeneration } from "../utils/courseGeneration";
 import { RouteAPI } from "../../../api/route";
 import CoursePlaceOption from "./CoursePlaceOption";
 import {
@@ -103,6 +104,8 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginP
   const searchControllerRef = useRef(null);
   const recommendationControllerRef = useRef(null);
   const creationControllerRef = useRef(null);
+  const generationRef = useRef(null);
+  const [descriptionRetry, setDescriptionRetry] = useState(false);
   const previewControllerRef = useRef(null);
   const [previewMessage, setPreviewMessage] = useState("");
   const destination = destinations.find((place) => String(place.placeNo) === destinationNo);
@@ -184,7 +187,18 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginP
 
   useEffect(() => () => onCancelOriginPick?.(), [onCancelOriginPick]);
 
+  const resetCreation = () => {
+    creationControllerRef.current?.abort();
+    creationControllerRef.current = null;
+    generationRef.current = null;
+    setDescriptionRetry(false);
+    setCreationState("idle");
+    setCreationMessage("");
+    setCourseResult(null);
+  };
+
   const clearGeneratedData = () => {
+    resetCreation();
     recommendationControllerRef.current?.abort();
     creationControllerRef.current?.abort();
     setRecommendations(null);
@@ -344,6 +358,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginP
     recommendationControllerRef.current?.abort();
     const controller = new AbortController();
     recommendationControllerRef.current = controller;
+    resetCreation();
     setRecommendationState("loading");
     setRecommendationMessage("");
     setRecommendations(null);
@@ -398,6 +413,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginP
   };
 
   const toggleWaypoint = (placeNo) => {
+    resetCreation();
     if (selectedWaypoints.includes(placeNo)) {
       setSelectedWaypoints((current) =>
         current.filter((item) => item !== placeNo),
@@ -414,7 +430,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginP
   };
 
   const createCourse = async () => {
-    if (creationState === "loading") return;
+    if (creationControllerRef.current && !creationControllerRef.current.signal.aborted) return;
     const validationMessage = validateConditions();
     if (validationMessage) {
       setCreationState("error");
@@ -433,50 +449,42 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginP
     setCourseResult(null);
 
     try {
-      const routeResponse = await CourseAPI.getRecommendedRoute(
-        {
-          ...coordinates,
+      if (!generationRef.current) {
+        generationRef.current = createCourseGeneration({
+          coordinates,
           endPlaceNo: Number(destinationNo),
-          transportType: "WALK",
-          routeOption: "SHORTEST",
-          waypointPlaceNos: selectedWaypoints,
-        },
-        controller.signal,
-      );
-      if (controller.signal.aborted) return;
-      const routeData = routeResponse?.data;
-      onCourseBuilt(routeData);
-
-      const courseResponse = await CourseAPI.getCustomCourse(
-        {
-          ...coordinates,
-          endPlaceNo: Number(destinationNo),
-          waypoints: Array.isArray(routeData?.waypoints)
-            ? routeData.waypoints.map((place) => place.placeNo)
-            : selectedWaypoints,
-          tags: selectedTags,
-        },
-        controller.signal,
-      );
+          waypointPlaceNos: [...selectedWaypoints],
+          tags: [...selectedTags],
+          getRoute: CourseAPI.getRecommendedRoute,
+          getDescription: CourseAPI.getCustomCourse,
+          onRoute: onCourseBuilt,
+        });
+      }
+      const { routeData, info } = await generationRef.current.run(controller.signal);
       if (controller.signal.aborted) return;
       const course = createUserCourse({
-        info: courseResponse?.data,
+        info,
         routeData,
         origin,
         tags: selectedTags,
       });
-      setCourseResult(courseResponse?.data || null);
+      setCourseResult(info);
+      setDescriptionRetry(false);
       setCreationState("success");
       setCreationMessage(
         "순례길 코스를 만들었습니다. 지도에서 경로를 확인해보세요.",
       );
       onCreated?.(course);
     } catch (error) {
-      if (error?.code === "ERR_CANCELED") return;
+      if (controller.signal.aborted || error?.code === "ERR_CANCELED") return;
+      const retryDescription = Boolean(generationRef.current?.hasRoute());
+      setDescriptionRetry(retryDescription);
       setCreationState("error");
-      setCreationMessage(
-        getErrorMessage(error, "순례길 코스를 만드는 중 오류가 발생했습니다."),
-      );
+      setCreationMessage(retryDescription
+        ? "코스 경로는 유지되어 있습니다. 설명을 생성하지 못했습니다. 다시 시도해주세요."
+        : getErrorMessage(error, "순례길 코스를 만드는 중 오류가 발생했습니다."));
+    } finally {
+      if (creationControllerRef.current === controller) creationControllerRef.current = null;
     }
   };
 
@@ -740,7 +748,7 @@ const CustomCoursePanel = ({ onClose, onCourseBuilt, onCreated, onRequestOriginP
                 <InlineSpinner /> 코스 설명 생성중...
               </>
             ) : (
-              "순례길 코스 제작"
+              descriptionRetry ? "코스 설명 다시 생성" : "순례길 코스 제작"
             )}
           </PrimaryButton>
         </ActionArea>

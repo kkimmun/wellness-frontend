@@ -120,6 +120,8 @@ const ReviewTab = ({ place }) => {
 
   useEffect(() => {
     if (!placeNo) return;
+    // 첫 페이지 요청 시 로딩 상태를 함께 갱신하는 의도된 동작이다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPage(1);
   }, [placeNo, loadPage]);
 

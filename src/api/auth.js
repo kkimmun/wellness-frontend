@@ -58,6 +58,7 @@ export const AuthAPI = {
     try {
       await api.post("/auth/logout");
     } catch {
+      // 회원 삭제는 완료됐으므로 로그아웃 정리 실패로 탈퇴 성공을 뒤집지 않는다.
     } finally {
       clearLocalAuth();
     }

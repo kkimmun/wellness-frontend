@@ -77,6 +77,7 @@ export function readUserCourses(storage) {
       }
     }
   } catch {
+    // 현재 형식의 데이터를 읽지 못하면 아래에서 이전 버전의 코스 복원을 시도한다.
   }
   try {
     const saved = JSON.parse((storage ?? window.localStorage).getItem(USER_COURSE_KEY));

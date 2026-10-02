@@ -58,7 +58,7 @@ export default function ProfileEditor({ user, onClose, onSaved }) {
     try {
       if (section === "password") {
         await MemberProfileAPI.updatePassword(currentPassword, newPassword);
-        try { await logout(); } catch {   }
+        try { await logout(); } catch { /* 비밀번호 변경은 완료됐고 로컬 인증은 logout의 finally에서 정리된다. */ }
         window.location.replace("/login"); return;
       }
       const updated = section === "name" ? await MemberProfileAPI.updateName(name)
