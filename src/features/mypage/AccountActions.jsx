@@ -17,7 +17,7 @@ export default function AccountActions({ onClose }) {
     setError("");
     if (action === "logout") {
       const request = logout();
-      try { await request; } catch {   }
+      try { await request; } catch { /* 로컬 인증은 logout의 finally에서 정리되므로 화면 이동을 계속한다. */ }
       onClose?.();
       window.location.replace("/");
       return;
